@@ -33,9 +33,15 @@ export type Settings = {
     trayUnreadBadge: boolean;
     /** Si es un número, fija el badge (pruebas); `null` = usar detección / IPC. */
     trayBadgeManual: number | null;
+    /** Escala UI (zoom factor). 1.0 = 100%. */
+    uiScale: number;
   };
   notifications: {
     enabled: boolean;
+    /** Mostrar el nombre de la cuenta en el título de notificación. */
+    showAccountName: boolean;
+    /** Mostrar texto detallado (p. ej. contador) en el cuerpo. */
+    showPreview: boolean;
   };
 };
 
@@ -56,8 +62,9 @@ const DEFAULTS: Settings = {
     autoStart: false,
     trayUnreadBadge: true,
     trayBadgeManual: null,
+    uiScale: 1,
   },
-  notifications: { enabled: true },
+  notifications: { enabled: true, showAccountName: true, showPreview: true },
 };
 
 function settingsPath() {
@@ -102,10 +109,7 @@ export function loadSettings(): Settings {
           typeof parsed.general?.showMenuBar === "boolean"
             ? parsed.general.showMenuBar
             : DEFAULTS.general.showMenuBar,
-        zen:
-          typeof parsed.general?.zen === "boolean"
-            ? parsed.general.zen
-            : DEFAULTS.general.zen,
+        zen: typeof parsed.general?.zen === "boolean" ? parsed.general.zen : DEFAULTS.general.zen,
         windowBounds: (() => {
           const b: any = (parsed.general as any)?.windowBounds;
           if (!b) return DEFAULTS.general.windowBounds;
@@ -144,18 +148,31 @@ export function loadSettings(): Settings {
             ? parsed.general.trayUnreadBadge
             : DEFAULTS.general.trayUnreadBadge,
         trayBadgeManual:
-          parsed.general?.trayBadgeManual === null ||
-          parsed.general?.trayBadgeManual === undefined
+          parsed.general?.trayBadgeManual === null || parsed.general?.trayBadgeManual === undefined
             ? DEFAULTS.general.trayBadgeManual
             : typeof parsed.general.trayBadgeManual === "number"
               ? parsed.general.trayBadgeManual
               : DEFAULTS.general.trayBadgeManual,
+        uiScale: (() => {
+          const raw: any = (parsed.general as any)?.uiScale;
+          const n = typeof raw === "number" ? raw : Number(raw);
+          if (!Number.isFinite(n)) return DEFAULTS.general.uiScale;
+          return Math.max(0.75, Math.min(2, n));
+        })(),
       },
       notifications: {
         enabled:
           typeof parsed.notifications?.enabled === "boolean"
             ? parsed.notifications.enabled
             : DEFAULTS.notifications.enabled,
+        showAccountName:
+          typeof (parsed.notifications as any)?.showAccountName === "boolean"
+            ? (parsed.notifications as any).showAccountName
+            : DEFAULTS.notifications.showAccountName,
+        showPreview:
+          typeof (parsed.notifications as any)?.showPreview === "boolean"
+            ? (parsed.notifications as any).showPreview
+            : DEFAULTS.notifications.showPreview,
       },
     };
   } catch {

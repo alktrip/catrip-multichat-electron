@@ -24,6 +24,7 @@ export function Overlay({
     <div
       role="dialog"
       aria-modal="true"
+      className="catrip-overlay-veil"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -39,6 +40,7 @@ export function Overlay({
       }}
     >
       <div
+        className="catrip-overlay-panel"
         style={{
           width: 560,
           maxWidth: "calc(100vw - 28px)",
@@ -49,7 +51,12 @@ export function Overlay({
           border: "1px solid rgba(255,255,255,0.22)",
           background: "#353a3a",
           color: "#eef2f2",
-          boxShadow: "0 20px 56px rgba(0,0,0,0.65), 0 0 1px rgba(255,255,255,0.08)",
+          boxShadow: [
+            "inset 0 1px 0 0 rgba(255,255,255,0.10)", // highlight superior
+            "inset 0 -1px 0 0 rgba(0,0,0,0.22)", // sombra inferior interna
+            "0 20px 56px rgba(0,0,0,0.65)",
+            "0 0 1px rgba(255,255,255,0.08)",
+          ].join(", "),
           overflow: "hidden",
         }}
       >
@@ -67,4 +74,3 @@ export function Overlay({
     </div>
   );
 }
-

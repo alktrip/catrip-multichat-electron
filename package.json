@@ -1,23 +1,42 @@
 {
   "name": "catrip_multichat_electron",
+  "desktopName": "catrip-connect.desktop",
   "productName": "catrip_multichat_electron",
   "private": true,
-  "version": "0.0.0",
-  "description": "Catrip Multichat rewrite in Electron",
+  "version": "1.0.0",
+  "description": "Catrip Connect — cliente multi-cuenta de WhatsApp Web construido sobre Electron",
+  "homepage": "https://github.com/alktrip/catrip-multichat-electron",
+  "license": "MIT",
+  "author": {
+    "name": "Catrip",
+    "email": "noreply@catrip.local"
+  },
   "main": "dist/main/main.js",
   "scripts": {
-    "dev:renderer": "vite",
+    "dev:renderer": "NODE_OPTIONS=--max-old-space-size=4096 vite",
     "dev:main": "tsc -p tsconfig.main.json --watch",
     "dev:preload": "tsc -p tsconfig.preload.json --watch",
     "dev:electron": "wait-on tcp:5173 && electron .",
-    "dev": "node _scripts/kill-dev-port.js && concurrently -k \"npm:dev:renderer\" \"npm:dev:preload\" \"npm:dev:main\" \"npm:dev:electron\"",
+    "dev": "node _scripts/kill-dev-port.js && concurrently --kill-others-on-fail \"npm:dev:renderer\" \"npm:dev:preload\" \"npm:dev:main\" \"npm:dev:electron\"",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "build:preload": "tsc -p tsconfig.preload.json",
     "build": "npm run build:renderer && npm run build:preload && npm run build:main",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && node _scripts/generate-app-icons.mjs && electron-builder",
+    "dist:deb": "npm run build && node _scripts/generate-app-icons.mjs && electron-builder --linux deb",
+    "dist:appimage": "npm run build && node _scripts/generate-app-icons.mjs && electron-builder --linux AppImage",
+    "dist:linux": "npm run build && node _scripts/generate-app-icons.mjs && electron-builder --linux deb AppImage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "pretest:e2e": "npm run build",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -25,7 +44,14 @@
     "concurrently": "^9.2.1",
     "electron": "^42.0.1",
     "electron-builder": "^26.8.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.3",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.2",
     "vite": "^8.0.11",
     "wait-on": "^8.0.5"
   },
@@ -38,7 +64,10 @@
   },
   "build": {
     "appId": "com.catrip.catrip-multichat-electron",
-    "productName": "catrip_multichat_electron",
+    "productName": "Catrip Connect",
+    "executableName": "catrip-connect",
+    "artifactName": "catrip-connect_${version}_${arch}.${ext}",
+    "compression": "normal",
     "files": [
       "dist/**/*",
       "assets/icons/**/*",
@@ -50,10 +79,40 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb"
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "category": "Network;Chat;InstantMessaging;"
+      "category": "Network;Chat;InstantMessaging;",
+      "icon": "assets/icons",
+      "synopsis": "Cliente multi-cuenta de WhatsApp Web",
+      "description": "Catrip Connect: ejecuta múltiples sesiones de WhatsApp Web aisladas en una sola aplicación de escritorio, con bandeja del sistema, atajos globales y notificaciones nativas.",
+      "maintainer": "Catrip <noreply@catrip.local>",
+      "vendor": "Catrip",
+      "desktop": {
+        "entry": {
+          "Name": "Catrip Connect",
+          "GenericName": "Mensajería",
+          "Comment": "Cliente multi-cuenta de WhatsApp Web",
+          "Categories": "Network;Chat;InstantMessaging;",
+          "Keywords": "whatsapp;chat;mensajería;multi-cuenta;catrip;",
+          "StartupNotify": "true",
+          "StartupWMClass": "catrip-connect"
+        }
+      }
+    },
+    "deb": {
+      "priority": "optional",
+      "afterInstall": "_scripts/postinst-linux.sh"
     }
   }
 }

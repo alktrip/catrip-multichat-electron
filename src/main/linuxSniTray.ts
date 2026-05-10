@@ -34,10 +34,17 @@ function fallbackSolidPixmap(size = 24): Array<[number, number, Uint8Array]> {
   return [[w, h, out]];
 }
 
-function safeRaster24(img: Electron.NativeImage, log?: (...args: any[]) => void): Electron.NativeImage {
+function safeRaster24(
+  img: Electron.NativeImage,
+  log?: (...args: any[]) => void,
+): Electron.NativeImage {
   try {
     const png = img.toPNG();
-    log?.("linux-sni icon:toPNG", { isEmpty: img.isEmpty(), size: img.getSize?.(), png: png?.length || 0 });
+    log?.("linux-sni icon:toPNG", {
+      isEmpty: img.isEmpty(),
+      size: img.getSize?.(),
+      png: png?.length || 0,
+    });
     if (png && png.length > 0) {
       const base = nativeImage.createFromBuffer(png);
       const r = base.resize({ width: 24, height: 24 });
@@ -88,8 +95,7 @@ export async function createLinuxSniTray(opts: {
         visible: v("b", true),
       });
       // Cada hijo debe ser Variant("(ia{sv}av)", ...) para cumplir con la firma av del D-Bus menu.
-      const leaf = (id: number, props: any) =>
-        v("(ia{sv}av)", [id, props, []]);
+      const leaf = (id: number, props: any) => v("(ia{sv}av)", [id, props, []]);
       const root = [
         0,
         { "children-display": v("s", "submenu") },
@@ -322,7 +328,7 @@ export async function createLinuxSniTray(opts: {
   async function register() {
     const watcher = await bus.getProxyObject(
       "org.kde.StatusNotifierWatcher",
-      "/StatusNotifierWatcher"
+      "/StatusNotifierWatcher",
     );
     const w = watcher.getInterface("org.kde.StatusNotifierWatcher");
     // La spec define `RegisterStatusNotifierItem(s service)`.
@@ -331,7 +337,9 @@ export async function createLinuxSniTray(opts: {
   }
 
   await register().catch((e) => {
-    opts.log?.("linux-sni register failed", { message: e instanceof Error ? e.message : String(e) });
+    opts.log?.("linux-sni register failed", {
+      message: e instanceof Error ? e.message : String(e),
+    });
   });
 
   async function update() {
@@ -342,7 +350,7 @@ export async function createLinuxSniTray(opts: {
           IconPixmap: sni.IconPixmap,
           ToolTip: sni.ToolTip,
         },
-        []
+        [],
       );
     } catch {
       // ignore
@@ -374,4 +382,3 @@ export async function createLinuxSniTray(opts: {
 
   return { update, dispose };
 }
-

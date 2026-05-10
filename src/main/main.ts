@@ -17,10 +17,15 @@ import fs from "node:fs";
 import os from "node:os";
 import {
   createAccount,
+  deleteAccount,
   ensureElectronSessionForAccount,
   loadAccountsState,
   regenerateAccountIcon,
   saveAccountsState,
+  renameAccount,
+  ensureAccountIconVariants,
+  setAccountIconVariant,
+  setAccountNotificationsEnabled,
   type Account,
 } from "./accounts";
 import { loadSettings, saveSettings, type Settings } from "./settings";
@@ -32,7 +37,9 @@ import { createLinuxSniTray, type LinuxSniTrayHandle } from "./linuxSniTray";
 // Se carga con require (CommonJS) solo cuando hace falta.
 type SysTray2 = {
   ready(): Promise<void>;
-  onClick(listener: (action: { type: "clicked"; item: { __id: number } }) => void): Promise<unknown>;
+  onClick(
+    listener: (action: { type: "clicked"; item: { __id: number } }) => void,
+  ): Promise<unknown>;
   sendAction(action: { type: "update-menu"; menu: any } | { type: "exit" }): Promise<unknown>;
   kill(exitNode?: boolean): Promise<void>;
   onExit(listener: (code: number | null, signal: string | null) => void): void;
@@ -94,9 +101,58 @@ if (process.env.CATRIP_DISABLE_GPU === "1") {
   app.disableHardwareAcceleration();
 }
 
-const APP_NAME = "catrip_multichat_electron";
+/**
+ * Empaquetado Linux: el fichero real es `catrip-connect.desktop` (véase
+ * `desktopName` y `executableName` en `package.json`). Electron usa por defecto
+ * `{package.json name}.desktop`; si no coincide con el instalado, el shell no
+ * enlaza ventana ↔ lanzador y el dock muestra el icono genérico.
+ *
+ * En X11 seguimos pasando `--class=catrip-connect` para alinear `WM_CLASS` con
+ * `StartupWMClass` del `.desktop`. `app.setName()` no sustituye al ID de
+ * escritorio del SO (véase documentación de Electron); el nombre del `.desktop`
+ * viene de `desktopName`.
+ *
+ * Como `app.getName()` también determina por defecto la ruta de `userData`,
+ * **antes** de cambiar el nombre fijamos `userData` explícitamente a la ruta
+ * histórica `~/.config/catrip_multichat_electron/` para no romper la
+ * persistencia de cuentas y ajustes de instalaciones existentes.
+ *
+ * Debe ejecutarse ANTES de `app.whenReady()` y de cualquier llamada que use
+ * `app.getPath("userData")`.
+ */
+if (process.platform === "linux") {
+  // X11: --class fija WM_CLASS directamente (app.setName no lo afecta en X11).
+  app.commandLine.appendSwitch("class", "catrip-connect");
+  try {
+    const legacyUserData = path.join(app.getPath("appData"), "catrip_multichat_electron");
+    app.setPath("userData", legacyUserData);
+  } catch {
+    // Si por alguna razón `appData` no está disponible aún, dejamos el
+    // default; lo único en juego es la ruta del perfil de usuario.
+  }
+  // Nombre interno coherente con el binario; el ID XDG del .desktop lo define `desktopName`.
+  app.setName("catrip-connect");
+}
+
+/**
+ * Nombre visible de la aplicación. Se usa para el título de la ventana,
+ * el menú nativo, el tooltip del tray y otros lugares orientados al usuario.
+ *
+ * NOTA: Esto es independiente de `app.getName()`, que sigue devolviendo el
+ * `productName` de `package.json` (`catrip_multichat_electron`) y por tanto
+ * sigue determinando `app.getPath("userData")` (= `~/.config/catrip_multichat_electron/`
+ * en Linux). Mantenemos esa identidad técnica intacta para no romper la
+ * persistencia de cuentas y settings de instalaciones existentes.
+ */
+const APP_NAME = "Catrip Connect";
 const WHATSAPP_URL = "https://web.whatsapp.com/";
 const WHATSAPP_SEND_URL = "https://web.whatsapp.com/send?phone=";
+
+// Modo de pruebas E2E (Playwright). Cuando está activo:
+// - cada cuenta carga `about:blank` en lugar de WhatsApp Web (sin red, instantáneo).
+// - se omite la creación del tray (evita ensuciar el sistema host).
+// Activar con `CATRIP_E2E=1` en el entorno.
+const E2E_MODE = process.env.CATRIP_E2E === "1";
 
 function isWhatsAppUrl(u: string): boolean {
   try {
@@ -222,6 +278,11 @@ function isDev() {
 }
 
 function rendererUrl() {
+  // En modo E2E forzamos el uso del bundle estático (dist/renderer/index.html)
+  // para no depender del dev server de Vite durante las pruebas.
+  if (E2E_MODE) {
+    return `file://${path.join(app.getAppPath(), "dist/renderer/index.html")}`;
+  }
   if (isDev()) return process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
   return `file://${path.join(app.getAppPath(), "dist/renderer/index.html")}`;
 }
@@ -239,8 +300,16 @@ function safeRemoveChildView(win: BrowserWindow, view: WebContentsView) {
 function raiseChildView(win: BrowserWindow, view: WebContentsView) {
   const children = win.contentView.children;
   if (children.length > 0 && children[children.length - 1] === view) return;
-  try { win.contentView.removeChildView(view); } catch { /* ignore */ }
-  try { win.contentView.addChildView(view); } catch { /* ignore */ }
+  try {
+    win.contentView.removeChildView(view);
+  } catch {
+    /* ignore */
+  }
+  try {
+    win.contentView.addChildView(view);
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Mismo gris que el rail en `App.tsx` (`#1d1f1f`); ARGB para `setBackgroundColor`. */
@@ -261,20 +330,32 @@ function useTransparentWindow(): boolean {
 function wireTransparency(
   win: BrowserWindow,
   shellView: WebContentsView,
-  windowTransparent: boolean
+  windowTransparent: boolean,
 ) {
   if (!windowTransparent) {
     win.setBackgroundColor(OPAQUE_CHROME_BG);
-    try { win.contentView.setBackgroundColor(OPAQUE_CHROME_BG); } catch { /* ignore */ }
+    try {
+      win.contentView.setBackgroundColor(OPAQUE_CHROME_BG);
+    } catch {
+      /* ignore */
+    }
     shellView.setBackgroundColor(OPAQUE_CHROME_BG);
     return;
   }
   const transparent = "#00000000";
   win.setBackgroundColor(transparent);
-  try { win.contentView.setBackgroundColor(transparent); } catch { /* ignore */ }
+  try {
+    win.contentView.setBackgroundColor(transparent);
+  } catch {
+    /* ignore */
+  }
   shellView.setBackgroundColor(transparent);
   shellView.webContents.once("did-finish-load", () => {
-    try { win.contentView.setBackgroundColor(transparent); } catch { /* ignore */ }
+    try {
+      win.contentView.setBackgroundColor(transparent);
+    } catch {
+      /* ignore */
+    }
     shellView.setBackgroundColor(transparent);
     dbgEmbed("shell paintShell", { shellWcId: shellView.webContents.id });
   });
@@ -285,8 +366,7 @@ function nativeImageFromSvgPath(absPath: string): Electron.NativeImage {
   try {
     if (!fs.existsSync(absPath)) return nativeImage.createEmpty();
     const svg = fs.readFileSync(absPath, "utf-8");
-    const dataUrl =
-      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     const img = nativeImage.createFromDataURL(dataUrl);
     if (!img.isEmpty()) return img;
   } catch {
@@ -296,37 +376,91 @@ function nativeImageFromSvgPath(absPath: string): Electron.NativeImage {
 }
 
 function getAppIconNativeImage(): Electron.NativeImage {
-  const p = path.join(
-    app.getAppPath(),
-    "assets/icons/org.k3p.catrip-multichat.svg"
-  );
-  return nativeImageFromSvgPath(p);
+  // Preferimos el PNG 256×256 (rasterizado por `_scripts/generate-app-icons.mjs`)
+  // antes que el SVG: en Linux, varios compositores Wayland (GNOME Mutter,
+  // KWin) no rasterizan bien los iconos SVG asignados a la `BrowserWindow` y
+  // acaban mostrando el icono genérico de Electron. El PNG 256 es un buen
+  // compromiso de calidad/peso para tamaños de dock y Alt-Tab.
+  const dir = path.join(app.getAppPath(), "assets/icons");
+  const candidates = ["256x256.png", "512x512.png", "128x128.png"];
+  for (const fname of candidates) {
+    const p = path.join(dir, fname);
+    try {
+      if (fs.existsSync(p)) {
+        const img = nativeImage.createFromPath(p);
+        if (!img.isEmpty()) return img;
+      }
+    } catch {
+      // probamos el siguiente
+    }
+  }
+  // Fallback al SVG histórico si ningún PNG está disponible (no debería pasar
+  // tras `npm run dist`, pero protege escenarios de desarrollo / e2e).
+  return nativeImageFromSvgPath(path.join(dir, "org.k3p.catrip-multichat.svg"));
+}
+
+/**
+ * Crea un alias minimalista de `WebContentsView` para usar en modo E2E. Sólo
+ * delega `webContents` al `BrowserWindow.webContents` real (donde se carga el
+ * shell) y deja en noop los métodos visuales (`setBounds`, `setVisible`, …).
+ *
+ * Motivo: Playwright sólo expone `BrowserWindow` como `Page` y no detecta
+ * `WebContentsView`. Cargando el shell directamente en la `BrowserWindow`
+ * podemos automatizar la UI desde Playwright sin tocar el resto del código,
+ * que sigue referenciando `shellView` con normalidad.
+ */
+function createE2EShellAlias(win: BrowserWindow): WebContentsView {
+  const noop = () => undefined;
+  const proxy = new Proxy({} as WebContentsView, {
+    get(_target, prop) {
+      if (prop === "webContents") return win.webContents;
+      if (prop === "getBounds") return () => win.getContentBounds();
+      return noop;
+    },
+  });
+  return proxy;
 }
 
 function createMainWindow(): { win: BrowserWindow; shellView: WebContentsView } {
   const transparent = useTransparentWindow();
   const st = viewState;
   const bounds = st?.settings?.general?.windowBounds ?? null;
+  const e2ePreload = E2E_MODE
+    ? {
+        preload: path.join(app.getAppPath(), "dist/preload/preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      }
+    : undefined;
   const win = new BrowserWindow({
     title: APP_NAME,
     icon: getAppIconNativeImage(),
-    ...(bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : { width: 1180, height: 760 }),
+    ...(bounds
+      ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+      : { width: 1180, height: 760 }),
     minWidth: 980,
     minHeight: 640,
     show: false,
     transparent,
     backgroundColor: transparent ? "#00000000" : OPAQUE_CHROME_BG,
+    ...(e2ePreload ? { webPreferences: e2ePreload } : {}),
   });
 
-  const shellView = new WebContentsView({
-    webPreferences: {
-      preload: path.join(app.getAppPath(), "dist/preload/preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-  win.contentView.addChildView(shellView);
+  let shellView: WebContentsView;
+  if (E2E_MODE) {
+    shellView = createE2EShellAlias(win);
+  } else {
+    shellView = new WebContentsView({
+      webPreferences: {
+        preload: path.join(app.getAppPath(), "dist/preload/preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+    win.contentView.addChildView(shellView);
+  }
 
   wireTransparency(win, shellView, transparent);
 
@@ -335,6 +469,7 @@ function createMainWindow(): { win: BrowserWindow; shellView: WebContentsView } 
     platform: process.platform,
     devtoolsEnv: process.env.CATRIP_DEBUG_EMBED,
     packaged: app.isPackaged,
+    e2eMode: E2E_MODE,
   });
 
   shellView.webContents.once("did-finish-load", () => {
@@ -348,7 +483,12 @@ function createMainWindow(): { win: BrowserWindow; shellView: WebContentsView } 
     }
     if (!startMin) win.show();
   });
-  void shellView.webContents.loadURL(rendererUrl());
+
+  if (E2E_MODE) {
+    void win.loadURL(rendererUrl());
+  } else {
+    void shellView.webContents.loadURL(rendererUrl());
+  }
 
   return { win, shellView };
 }
@@ -356,6 +496,21 @@ function createMainWindow(): { win: BrowserWindow; shellView: WebContentsView } 
 async function applySettingsToRuntime(s: Settings) {
   const st = ensureState();
   st.win.setMenuBarVisibility(!!s.general.showMenuBar);
+
+  // Escala (zoom) para shell y vistas de WhatsApp.
+  const z = Number.isFinite(s.general.uiScale) ? Math.max(0.75, Math.min(2, s.general.uiScale)) : 1;
+  try {
+    st.shellView.webContents.setZoomFactor(z);
+  } catch {
+    // ignore
+  }
+  for (const view of st.viewsById.values()) {
+    try {
+      view.webContents.setZoomFactor(z);
+    } catch {
+      // ignore
+    }
+  }
 
   const proxy =
     s.network.proxyEnabled && s.network.proxyRules.trim()
@@ -409,11 +564,10 @@ function applyAutostartSettings(s: Settings) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
 
     const exec = process.env.APPIMAGE || process.execPath;
-    const name = "catrip_multichat_electron";
     const desktop = [
       "[Desktop Entry]",
       "Type=Application",
-      `Name=${name}`,
+      `Name=${APP_NAME}`,
       `Exec=${exec}`,
       "X-GNOME-Autostart-enabled=true",
       "Terminal=false",
@@ -469,6 +623,8 @@ type ViewState = {
   attachedViewId: string | null;
   /** Detección automática / IPC `tray:setBadgeCount`; el valor mostrado usa `getEffectiveTrayBadge()`. */
   trayUnreadDetected: number;
+  /** No leídos detectados por cuenta. Usado por el rail (punto verde de pulso). */
+  unreadByAccount: Record<string, number>;
 };
 
 type TrayBackend =
@@ -489,6 +645,7 @@ let rendererModalOpen = false;
 
 /** DarkReader eliminado: WhatsApp usa modo oscuro nativo. */
 let unreadPollTimer: ReturnType<typeof setInterval> | null = null;
+let unreadInactivePollTimer: ReturnType<typeof setInterval> | null = null;
 let unreadTitleDebounce: NodeJS.Timeout | null = null;
 const downloadSessionsHooked = new WeakSet<Electron.Session>();
 const permissionSessionsHooked = new WeakSet<Electron.Session>();
@@ -516,6 +673,66 @@ function schedulePollUnreadFromTitle() {
   }, 600);
 }
 
+/** Evalúa el contador de no leídos en la WebContentsView de una cuenta.
+ * Devuelve null si la cuenta no tiene vista, está destruida, o no está en
+ * WhatsApp Web (no logueada / página de QR). */
+async function evalUnreadForAccount(id: string): Promise<number | null> {
+  const st = ensureState();
+  const view = st.viewsById.get(id);
+  if (!view || view.webContents.isDestroyed()) return null;
+  let url: string;
+  try {
+    url = view.webContents.getURL();
+  } catch {
+    return null;
+  }
+  if (!url.includes("web.whatsapp.com")) return null;
+  try {
+    const n = await view.webContents.executeJavaScript(WHATSAPP_UNREAD_JS, true);
+    return typeof n === "number" && Number.isFinite(n) ? clampTrayBadge(n) : 0;
+  } catch {
+    return null;
+  }
+}
+
+/** Compara el snapshot guardado con uno nuevo y, si difiere, lo persiste y
+ * notifica al renderer para que actualice los puntos del rail. */
+function broadcastUnreadIfChanged(next: Record<string, number>) {
+  const st = ensureState();
+  const prev = st.unreadByAccount;
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+  let changed = prevKeys.length !== nextKeys.length;
+  if (!changed) {
+    for (const k of nextKeys) {
+      if ((prev[k] ?? 0) !== (next[k] ?? 0)) {
+        changed = true;
+        break;
+      }
+    }
+  }
+  if (!changed) return;
+  st.unreadByAccount = next;
+  try {
+    void st.shellView.webContents.send("accounts:unreadChanged", next);
+  } catch {
+    /* shellView puede no estar lista todavía en arranque */
+  }
+}
+
+/** Actualiza el contador de una cuenta dentro del mapa global (immutable). */
+function setUnreadFor(id: string, value: number | null) {
+  const st = ensureState();
+  const next: Record<string, number> = { ...st.unreadByAccount };
+  if (value == null) {
+    if (next[id] === 0 || next[id] === undefined) return;
+    next[id] = 0;
+  } else {
+    next[id] = value;
+  }
+  broadcastUnreadIfChanged(next);
+}
+
 async function pollTrayUnreadFromActiveView() {
   const st = ensureState();
   if (st.chrome.mode !== "browser") return;
@@ -524,28 +741,30 @@ async function pollTrayUnreadFromActiveView() {
   if (g.trayBadgeManual != null) return;
   const id = st.activeId;
   if (!id) return;
-  const view = st.viewsById.get(id);
-  if (!view || view.webContents.isDestroyed()) return;
-  const url = view.webContents.getURL();
-  if (!url.includes("web.whatsapp.com")) return;
+  const acc = st.accounts.find((a) => a.id === id) || null;
+  const perAccountNotifs = acc?.notificationsEnabled !== false;
   try {
     const prev = clampTrayBadge(st.trayUnreadDetected ?? 0);
-    const n = await view.webContents.executeJavaScript(WHATSAPP_UNREAD_JS, true);
-    const num =
-      typeof n === "number" && Number.isFinite(n) ? clampTrayBadge(n) : 0;
+    const num = await evalUnreadForAccount(id);
+    if (num == null) return;
     st.trayUnreadDetected = num;
+    setUnreadFor(id, num);
     refreshTrayIcon();
     // Notificación nativa (solo si sube el contador; throttle para evitar spam).
-    if (st.settings.notifications.enabled && num > prev) {
+    if (st.settings.notifications.enabled && perAccountNotifs && num > prev) {
       const now = Date.now();
       if (now - lastUnreadNotifyAt > 8000) {
         lastUnreadNotifyAt = now;
         try {
-          const body =
-            num === 1
+          const showAcc = !!st.settings.notifications.showAccountName;
+          const showPreview = st.settings.notifications.showPreview !== false;
+          const title = showAcc && acc?.label ? `WhatsApp · ${acc.label}` : "WhatsApp";
+          const body = showPreview
+            ? num === 1
               ? "Tienes 1 chat sin leer."
-              : `Tienes ${num} chats sin leer.`;
-          const notif = new Notification({ title: "WhatsApp", body, silent: false });
+              : `Tienes ${num} chats sin leer.`
+            : "Tienes chats sin leer.";
+          const notif = new Notification({ title, body, silent: false });
           notif.on("click", () => {
             try {
               st.win.show();
@@ -565,10 +784,43 @@ async function pollTrayUnreadFromActiveView() {
   }
 }
 
+/** Muestrea no leídos en TODAS las cuentas no activas y emite un único
+ * broadcast si el mapa cambia. La cuenta activa se cubre con el poll
+ * principal (`pollTrayUnreadFromActiveView`). */
+async function pollUnreadInactiveAccounts() {
+  const st = viewState;
+  if (!st) return;
+  const activeId = st.activeId;
+  const next: Record<string, number> = { ...st.unreadByAccount };
+  let any = false;
+  for (const a of st.accounts) {
+    if (a.id === activeId) continue;
+    const n = await evalUnreadForAccount(a.id);
+    if (n == null) {
+      // Sin medición: limpiar a 0 si había un valor previo (la vista pudo
+      // haberse destruido o la sesión cerró).
+      if ((next[a.id] ?? 0) !== 0) {
+        next[a.id] = 0;
+        any = true;
+      }
+      continue;
+    }
+    if ((next[a.id] ?? 0) !== n) {
+      next[a.id] = n;
+      any = true;
+    }
+  }
+  if (any) broadcastUnreadIfChanged(next);
+}
+
 function restartUnreadPolling() {
   if (unreadPollTimer != null) {
     clearInterval(unreadPollTimer);
     unreadPollTimer = null;
+  }
+  if (unreadInactivePollTimer != null) {
+    clearInterval(unreadInactivePollTimer);
+    unreadInactivePollTimer = null;
   }
   const st = viewState;
   if (!st) return;
@@ -577,6 +829,13 @@ function restartUnreadPolling() {
   unreadPollTimer = setInterval(() => {
     void pollTrayUnreadFromActiveView();
   }, 14000);
+  // Las cuentas inactivas se muestrean con menor frecuencia para no
+  // martillar a Chromium con executeJavaScript en BrowserViews secundarias.
+  unreadInactivePollTimer = setInterval(() => {
+    void pollUnreadInactiveAccounts();
+  }, 30000);
+  // Lanzamiento inmediato (no esperar 30 s al arranque).
+  void pollUnreadInactiveAccounts();
 }
 
 function downloadsDirForSettings(st: ViewState): string {
@@ -681,10 +940,7 @@ function attachPermissionHandlersOnce(ses: Electron.Session) {
   try {
     ses.setPermissionRequestHandler((wc, permission, callback, details) => {
       const url =
-        (details as any)?.requestingUrl ||
-        (details as any)?.requestingURL ||
-        wc.getURL?.() ||
-        "";
+        (details as any)?.requestingUrl || (details as any)?.requestingURL || wc.getURL?.() || "";
       callback(shouldAllow(String(permission), String(url || "")));
     });
   } catch {
@@ -787,10 +1043,16 @@ function ensureViewForAccount(id: string): WebContentsView {
     },
   });
   view.setBackgroundColor("#ffffffff");
+  try {
+    const z = st.settings?.general?.uiScale ?? 1;
+    if (Number.isFinite(z)) view.webContents.setZoomFactor(Math.max(0.75, Math.min(2, z)));
+  } catch {
+    // ignore
+  }
   view.webContents.setUserAgent(
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
   );
-  void view.webContents.loadURL(WHATSAPP_URL);
+  void view.webContents.loadURL(E2E_MODE ? "about:blank" : WHATSAPP_URL);
 
   // Enlaces / popups: mantener navegación dentro de WhatsApp; el resto al navegador del sistema.
   view.webContents.setWindowOpenHandler(({ url }) => {
@@ -837,7 +1099,7 @@ function ensureViewForAccount(id: string): WebContentsView {
         validatedURL,
         isMainFrame,
       });
-    }
+    },
   );
   view.webContents.on("did-start-loading", () => {
     dbgEmbed("whatsapp webContents did-start-loading", { accountId: id });
@@ -1003,7 +1265,11 @@ function buildAppMenu() {
     {
       label: "Cuentas",
       submenu: [
-        { label: "Nueva cuenta", accelerator: "Ctrl+U", click: () => void createAccountAndNotify() },
+        {
+          label: "Nueva cuenta",
+          accelerator: "Ctrl+U",
+          click: () => void createAccountAndNotify(),
+        },
         { type: "separator" },
         ...accountsMenu,
       ],
@@ -1113,6 +1379,12 @@ function detachBrowserView() {
 }
 
 function attachBrowserViewForAccount(id: string) {
+  // En modo E2E el shell vive en la BrowserWindow principal y no queremos que
+  // las WebContentsView de cuentas (que cargan about:blank) lo tapen.
+  if (E2E_MODE) {
+    dbgEmbed("attachBrowserViewForAccount skipped (E2E_MODE)", { id });
+    return;
+  }
   const st = ensureState();
   const win = st.win;
   dbgEmbed("attachBrowserViewForAccount enter", {
@@ -1216,7 +1488,7 @@ function createTray() {
         // Fallback ultra seguro: PNG 1x1 (evita IconPixmap vacío).
         try {
           return nativeImage.createFromDataURL(
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBApWf7QAAAABJRU5ErkJggg=="
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBApWf7QAAAABJRU5ErkJggg==",
           );
         } catch {
           return nativeImage.createEmpty();
@@ -1304,7 +1576,10 @@ function createTray() {
       // Fallback inmediato al tray de Electron si systray2 no se puede instanciar.
       dbgEmbed("tray backend fallback", { backend: "electron.Tray" });
       const icon = trayNativeImage(trayModeForPlatform(), getEffectiveTrayBadge());
-      st.tray = { kind: "electron", tray: new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon) };
+      st.tray = {
+        kind: "electron",
+        tray: new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon),
+      };
       return;
     }
     const backend: TrayBackend = {
@@ -1325,21 +1600,29 @@ function createTray() {
       binPath: (tray as any).binPath,
       childPid: (tray as any).process?.pid,
     });
-    void tray.ready().then(() => {
-      backend.ready = true;
-      dbgEmbed("systray2 ready", { binPath: (tray as any).binPath, killed: (tray as any).killed });
-      rebuildSystray2Handlers(backend);
-      // Ahora sí permitir updates (badge, cuentas, etc.)
-      refreshTrayMenu();
-      refreshTrayIcon();
-      void tray.onClick((action) => {
-        const id = action?.item?.__id;
-        const fn = backend.handlerByInternalId.get(id);
-        if (fn) fn();
-      }).catch(() => {});
-    }).catch((e) => {
-      dbgEmbed("systray2 ready failed", { message: e instanceof Error ? e.message : String(e) });
-    });
+    void tray
+      .ready()
+      .then(() => {
+        backend.ready = true;
+        dbgEmbed("systray2 ready", {
+          binPath: (tray as any).binPath,
+          killed: (tray as any).killed,
+        });
+        rebuildSystray2Handlers(backend);
+        // Ahora sí permitir updates (badge, cuentas, etc.)
+        refreshTrayMenu();
+        refreshTrayIcon();
+        void tray
+          .onClick((action) => {
+            const id = action?.item?.__id;
+            const fn = backend.handlerByInternalId.get(id);
+            if (fn) fn();
+          })
+          .catch(() => {});
+      })
+      .catch((e) => {
+        dbgEmbed("systray2 ready failed", { message: e instanceof Error ? e.message : String(e) });
+      });
     return;
   }
 
@@ -1395,8 +1678,8 @@ function buildSystray2Menu() {
       a.label,
       () => setActiveAccount(a.id),
       // systray2 no tiene radio; usamos check para mostrar la activa.
-      { checked: a.id === st.activeId }
-    )
+      { checked: a.id === st.activeId },
+    ),
   );
 
   return {
@@ -1414,15 +1697,19 @@ function buildSystray2Menu() {
         st.win.focus();
         void st.shellView.webContents.send("ui:openSettings");
       }),
-      mk("Cerrar a bandeja", () => {
-        const next = {
-          ...st.settings,
-          general: { ...st.settings.general, closeToTray: !st.settings.general.closeToTray },
-        };
-        st.settings = next;
-        saveSettings(next);
-        refreshTrayMenu();
-      }, { checked: !!st.settings.general.closeToTray }),
+      mk(
+        "Cerrar a bandeja",
+        () => {
+          const next = {
+            ...st.settings,
+            general: { ...st.settings.general, closeToTray: !st.settings.general.closeToTray },
+          };
+          st.settings = next;
+          saveSettings(next);
+          refreshTrayMenu();
+        },
+        { checked: !!st.settings.general.closeToTray },
+      ),
       SysTrayCtor.separator,
       {
         title: "Cuentas",
@@ -1466,6 +1753,61 @@ if (!gotLock) {
   });
 }
 
+/**
+ * Limpieza de particiones huérfanas en arranque.
+ *
+ * Chromium persiste las cookies/storage de cada `session.fromPartition(...)`
+ * bajo `<userData>/Partitions/<nombre>`. Cuando el usuario elimina una cuenta,
+ * `clearStorageData()` vacía el contenido pero la **carpeta** persiste y
+ * Chromium puede acumular GBs con el tiempo si se crean y eliminan muchas
+ * cuentas. Aquí, al arrancar, comparamos los directorios de `Partitions/`
+ * con la lista viva de cuentas y borramos los que ya no aparecen.
+ *
+ * El nombre puede venir como `persist:acct-<id>` (Linux/macOS) o
+ * `persist%3Aacct-<id>` (Windows codifica los `:`). Manejamos ambos.
+ */
+function purgeOrphanPartitions(liveAccountIds: string[]): {
+  purged: string[];
+  failed: { dir: string; err: string }[];
+} {
+  const result: {
+    purged: string[];
+    failed: { dir: string; err: string }[];
+  } = { purged: [], failed: [] };
+  try {
+    const partitionsDir = path.join(app.getPath("userData"), "Partitions");
+    if (!fs.existsSync(partitionsDir)) return result;
+    const liveIds = new Set(liveAccountIds);
+    const entries = fs.readdirSync(partitionsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const decoded = (() => {
+        try {
+          return decodeURIComponent(entry.name);
+        } catch {
+          return entry.name;
+        }
+      })();
+      const m = decoded.match(/^persist:acct-(.+)$/);
+      if (!m) continue;
+      const id = m[1];
+      if (liveIds.has(id)) continue;
+      const fullPath = path.join(partitionsDir, entry.name);
+      try {
+        fs.rmSync(fullPath, { recursive: true, force: true });
+        result.purged.push(entry.name);
+      } catch (err) {
+        result.failed.push({ dir: entry.name, err: String(err) });
+      }
+    }
+  } catch (err) {
+    dbgEmbed("purgeOrphanPartitions failed (top-level)", {
+      err: String(err),
+    });
+  }
+  return result;
+}
+
 app.whenReady().then(() => {
   const s = loadAccountsState();
   const settings = loadSettings();
@@ -1474,17 +1816,28 @@ app.whenReady().then(() => {
     saveAccountsState(s);
   }
 
+  // Limpia particiones huérfanas en disco antes de crear cualquier `session.fromPartition`,
+  // para que Chromium no las re-aproveche con datos viejos accidentalmente.
+  const purgeReport = purgeOrphanPartitions(s.accounts.map((a) => a.id));
+  if (purgeReport.purged.length > 0 || purgeReport.failed.length > 0) {
+    dbgEmbed("purgeOrphanPartitions report", {
+      purged: purgeReport.purged,
+      failed: purgeReport.failed,
+    });
+  }
+
   // Inicializa el estado antes de crear la ventana (para startMinimized).
   viewState = {
     win: null as any,
     shellView: null as any,
     accounts: s.accounts,
-    activeId: s.activeId ?? (s.accounts[0]?.id ?? null),
+    activeId: s.activeId ?? s.accounts[0]?.id ?? null,
     viewsById: new Map(),
     settings,
     chrome: { sidebarWidth: 72, topHeight: 0, zen: !!settings.general.zen, mode: "browser" },
     attachedViewId: null,
     trayUnreadDetected: 0,
+    unreadByAccount: {},
   };
 
   const { win, shellView } = createMainWindow();
@@ -1493,7 +1846,7 @@ app.whenReady().then(() => {
 
   layoutActiveView();
 
-  createTray();
+  if (!E2E_MODE) createTray();
   refreshMenus();
   void applySettingsToRuntime(settings);
 
@@ -1608,6 +1961,23 @@ ipcMain.handle("diagnostics:whatsappMedia", async () => {
   }
 });
 
+ipcMain.handle("storage:clearHttpCacheAll", async () => {
+  const st = ensureState();
+  try {
+    for (const acc of st.accounts) {
+      const ses = ensureElectronSessionForAccount(acc.id);
+      try {
+        await ses.clearCache();
+      } catch {
+        // ignore per account
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+});
+
 ipcMain.handle("tray:setBadgeCount", (_evt, raw: unknown) => {
   const st = ensureState();
   const n = typeof raw === "number" ? raw : Number(raw);
@@ -1627,8 +1997,17 @@ ipcMain.handle("accounts:getActiveId", () => {
   return st.activeId;
 });
 
+ipcMain.handle("accounts:getUnread", () => {
+  const st = ensureState();
+  return { ...st.unreadByAccount };
+});
+
 ipcMain.handle("accounts:create", (_evt, label?: string) => {
   return createAccountAndNotify(label);
+});
+
+ipcMain.handle("accounts:createV2", (_evt, payload?: { label?: string; icon?: unknown }) => {
+  return createAccountAndNotify(payload?.label);
 });
 
 ipcMain.handle("accounts:regenerateIcon", (_evt, id: string) => {
@@ -1641,8 +2020,182 @@ ipcMain.handle("accounts:regenerateIcon", (_evt, id: string) => {
   return next;
 });
 
+ipcMain.handle("accounts:rename", (_evt, id: string, nextLabel: string) => {
+  const st = ensureState();
+  const next = renameAccount(st.accounts, id, nextLabel);
+  if (!next) return null;
+  saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
+  void st.shellView.webContents.send("accounts:listChanged", st.accounts);
+  refreshMenus();
+  return next;
+});
+
+ipcMain.handle("accounts:getIconVariants", (_evt, id: string) => {
+  const st = ensureState();
+  saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
+  const ensured = ensureAccountIconVariants(st.accounts, id, 5);
+  if (!ensured) return null;
+  saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
+  void st.shellView.webContents.send("accounts:listChanged", st.accounts);
+  refreshMenus();
+  return ensured.variants;
+});
+
+ipcMain.handle("accounts:setIconVariant", (_evt, id: string, idx: number) => {
+  const st = ensureState();
+  const next = setAccountIconVariant(st.accounts, id, idx);
+  if (!next) return null;
+  saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
+  void st.shellView.webContents.send("accounts:listChanged", st.accounts);
+  refreshMenus();
+  return next;
+});
+
+ipcMain.handle("accounts:setNotificationsEnabled", (_evt, id: string, enabled: boolean) => {
+  const st = ensureState();
+  const next = setAccountNotificationsEnabled(st.accounts, id, enabled);
+  if (!next) return null;
+  saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
+  void st.shellView.webContents.send("accounts:listChanged", st.accounts);
+  refreshMenus();
+  return next;
+});
+
 ipcMain.handle("accounts:setActive", (_evt, id: string) => {
   setActiveAccount(id);
+});
+
+ipcMain.handle("accounts:reorder", (_evt, orderedIds: unknown) => {
+  const st = ensureState();
+  if (!Array.isArray(orderedIds)) return false;
+  const ids = orderedIds.filter((x): x is string => typeof x === "string");
+  if (ids.length !== st.accounts.length) return false;
+
+  // Verificar que sea exactamente el mismo conjunto de IDs (sin dups, sin extras).
+  const known = new Set(st.accounts.map((a) => a.id));
+  const incoming = new Set(ids);
+  if (incoming.size !== ids.length) return false;
+  for (const id of ids) {
+    if (!known.has(id)) return false;
+  }
+
+  const byId = new Map(st.accounts.map((a) => [a.id, a]));
+  st.accounts = ids.map((id) => byId.get(id)!);
+  saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
+  void st.shellView.webContents.send("accounts:listChanged", st.accounts);
+  refreshMenus();
+  return true;
+});
+
+/**
+ * Borra una cuenta por completo:
+ *  1. Detacha y destruye su `WebContentsView` si estaba viva.
+ *  2. Limpia cookies, almacenamiento local, IndexedDB, Service Workers y
+ *     caché HTTP de su partición de sesión (`persist:acct-<id>`). La carpeta
+ *     en disco bajo `Partitions/` queda vacía pero no se elimina (Chromium
+ *     la reaprovechará si en el futuro se vuelve a crear una cuenta con el
+ *     mismo id, cosa muy poco probable porque los ids son UUIDs).
+ *  3. Borra la entrada en el array de cuentas y, si era la activa, elige
+ *     una de reemplazo (siguiente o anterior).
+ *  4. Persiste, notifica al renderer y refresca menús/tray.
+ *
+ * Devuelve `true` si se borró, `false` si el id no existía.
+ */
+ipcMain.handle("accounts:delete", async (_evt, id: string) => {
+  const st = ensureState();
+  dbgEmbed("accounts:delete enter", {
+    id,
+    has: !!st.accounts.find((a) => a.id === id),
+    activeId: st.activeId,
+    attachedViewId: st.attachedViewId,
+    total: st.accounts.length,
+  });
+  if (typeof id !== "string" || !st.accounts.find((a) => a.id === id)) {
+    return false;
+  }
+
+  // 1. Detach si estaba al frente.
+  if (st.attachedViewId === id) {
+    try {
+      detachBrowserView();
+    } catch (err) {
+      dbgEmbed("accounts:delete detach failed", { id, err: String(err) });
+    }
+  }
+
+  // 2. Destruir la WebContentsView si existía. Cuando cerramos `webContents`
+  //    Electron limpia listeners por nosotros; no llamamos a
+  //    `removeAllListeners()` porque podría afectar limpieza interna.
+  const view = st.viewsById.get(id);
+  if (view) {
+    safeRemoveChildView(st.win, view);
+    try {
+      view.webContents.close();
+    } catch (err) {
+      dbgEmbed("accounts:delete webContents.close threw", {
+        id,
+        err: String(err),
+      });
+    }
+    st.viewsById.delete(id);
+  }
+
+  // 3. Limpiar datos de sesión (cookies, storage, cache). Las llamadas son
+  //    asíncronas pero las dejamos correr aunque tarden; lo importante para
+  //    el usuario es que la cuenta desaparezca de la UI inmediatamente.
+  try {
+    const ses = ensureElectronSessionForAccount(id);
+    await ses.clearStorageData();
+    await ses.clearCache();
+  } catch (err) {
+    dbgEmbed("accounts:delete clearStorageData failed", {
+      id,
+      err: String(err),
+    });
+  }
+
+  // 4. Limpiar contador de no leídos.
+  if (st.unreadByAccount[id] !== undefined) {
+    const next = { ...st.unreadByAccount };
+    delete next[id];
+    st.unreadByAccount = next;
+    try {
+      void st.shellView.webContents.send("accounts:unreadChanged", next);
+    } catch {
+      /* shellView puede no estar lista */
+    }
+  }
+
+  // 5. Mutar el array y recalcular el activo.
+  const result = deleteAccount(st.accounts, st.activeId, id);
+  if (!result) return false;
+  st.activeId = result.newActiveId;
+
+  // 6. Persistir y notificar.
+  saveAccountsState({
+    version: 1,
+    accounts: st.accounts,
+    activeId: st.activeId,
+  });
+  try {
+    void st.shellView.webContents.send("accounts:listChanged", st.accounts);
+    void st.shellView.webContents.send("accounts:activeChanged", st.activeId);
+  } catch {
+    /* ignore */
+  }
+
+  // 7. Si quedó otra cuenta activa, atacharla en el área principal.
+  if (st.activeId && st.chrome.mode === "browser" && !rendererModalOpen) {
+    setActiveAccount(st.activeId);
+  }
+
+  refreshMenus();
+  dbgEmbed("accounts:delete done", {
+    id,
+    newActiveId: st.activeId,
+    remaining: st.accounts.length,
+  });
+  return true;
 });
 
 ipcMain.handle("chat:openByPhone", (_evt, phoneRaw: string) => {
@@ -1675,18 +2228,15 @@ ipcMain.handle("dialog:selectDownloadsDirectory", async () => {
   return res.filePaths[0] || null;
 });
 
-ipcMain.handle(
-  "ui:setChromeMetrics",
-  (_evt, m: { sidebarWidth: number; topHeight: number }) => {
-    const st = ensureState();
-    const sw = Number.isFinite(m.sidebarWidth) ? Math.max(0, Math.min(400, m.sidebarWidth)) : 72;
-    const th = Number.isFinite(m.topHeight) ? Math.max(0, Math.min(200, m.topHeight)) : 0;
-    dbgEmbed("ipc ui:setChromeMetrics", { raw: m, clamped: { sidebarWidth: sw, topHeight: th } });
-    st.chrome.sidebarWidth = sw;
-    st.chrome.topHeight = th;
-    layoutActiveView();
-  }
-);
+ipcMain.handle("ui:setChromeMetrics", (_evt, m: { sidebarWidth: number; topHeight: number }) => {
+  const st = ensureState();
+  const sw = Number.isFinite(m.sidebarWidth) ? Math.max(0, Math.min(400, m.sidebarWidth)) : 72;
+  const th = Number.isFinite(m.topHeight) ? Math.max(0, Math.min(200, m.topHeight)) : 0;
+  dbgEmbed("ipc ui:setChromeMetrics", { raw: m, clamped: { sidebarWidth: sw, topHeight: th } });
+  st.chrome.sidebarWidth = sw;
+  st.chrome.topHeight = th;
+  layoutActiveView();
+});
 
 ipcMain.handle("ui:setRendererModalOpen", (_evt, open: boolean) => {
   dbgEmbed("ipc ui:setRendererModalOpen", { open });
@@ -1721,4 +2271,3 @@ ipcMain.handle("ui:setMode", (_evt, mode: "browser" | "settings") => {
   if (next === "browser") void pollTrayUnreadFromActiveView();
   layoutActiveView();
 });
-

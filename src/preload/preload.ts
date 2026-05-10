@@ -1,13 +1,29 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-export type AccountDto = { id: string; label: string; icon: string };
+export type AccountDto = {
+  id: string;
+  label: string;
+  icon: string;
+  notificationsEnabled?: boolean;
+};
+
+export type AccountUnreadMap = Record<string, number>;
 
 export type AppApi = {
   getVersion: () => Promise<string>;
   listAccounts: () => Promise<AccountDto[]>;
+  getAccountsUnread: () => Promise<AccountUnreadMap>;
+  onAccountsUnreadChanged: (cb: (map: AccountUnreadMap) => void) => () => void;
   createAccount: (label?: string) => Promise<AccountDto>;
+  createAccountV2: (payload?: { label?: string; icon?: unknown }) => Promise<AccountDto>;
   regenerateAccountIcon: (id: string) => Promise<AccountDto | null>;
+  renameAccount: (id: string, nextLabel: string) => Promise<AccountDto | null>;
+  getAccountIconVariants: (id: string) => Promise<string[] | null>;
+  setAccountIconVariant: (id: string, idx: number) => Promise<AccountDto | null>;
+  setAccountNotificationsEnabled: (id: string, enabled: boolean) => Promise<AccountDto | null>;
+  deleteAccount: (id: string) => Promise<boolean>;
   setActiveAccount: (id: string) => Promise<void>;
+  reorderAccounts: (orderedIds: string[]) => Promise<boolean>;
   getActiveAccountId: () => Promise<string | null>;
   onAccountsListChanged: (cb: (accounts: AccountDto[]) => void) => () => void;
   onActiveAccountChanged: (cb: (id: string | null) => void) => () => void;
@@ -28,6 +44,7 @@ export type AppApi = {
   onOpenAbout: (cb: () => void) => () => void;
   runWhatsAppMediaDiagnostics: () => Promise<WhatsAppMediaDiagnosticsResult>;
   selectDownloadsDirectory: () => Promise<string | null>;
+  clearHttpCacheAllAccounts: () => Promise<boolean>;
 };
 
 export type WhatsAppMediaDiagnosticsResult =
@@ -45,9 +62,27 @@ export type WhatsAppMediaDiagnosticsResult =
 const api: AppApi = {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
   listAccounts: () => ipcRenderer.invoke("accounts:list"),
+  getAccountsUnread: () => ipcRenderer.invoke("accounts:getUnread"),
+  onAccountsUnreadChanged: (cb) => {
+    const listener = (_evt: unknown, map: AccountUnreadMap) => cb(map ?? {});
+    ipcRenderer.on("accounts:unreadChanged", listener);
+    return () => ipcRenderer.removeListener("accounts:unreadChanged", listener);
+  },
   createAccount: (label?: string) => ipcRenderer.invoke("accounts:create", label),
+  createAccountV2: (payload?: { label?: string; icon?: unknown }) =>
+    ipcRenderer.invoke("accounts:createV2", payload),
   regenerateAccountIcon: (id: string) => ipcRenderer.invoke("accounts:regenerateIcon", id),
+  renameAccount: (id: string, nextLabel: string) =>
+    ipcRenderer.invoke("accounts:rename", id, nextLabel),
+  getAccountIconVariants: (id: string) => ipcRenderer.invoke("accounts:getIconVariants", id),
+  setAccountIconVariant: (id: string, idx: number) =>
+    ipcRenderer.invoke("accounts:setIconVariant", id, idx),
+  setAccountNotificationsEnabled: (id: string, enabled: boolean) =>
+    ipcRenderer.invoke("accounts:setNotificationsEnabled", id, enabled),
+  deleteAccount: (id: string) => ipcRenderer.invoke("accounts:delete", id) as Promise<boolean>,
   setActiveAccount: (id: string) => ipcRenderer.invoke("accounts:setActive", id),
+  reorderAccounts: (orderedIds: string[]) =>
+    ipcRenderer.invoke("accounts:reorder", orderedIds) as Promise<boolean>,
   getActiveAccountId: () => ipcRenderer.invoke("accounts:getActiveId"),
   onAccountsListChanged: (cb) => {
     const listener = (_evt: unknown, accounts: AccountDto[]) => cb(accounts);
@@ -103,7 +138,8 @@ const api: AppApi = {
     ipcRenderer.invoke("diagnostics:whatsappMedia") as Promise<WhatsAppMediaDiagnosticsResult>,
   selectDownloadsDirectory: () =>
     ipcRenderer.invoke("dialog:selectDownloadsDirectory") as Promise<string | null>,
+  clearHttpCacheAllAccounts: () =>
+    ipcRenderer.invoke("storage:clearHttpCacheAll") as Promise<boolean>,
 };
 
 contextBridge.exposeInMainWorld("catrip", api);
-

@@ -1,43 +1,21 @@
 import React from "react";
 import { Overlay } from "./Overlay";
-import SettingsView from "./SettingsView";
+import SettingsView, { type SettingsPage } from "./SettingsView";
 import SystemIconImg from "./SystemIconImg";
 import AccountAvatar from "./AccountAvatar";
+import { extractAccountAccentRgb } from "./accountColors";
+import {
+  buildCommands,
+  filterCommands,
+  COMMAND_GROUPS,
+  type Command,
+  type CommandIcon,
+} from "./commands";
+import type { AppApi } from "../../preload/preload";
 
 declare global {
   interface Window {
-    catrip: {
-      getVersion: () => Promise<string>;
-      listAccounts: () => Promise<{ id: string; label: string; icon: string }[]>;
-      createAccount: (label?: string) => Promise<{ id: string; label: string; icon: string }>;
-      regenerateAccountIcon: (id: string) => Promise<{ id: string; label: string; icon: string } | null>;
-      setActiveAccount: (id: string) => Promise<void>;
-      getActiveAccountId: () => Promise<string | null>;
-      onAccountsListChanged: (
-        cb: (accounts: { id: string; label: string; icon: string }[]) => void
-      ) => () => void;
-      onActiveAccountChanged: (cb: (id: string | null) => void) => () => void;
-      openChatByPhone: (phoneRaw: string) => Promise<void>;
-      triggerNewChat: () => Promise<void>;
-      getSettings: () => Promise<any>;
-      setSettings: (next: any) => Promise<void>;
-      setChromeMetrics: (m: { sidebarWidth: number; topHeight: number }) => Promise<void>;
-      setRendererModalOpen: (open: boolean) => Promise<void>;
-      setTrayBadgeCount: (count: number) => Promise<void>;
-      setZenMode: (enabled: boolean) => Promise<void>;
-      setMode: (mode: "browser" | "settings") => Promise<void>;
-      onOpenSettings: (cb: () => void) => () => void;
-      onOpenQuickSwitcher: (cb: () => void) => () => void;
-      onOpenPhoneChat: (cb: () => void) => () => void;
-      onZenChanged: (cb: (enabled: boolean) => void) => () => void;
-      onOpenShortcutsHelp: (cb: () => void) => () => void;
-      onOpenAbout: (cb: () => void) => () => void;
-      runWhatsAppMediaDiagnostics: () => Promise<
-        | { ok: true; data: Record<string, unknown> }
-        | { ok: false; code: string; message: string; url?: string }
-      >;
-      selectDownloadsDirectory: () => Promise<string | null>;
-    };
+    catrip: AppApi;
   }
 }
 
@@ -65,6 +43,102 @@ const modalSectionTitle: React.CSSProperties = {
   color: "#21c063",
 };
 
+/**
+ * Render del shortcut de la paleta de comandos como keycaps individuales,
+ * estilo macOS Spotlight / Linear: cada modificador y cada tecla se pinta en
+ * su propio "kbd" pequeño, separados por `+`.
+ *
+ * Reemplaza alias verbosos por símbolos compactos (`↑`, `↓`, `Esc`, `Enter`,
+ * `Tab`) para reducir el ruido visual cuando hay shortcuts largos.
+ */
+const KEY_GLYPHS: Record<string, string> = {
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+  Up: "↑",
+  Down: "↓",
+  Left: "←",
+  Right: "→",
+  Enter: "⏎",
+  Return: "⏎",
+  Escape: "Esc",
+  Tab: "⇥",
+  Space: "Space",
+  Backspace: "⌫",
+  Delete: "⌦",
+};
+
+function CommandShortcut({ shortcut }: { shortcut: string }) {
+  const tokens = shortcut
+    .split("+")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  return (
+    <span className="catrip-cmd-kbd-group" aria-label={shortcut}>
+      {tokens.map((tok, i) => {
+        const display = KEY_GLYPHS[tok] ?? tok;
+        return (
+          <React.Fragment key={i}>
+            <kbd className="catrip-cmd-kbd">{display}</kbd>
+            {i < tokens.length - 1 ? (
+              <span className="catrip-cmd-kbd-sep" aria-hidden>
+                +
+              </span>
+            ) : null}
+          </React.Fragment>
+        );
+      })}
+    </span>
+  );
+}
+
+function CommandIconView({ icon, size }: { icon: CommandIcon; size: number }) {
+  if (icon.kind === "system") {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 8,
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.10)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <SystemIconImg name={icon.name} size={Math.round(size * 0.62)} />
+      </div>
+    );
+  }
+  if (icon.kind === "avatar") {
+    return <AccountAvatar icon={icon.data} labelFallback={icon.fallback} size={size} />;
+  }
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 8,
+        background: "rgba(33,192,99,0.10)",
+        border: "1px solid rgba(33,192,99,0.30)",
+        color: "#c8f5dc",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 700,
+        fontSize: Math.round(size * 0.5),
+        flexShrink: 0,
+      }}
+      aria-hidden
+    >
+      {icon.char}
+    </div>
+  );
+}
+
 function ShortcutRow({ keys, children }: { keys: string; children: React.ReactNode }) {
   return (
     <dd
@@ -87,21 +161,61 @@ function ShortcutRow({ keys, children }: { keys: string; children: React.ReactNo
 export default function App() {
   const [version, setVersion] = React.useState<string>("");
   const [accounts, setAccounts] = React.useState<
-    { id: string; label: string; icon: string }[]
+    { id: string; label: string; icon: string; notificationsEnabled?: boolean }[]
   >([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [unreadByAccount, setUnreadByAccount] = React.useState<Record<string, number>>({});
+  /**
+   * Token por cuenta que se incrementa cada vez que su contador de no leídos
+   * SUBE. Se usa como `key` del `<span>` del unread-dot para forzar remount
+   * y re-disparar la animación de pulso (one-shot). Evita el pulso infinito.
+   */
+  const [unreadPulseTokens, setUnreadPulseTokens] = React.useState<Record<string, number>>({});
+  const prevUnreadRef = React.useRef<Record<string, number>>({});
+  React.useEffect(() => {
+    const prev = prevUnreadRef.current;
+    const incremented: string[] = [];
+    for (const id of Object.keys(unreadByAccount)) {
+      const next = unreadByAccount[id] ?? 0;
+      const previous = prev[id] ?? 0;
+      if (next > previous) incremented.push(id);
+    }
+    prevUnreadRef.current = { ...unreadByAccount };
+    if (incremented.length > 0) {
+      setUnreadPulseTokens((tok) => {
+        const out = { ...tok };
+        for (const id of incremented) out[id] = (out[id] ?? 0) + 1;
+        return out;
+      });
+    }
+  }, [unreadByAccount]);
+  const [dragId, setDragId] = React.useState<string | null>(null);
+  const [dropIndex, setDropIndex] = React.useState<number | null>(null);
   const [quickOpen, setQuickOpen] = React.useState(false);
   const [quickQuery, setQuickQuery] = React.useState("");
   const quickInputRef = React.useRef<HTMLInputElement | null>(null);
   const [phoneOpen, setPhoneOpen] = React.useState(false);
   const [phoneValue, setPhoneValue] = React.useState("+");
   const phoneInputRef = React.useRef<HTMLInputElement | null>(null);
-  const [sidebarWide, setSidebarWide] = React.useState(false);
+  const sidebarWidthPx = 72;
   const [zen, setZen] = React.useState(false);
   const [mode, setMode] = React.useState<"browser" | "settings">("browser");
+  const [settingsPage, setSettingsPage] = React.useState<SettingsPage>("general");
   const [settings, setSettings] = React.useState<any>(null);
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
+  const [paletteIndex, setPaletteIndex] = React.useState(0);
+  const paletteListRef = React.useRef<HTMLDivElement | null>(null);
+
+  const enterSettings = React.useCallback((page: SettingsPage = "general") => {
+    setSettingsPage(page);
+    setMode("settings");
+  }, []);
+
+  const applySettingsRemote = React.useCallback((next: any) => {
+    setSettings(next);
+    void window.catrip.setSettings(next);
+  }, []);
 
   React.useEffect(() => {
     let mounted = true;
@@ -120,11 +234,18 @@ export default function App() {
       .then((id) => mounted && setActiveId(id))
       .catch(() => {});
 
+    api
+      .getAccountsUnread()
+      .then((m) => mounted && setUnreadByAccount(m ?? {}))
+      .catch(() => {});
+
     const offList = api.onAccountsListChanged((a) => setAccounts(a));
     const offActive = api.onActiveAccountChanged((id) => setActiveId(id));
+    const offUnread = api.onAccountsUnreadChanged((m) => setUnreadByAccount(m ?? {}));
     return () => {
       offList();
       offActive();
+      offUnread();
       mounted = false;
     };
   }, []);
@@ -141,9 +262,9 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    const off = window.catrip.onOpenSettings(() => setMode("settings"));
+    const off = window.catrip.onOpenSettings(() => enterSettings("general"));
     return () => off();
-  }, []);
+  }, [enterSettings]);
 
   React.useEffect(() => {
     const offQuick = window.catrip.onOpenQuickSwitcher(() => {
@@ -183,7 +304,7 @@ export default function App() {
       const k = e.key.toLowerCase();
       if (k === "p") {
         e.preventDefault();
-        setMode("settings");
+        enterSettings("general");
         return;
       }
       if (mode === "browser" && k === "n" && !e.shiftKey) {
@@ -216,7 +337,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
-  }, [zen, mode]);
+  }, [zen, mode, enterSettings]);
 
   React.useEffect(() => {
     if (!quickOpen) return;
@@ -230,27 +351,91 @@ export default function App() {
     return () => clearTimeout(t);
   }, [phoneOpen]);
 
-  const filtered = accounts.filter((a) =>
-    a.label.toLowerCase().includes(quickQuery.trim().toLowerCase())
+  const openPhoneDialog = React.useCallback(() => {
+    setPhoneValue("+");
+    setPhoneOpen(true);
+    setQuickOpen(false);
+  }, []);
+
+  const toggleZen = React.useCallback((next: boolean) => {
+    setZen(next);
+    void window.catrip.setZenMode(next);
+  }, []);
+
+  const commands = React.useMemo<Command[]>(
+    () =>
+      buildCommands({
+        accounts,
+        activeAccountId: activeId,
+        settings,
+        zen,
+        mode,
+        setActiveAccount: (id) => {
+          setActiveId(id);
+          void window.catrip.setActiveAccount(id);
+        },
+        goToSettings: (page) => enterSettings(page ?? "general"),
+        toggleZen,
+        openPhoneDialog,
+        triggerNewChat: () => {
+          void window.catrip.triggerNewChat();
+        },
+        createAccount: () => {
+          void window.catrip.createAccount();
+        },
+        applySettings: applySettingsRemote,
+      }),
+    [
+      accounts,
+      activeId,
+      settings,
+      zen,
+      mode,
+      enterSettings,
+      toggleZen,
+      openPhoneDialog,
+      applySettingsRemote,
+    ],
+  );
+
+  const filteredCommands = React.useMemo(
+    () => filterCommands(commands, quickQuery),
+    [commands, quickQuery],
   );
 
   React.useEffect(() => {
-    const railHidden =
-      mode === "settings" || zen || settings?.general?.showSidebar === false;
-    const sidebarWidth = railHidden ? 0 : sidebarWide ? 88 : 72;
+    setPaletteIndex(0);
+  }, [quickQuery, quickOpen]);
+
+  React.useEffect(() => {
+    if (!quickOpen) return;
+    const root = paletteListRef.current;
+    if (!root) return;
+    const el = root.querySelector<HTMLElement>(`[data-cmd-index="${paletteIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [paletteIndex, quickOpen, filteredCommands.length]);
+
+  const runCommand = React.useCallback((cmd: Command) => {
+    setQuickOpen(false);
+    setQuickQuery("");
+    void cmd.perform();
+  }, []);
+
+  React.useEffect(() => {
+    const railHidden = mode === "settings" || zen || settings?.general?.showSidebar === false;
+    const sidebarWidth = railHidden ? 0 : sidebarWidthPx;
     const metrics = { sidebarWidth, topHeight: 0 };
     if (import.meta.env.DEV) {
       console.log("[catrip-embed-renderer]", "setChromeMetrics", {
         ...metrics,
         railHidden,
-        sidebarWide,
         zen,
         mode,
         showSidebar: settings?.general?.showSidebar,
       });
     }
     void window.catrip.setChromeMetrics(metrics);
-  }, [sidebarWide, zen, mode, settings]);
+  }, [zen, mode, settings]);
 
   React.useEffect(() => {
     if (mode === "settings" && zen) {
@@ -258,8 +443,7 @@ export default function App() {
       void window.catrip.setZenMode(false);
     }
     const modalBlocking =
-      mode === "browser" &&
-      (quickOpen || phoneOpen || shortcutsOpen || aboutOpen);
+      mode === "browser" && (quickOpen || phoneOpen || shortcutsOpen || aboutOpen);
     if (import.meta.env.DEV) {
       console.log("[catrip-embed-renderer]", "setMode+modal", { mode, modalBlocking });
     }
@@ -270,18 +454,6 @@ export default function App() {
   }, [mode, quickOpen, phoneOpen, shortcutsOpen, aboutOpen, zen]);
 
   const sidebarAllowed = settings?.general?.showSidebar !== false;
-
-  const railActionBtn: React.CSSProperties = {
-    height: 35,
-    borderRadius: 8,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.06)",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-  };
 
   const helpOverlays = (
     <>
@@ -356,7 +528,7 @@ export default function App() {
                 lineHeight: 1.25,
               }}
             >
-              Acerca de catrip_multichat_electron
+              Acerca de Catrip Connect
             </div>
           </div>
           <p style={{ margin: "0 0 16px", fontSize: 14, color: "#dce4e4", lineHeight: 1.65 }}>
@@ -381,6 +553,18 @@ export default function App() {
           <p style={{ margin: "18px 0 0", fontSize: 12, color: "#9aa6a6", lineHeight: 1.55 }}>
             Electron + Chromium embebido para reproducir audio y vídeo de forma fiable.
           </p>
+          <p style={{ margin: "12px 0 0", fontSize: 12, color: "#9aa6a6", lineHeight: 1.55 }}>
+            Inspirado en ideas del proyecto{" "}
+            <a
+              href="https://github.com/rafatosta/zapzap"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "#7dd3a8", textDecoration: "underline" }}
+            >
+              ZapZap
+            </a>{" "}
+            (PyQt6 + WebEngine). Implementación independiente en Electron.
+          </p>
         </div>
       </Overlay>
     </>
@@ -390,6 +574,8 @@ export default function App() {
     return (
       <>
         <SettingsView
+          page={settingsPage}
+          onPageChange={setSettingsPage}
           onBack={() => {
             setMode("browser");
             void window.catrip.getSettings().then((s) => setSettings(s));
@@ -402,271 +588,473 @@ export default function App() {
 
   return (
     <>
-    <div style={{ fontFamily: "system-ui, sans-serif", height: "100vh", display: "flex" }}>
-      {zen || !sidebarAllowed ? null : (
-      <div
-        onMouseEnter={() => setSidebarWide(true)}
-        onMouseLeave={() => setSidebarWide(false)}
-        style={{
-          width: sidebarWide ? 88 : 72,
-          transition: "width 170ms ease",
-          background: "#1d1f1f",
-          padding: "6px 8px",
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {accounts.map((a) => {
-            const selected = a.id === activeId;
-            return (
+      <div style={{ height: "100vh", display: "flex" }}>
+        {zen || !sidebarAllowed ? null : (
+          <div
+            style={{
+              width: sidebarWidthPx,
+              background: "#1d1f1f",
+              padding: "6px 8px",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              position: "relative",
+            }}
+          >
+            <div className="catrip-rail-edge" aria-hidden />
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {accounts.map((a, idx) => {
+                const selected = a.id === activeId;
+                const unread = unreadByAccount[a.id] ?? 0;
+                const showUnreadDot = unread > 0 && a.notificationsEnabled !== false;
+                const tooltip = showUnreadDot
+                  ? `${a.label} · ${unread} sin leer · Arrastrar para reordenar`
+                  : `${a.label} · Arrastrar para reordenar · Clic derecho: variante`;
+                const isDragging = dragId === a.id;
+                const showSlotBefore = dropIndex === idx;
+                const accentRgb = extractAccountAccentRgb(a.icon);
+                return (
+                  <React.Fragment key={a.id}>
+                    {showSlotBefore ? <div className="catrip-drop-slot is-active" /> : null}
+                    <button
+                      className={`catrip-rail-account-btn${selected ? " is-selected" : ""}`}
+                      title={tooltip}
+                      draggable
+                      onClick={() => {
+                        setActiveId(a.id);
+                        void window.catrip.setActiveAccount(a.id);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        void window.catrip.regenerateAccountIcon(a.id);
+                      }}
+                      onDragStart={(e) => {
+                        setDragId(a.id);
+                        setDropIndex(null);
+                        try {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", a.id);
+                        } catch {
+                          /* algunas plataformas exigen al menos un setData */
+                        }
+                      }}
+                      onDragOver={(e) => {
+                        if (!dragId) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const before = e.clientY - rect.top < rect.height / 2;
+                        const next = before ? idx : idx + 1;
+                        const draggedIdx = accounts.findIndex((x) => x.id === dragId);
+                        if (draggedIdx === -1 || draggedIdx === next || draggedIdx === next - 1) {
+                          if (dropIndex !== null) setDropIndex(null);
+                          return;
+                        }
+                        if (dropIndex !== next) setDropIndex(next);
+                      }}
+                      onDrop={(e) => {
+                        if (!dragId) return;
+                        e.preventDefault();
+                        const draggedIdx = accounts.findIndex((x) => x.id === dragId);
+                        if (draggedIdx === -1) {
+                          setDragId(null);
+                          setDropIndex(null);
+                          return;
+                        }
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const before = e.clientY - rect.top < rect.height / 2;
+                        const targetIndex = before ? idx : idx + 1;
+                        if (targetIndex === draggedIdx || targetIndex === draggedIdx + 1) {
+                          setDragId(null);
+                          setDropIndex(null);
+                          return;
+                        }
+                        const next = accounts.slice();
+                        const [moved] = next.splice(draggedIdx, 1);
+                        const adjustedTo = targetIndex > draggedIdx ? targetIndex - 1 : targetIndex;
+                        next.splice(adjustedTo, 0, moved);
+                        const prev = accounts;
+                        setAccounts(next);
+                        setDragId(null);
+                        setDropIndex(null);
+                        void window.catrip
+                          .reorderAccounts(next.map((x) => x.id))
+                          .then((ok) => {
+                            if (!ok) setAccounts(prev);
+                          })
+                          .catch(() => setAccounts(prev));
+                      }}
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setDropIndex(null);
+                      }}
+                      style={{
+                        position: "relative",
+                        height: 40,
+                        width: "100%",
+                        borderRadius: 10,
+                        border: "none",
+                        background: "transparent",
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: dragId ? "grabbing" : "grab",
+                        opacity: isDragging ? 0.35 : 1,
+                        transition: "opacity 120ms ease-out",
+                        ...(accentRgb
+                          ? ({ "--catrip-accent-rgb": accentRgb } as React.CSSProperties)
+                          : {}),
+                      }}
+                    >
+                      <div
+                        className="catrip-rail-account-inner"
+                        style={{
+                          position: "relative",
+                          width: 40,
+                          height: 40,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            overflow: "hidden",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <AccountAvatar icon={a.icon} labelFallback={a.label} size={40} />
+                        </div>
+                        {showUnreadDot ? (
+                          <span
+                            key={`unread-${a.id}-${unreadPulseTokens[a.id] ?? 0}`}
+                            className="catrip-unread-dot"
+                            data-count={unread > 99 ? "99+" : unread}
+                            aria-label={`${unread} mensajes sin leer`}
+                          />
+                        ) : null}
+                      </div>
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+              {dropIndex === accounts.length ? (
+                <div className="catrip-drop-slot is-active" />
+              ) : null}
+            </div>
+
+            <div className="catrip-gradient-divider" style={{ marginTop: 6 }} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 2 }}>
               <button
-                key={a.id}
-                title={`${a.label} · Clic derecho: nuevo ícono de color`}
+                type="button"
+                className={`catrip-rail-action-btn${accounts.length === 0 ? " is-pulsing" : ""}`}
+                title={accounts.length === 0 ? "Crear tu primera cuenta" : "Nueva cuenta"}
+                onClick={() => void window.catrip.createAccount()}
+              >
+                <SystemIconImg name="new-account" size={22} />
+              </button>
+              <div style={{ flex: 1 }} />
+              <button
+                type="button"
+                className="catrip-rail-action-btn"
+                title="Nuevo chat por número de teléfono"
                 onClick={() => {
-                  setActiveId(a.id);
-                  void window.catrip.setActiveAccount(a.id);
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  void window.catrip.regenerateAccountIcon(a.id);
-                }}
-                style={{
-                  height: 40,
-                  width: "100%",
-                  borderRadius: 10,
-                  border: "none",
-                  background: selected ? "rgba(255,255,255,0.10)" : "transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
+                  setPhoneValue("+");
+                  setPhoneOpen(true);
                 }}
               >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    background: selected ? "rgba(33,192,99,0.12)" : "rgba(255,255,255,0.04)",
-                    border: selected ? "1px solid rgba(33,192,99,0.75)" : "1px solid rgba(255,255,255,0.10)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  <AccountAvatar icon={a.icon} labelFallback={a.label} size={40} />
-                </div>
+                <SystemIconImg name="new-chat-number" size={22} />
               </button>
-            );
-          })}
-        </div>
-
-        <div style={{ height: 1, background: "rgba(255,255,255,0.10)", marginTop: 6 }} />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 2 }}>
-          <button
-            title="Nueva cuenta"
-            onClick={() => void window.catrip.createAccount()}
-            style={railActionBtn}
-          >
-            <SystemIconImg name="new-account" size={22} />
-          </button>
-          <div style={{ flex: 1 }} />
-          <button
-            title="Nuevo chat por número de teléfono"
-            onClick={() => {
-              setPhoneValue("+");
-              setPhoneOpen(true);
-            }}
-            style={railActionBtn}
-          >
-            <SystemIconImg name="new-chat-number" size={22} />
-          </button>
-          <button
-            title="Nuevo chat (WhatsApp Web)"
-            onClick={() => {
-              void window.catrip.triggerNewChat();
-            }}
-            style={railActionBtn}
-          >
-            <SystemIconImg name="new-chat" size={22} />
-          </button>
-          <div style={{ height: 1, background: "rgba(255,255,255,0.10)" }} />
-          <button
-            title="Ajustes"
-            onClick={() => {
-              setMode("settings");
-            }}
-            style={railActionBtn}
-          >
-            <SystemIconImg name="open-settings" size={22} />
-          </button>
-          <button
-            title="Modo Zen (Esc para salir)"
-            onClick={() => {
-              setZen(true);
-              void window.catrip.setZenMode(true);
-            }}
-            style={railActionBtn}
-          >
-            <SystemIconImg name="zen-mode" size={22} />
-          </button>
-        </div>
-      </div>
-      )}
-
-      <Overlay
-        open={quickOpen}
-        onClose={() => {
-          setQuickOpen(false);
-          setQuickQuery("");
-        }}
-      >
-        <div style={{ padding: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Cambiar de cuenta</div>
-          <input
-            ref={quickInputRef}
-            value={quickQuery}
-            onChange={(e) => setQuickQuery(e.target.value)}
-            placeholder="Buscar cuentas…"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const first = filtered[0];
-                if (!first) return;
-                setActiveId(first.id);
-                void window.catrip.setActiveAccount(first.id);
-                setQuickOpen(false);
-              }
-            }}
-            style={{
-              width: "100%",
-              borderRadius: 10,
-              padding: "10px 12px",
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "inherit",
-              outline: "none",
-            }}
-          />
-          <div style={{ marginTop: 10, maxHeight: 320, overflow: "auto" }}>
-            {filtered.map((a) => (
               <button
-                key={a.id}
+                type="button"
+                className="catrip-rail-action-btn"
+                title="Nuevo chat (WhatsApp Web)"
                 onClick={() => {
-                  setActiveId(a.id);
-                  void window.catrip.setActiveAccount(a.id);
-                  setQuickOpen(false);
+                  void window.catrip.triggerNewChat();
                 }}
+              >
+                <SystemIconImg name="new-chat" size={22} />
+              </button>
+              <div style={{ height: 1, background: "rgba(255,255,255,0.10)" }} />
+              <button
+                type="button"
+                className="catrip-rail-action-btn"
+                title="Ajustes"
+                onClick={() => {
+                  enterSettings("general");
+                }}
+              >
+                <SystemIconImg name="open-settings" size={22} />
+              </button>
+              <button
+                type="button"
+                className="catrip-rail-action-btn"
+                title="Modo Zen (Esc para salir)"
+                onClick={() => {
+                  setZen(true);
+                  void window.catrip.setZenMode(true);
+                }}
+              >
+                <SystemIconImg name="zen-mode" size={22} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {accounts.length === 0 && !zen ? (
+          <div className="catrip-onboarding-wrap" role="region" aria-label="Bienvenida">
+            <div className="catrip-onboarding-card">
+              <img
+                src={`${import.meta.env.BASE_URL}org.k3p.catrip-multichat.svg`}
+                width={88}
+                height={88}
+                alt=""
+                draggable={false}
+                className="catrip-onboarding-logo"
+              />
+              <h1 className="catrip-onboarding-title">Bienvenido a Catrip Connect</h1>
+              <p className="catrip-onboarding-subtitle">
+                Cliente multicuenta de WhatsApp Web. Añade tu primera cuenta para empezar a chatear
+                desde el escritorio.
+              </p>
+              <button
+                type="button"
+                className="catrip-btn catrip-btn-accent"
+                onClick={() => void window.catrip.createAccount()}
                 style={{
-                  width: "100%",
-                  textAlign: "left",
+                  marginTop: 6,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  background: "rgb(33, 192, 99)",
+                  border: "1px solid rgba(33, 192, 99, 0.85)",
+                  borderRadius: 12,
+                  padding: "12px 22px",
+                  cursor: "pointer",
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                Añadir tu primera cuenta
+              </button>
+              <p className="catrip-onboarding-hint">
+                También puedes pulsar el botón <strong>+</strong> del rail (lateral izquierdo,
+                parpadea en verde).
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        <Overlay
+          open={quickOpen}
+          onClose={() => {
+            setQuickOpen(false);
+            setQuickQuery("");
+          }}
+        >
+          <div style={{ padding: 12 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Paleta de comandos</div>
+            <input
+              ref={quickInputRef}
+              value={quickQuery}
+              onChange={(e) => setQuickQuery(e.target.value)}
+              placeholder="Buscar cuentas, acciones, ajustes…"
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setPaletteIndex((i) =>
+                    filteredCommands.length === 0
+                      ? 0
+                      : Math.min(i + 1, filteredCommands.length - 1),
+                  );
+                  return;
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setPaletteIndex((i) => Math.max(i - 1, 0));
+                  return;
+                }
+                if (e.key === "Home") {
+                  e.preventDefault();
+                  setPaletteIndex(0);
+                  return;
+                }
+                if (e.key === "End") {
+                  e.preventDefault();
+                  setPaletteIndex(Math.max(0, filteredCommands.length - 1));
+                  return;
+                }
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const cmd = filteredCommands[paletteIndex];
+                  if (cmd) runCommand(cmd);
+                }
+              }}
+              style={{
+                width: "100%",
+                borderRadius: 10,
+                padding: "10px 12px",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "inherit",
+                outline: "none",
+              }}
+            />
+            <div ref={paletteListRef} style={{ marginTop: 10, maxHeight: 360, overflow: "auto" }}>
+              {filteredCommands.length === 0 ? (
+                <div style={{ opacity: 0.7, padding: "10px 2px" }}>Sin resultados</div>
+              ) : (
+                (() => {
+                  const indexByCmd = new Map<string, number>(
+                    filteredCommands.map((c, i) => [c.id, i]),
+                  );
+                  return COMMAND_GROUPS.map((group) => {
+                    const items = filteredCommands.filter((c) => c.group === group);
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={group}>
+                        <div className="catrip-cmd-group-title">{group}</div>
+                        {items.map((cmd) => {
+                          const idx = indexByCmd.get(cmd.id) ?? 0;
+                          const isActive = idx === paletteIndex;
+                          return (
+                            <button
+                              key={cmd.id}
+                              type="button"
+                              data-cmd-index={idx}
+                              className={"catrip-cmd-row" + (isActive ? " is-active" : "")}
+                              onMouseEnter={() => setPaletteIndex(idx)}
+                              onClick={() => runCommand(cmd)}
+                              style={{ marginBottom: 4 }}
+                            >
+                              <CommandIconView icon={cmd.icon} size={28} />
+                              <div
+                                style={{
+                                  flex: 1,
+                                  minWidth: 0,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 2,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {cmd.label}
+                                </span>
+                                {cmd.description ? (
+                                  <span
+                                    style={{
+                                      fontSize: 12,
+                                      opacity: 0.7,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {cmd.description}
+                                  </span>
+                                ) : null}
+                              </div>
+                              {cmd.shortcut ? <CommandShortcut shortcut={cmd.shortcut} /> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  });
+                })()
+              )}
+            </div>
+            <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
+              ↑ ↓ para navegar • Intro para ejecutar • Esc para cerrar
+            </div>
+          </div>
+        </Overlay>
+
+        <Overlay
+          open={phoneOpen}
+          onClose={() => {
+            setPhoneOpen(false);
+            setPhoneValue("+");
+          }}
+        >
+          <div style={{ padding: 12 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Enviar mensaje a…</div>
+            <div style={{ opacity: 0.8, fontSize: 13, marginBottom: 8 }}>
+              Introduzca el número de teléfono con código de país (ej.: +5511999999999):
+            </div>
+            <input
+              ref={phoneInputRef}
+              value={phoneValue}
+              onChange={(e) => setPhoneValue(e.target.value)}
+              placeholder="+5511999999999"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setPhoneOpen(false);
+                  window.setTimeout(() => void window.catrip.openChatByPhone(phoneValue), 0);
+                }
+              }}
+              style={{
+                width: "100%",
+                borderRadius: 10,
+                padding: "10px 12px",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "inherit",
+                outline: "none",
+              }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+              <button
+                type="button"
+                className="catrip-btn"
+                onClick={() => setPhoneOpen(false)}
+                style={{
                   borderRadius: 10,
-                  padding: "8px 10px",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background:
-                    a.id === activeId
-                      ? "rgba(33,192,99,0.18)"
-                      : "rgba(255,255,255,0.04)",
+                  padding: "8px 12px",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.04)",
                   color: "inherit",
                   cursor: "pointer",
-                  marginBottom: 6,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
                 }}
               >
-                <AccountAvatar icon={a.icon} labelFallback={a.label} size={28} />
-                <span style={{ flex: 1 }}>{a.label}</span>
+                Cancelar
               </button>
-            ))}
-            {filtered.length === 0 ? (
-              <div style={{ opacity: 0.7, padding: "10px 2px" }}>
-                Sin resultados
-              </div>
-            ) : null}
+              <button
+                type="button"
+                className="catrip-btn catrip-btn-accent"
+                onClick={() => {
+                  setPhoneOpen(false);
+                  window.setTimeout(() => void window.catrip.openChatByPhone(phoneValue), 0);
+                }}
+                style={{
+                  borderRadius: 10,
+                  padding: "8px 12px",
+                  border: "1px solid rgba(33,192,99,0.50)",
+                  background: "rgba(33,192,99,0.18)",
+                  color: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                Aceptar
+              </button>
+            </div>
+            <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
+              Intro para abrir el chat • Esc para cerrar
+            </div>
           </div>
-          <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
-            Intro para cambiar • Esc para cerrar
-          </div>
-        </div>
-      </Overlay>
-
-      <Overlay
-        open={phoneOpen}
-        onClose={() => {
-          setPhoneOpen(false);
-          setPhoneValue("+");
-        }}
-      >
-        <div style={{ padding: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Enviar mensaje a…</div>
-          <div style={{ opacity: 0.8, fontSize: 13, marginBottom: 8 }}>
-            Introduzca el número de teléfono con código de país (ej.: +5511999999999):
-          </div>
-          <input
-            ref={phoneInputRef}
-            value={phoneValue}
-            onChange={(e) => setPhoneValue(e.target.value)}
-            placeholder="+5511999999999"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                setPhoneOpen(false);
-                window.setTimeout(() => void window.catrip.openChatByPhone(phoneValue), 0);
-              }
-            }}
-            style={{
-              width: "100%",
-              borderRadius: 10,
-              padding: "10px 12px",
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "inherit",
-              outline: "none",
-            }}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
-            <button
-              onClick={() => setPhoneOpen(false)}
-              style={{
-                borderRadius: 10,
-                padding: "8px 12px",
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.04)",
-                color: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => {
-                setPhoneOpen(false);
-                window.setTimeout(() => void window.catrip.openChatByPhone(phoneValue), 0);
-              }}
-              style={{
-                borderRadius: 10,
-                padding: "8px 12px",
-                border: "1px solid rgba(33,192,99,0.50)",
-                background: "rgba(33,192,99,0.18)",
-                color: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              Aceptar
-            </button>
-          </div>
-          <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
-            Intro para abrir el chat • Esc para cerrar
-          </div>
-        </div>
-      </Overlay>
-    </div>
-    {helpOverlays}
+        </Overlay>
+      </div>
+      {helpOverlays}
     </>
   );
 }
-

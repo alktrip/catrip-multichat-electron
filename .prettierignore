@@ -1,0 +1,11 @@
+node_modules
+dist
+release
+playwright-report
+test-results
+package-lock.json
+src/renderer/fonts
+assets/icons
+*.svg
+*.png
+*.woff2

@@ -17,6 +17,23 @@ export default function AccountAvatar({
   size?: number;
   style?: React.CSSProperties;
 }) {
+  if (icon && icon.startsWith("data:image/")) {
+    return (
+      <img
+        src={icon}
+        width={size}
+        height={size}
+        alt=""
+        draggable={false}
+        style={{
+          display: "block",
+          borderRadius: Math.max(8, size * 0.25),
+          objectFit: "cover",
+          ...style,
+        }}
+      />
+    );
+  }
   if (icon && icon.includes("<svg")) {
     return (
       <img
