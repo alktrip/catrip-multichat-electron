@@ -159,7 +159,8 @@ function ShortcutRow({ keys, children }: { keys: string; children: React.ReactNo
 }
 
 export default function App() {
-  const [version, setVersion] = React.useState<string>("");
+  /** Versión de la raíz `package.json` inyectada en `vite build` (coherente con el artefacto empaquetado). */
+  const version = __CATRIP_APP_VERSION__;
   const [accounts, setAccounts] = React.useState<
     { id: string; label: string; icon: string; notificationsEnabled?: boolean }[]
   >([]);
@@ -220,11 +221,6 @@ export default function App() {
   React.useEffect(() => {
     let mounted = true;
     const api = window.catrip;
-    api
-      .getVersion()
-      .then((v) => mounted && setVersion(v))
-      .catch(() => mounted && setVersion("unknown"));
-
     api
       .listAccounts()
       .then((a) => mounted && setAccounts(a))

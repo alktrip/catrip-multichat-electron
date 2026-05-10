@@ -2057,7 +2057,24 @@ ipcMain.handle("tray:setBadgeCount", (_evt, raw: unknown) => {
   refreshTrayIcon();
 });
 
-ipcMain.handle("app:getVersion", () => app.getVersion());
+/** Versión para IPC; lee el `package.json` del asar (misma fuente que el build), más fiable que `app.getVersion()` en algunos AppImage/Linux. */
+function getApplicationVersionForDisplay(): string {
+  try {
+    const pkgPath = path.join(app.getAppPath(), "package.json");
+    const raw = fs.readFileSync(pkgPath, "utf-8");
+    const pkg = JSON.parse(raw) as { version?: unknown };
+    if (typeof pkg.version === "string" && pkg.version.trim()) return pkg.version.trim();
+  } catch {
+    /* ignore */
+  }
+  try {
+    return app.getVersion();
+  } catch {
+    return "0.0.0";
+  }
+}
+
+ipcMain.handle("app:getVersion", () => getApplicationVersionForDisplay());
 
 ipcMain.handle("accounts:list", () => {
   const st = ensureState();
