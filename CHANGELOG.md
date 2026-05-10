@@ -4,6 +4,19 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.0.1] — 2026-05-10
+
+Corrección de integración con el escritorio Linux (menú de aplicaciones e icono en dock / conmutador).
+
+### Corregido
+
+- **Menú de aplicaciones tras instalar el `.deb`**: el `postinst` ahora ejecuta también `update-desktop-database` sobre `/usr/share/applications`, además de `gtk-update-icon-cache`, para que la entrada **Catrip Connect** aparezca correctamente en el listado y la búsqueda.
+- **Icono genérico en dock / AppImage (sobre todo en Wayland)**: nuevo punto de entrada `bootstrap.ts` que define `CHROME_DESKTOP=catrip-connect.desktop` **antes** de cargar Electron, de modo que Chromium asocie la ventana al mismo ID que el fichero `.desktop` (`desktopName` / `StartupWMClass`).
+
+### Cambiado
+
+- **`package.json` → `main`**: `dist/main/bootstrap.js` en lugar de `dist/main/main.js`.
+
 ## [1.0.0] — 2026-05-10
 
 Primera versión estable publicada de **Catrip Connect** como cliente de escritorio para WhatsApp Web multi‑cuenta sobre Electron.
@@ -45,4 +58,5 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.0.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.1
 [1.0.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.0
