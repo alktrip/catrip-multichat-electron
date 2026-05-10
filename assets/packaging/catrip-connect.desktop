@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Catrip Connect
+Exec=AppRun --no-sandbox %U
+Terminal=false
+Type=Application
+Icon=catrip-connect
+StartupWMClass=catrip-connect
+GenericName=Mensajería
+Comment=Catrip Connect: ejecuta múltiples sesiones de WhatsApp Web aisladas en una sola aplicación de escritorio, con bandeja del sistema, atajos globales y notificaciones nativas.
+Categories=Network;Chat;InstantMessaging;
+Keywords=whatsapp;chat;mensajería;multi-cuenta;catrip;
+StartupNotify=true

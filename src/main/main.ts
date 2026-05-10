@@ -107,7 +107,9 @@ if (process.env.CATRIP_DISABLE_GPU === "1") {
  * `{package.json name}.desktop`; si no coincide con el instalado, el shell no
  * enlaza ventana ↔ lanzador y el dock muestra el icono genérico.
  * `bootstrap.ts` fija `CHROME_DESKTOP=catrip-connect.desktop` antes de cargar
- * este módulo (necesario para que Chromium la lea al arrancar).
+ * este módulo; el AppImage incluye el mismo nombre bajo
+ * `usr/share/applications/` (hook `after-pack-linux.js`) para que quede en
+ * `XDG_DATA_DIRS` con el `AppRun` del runtime.
  *
  * En X11 seguimos pasando `--class=catrip-connect` para alinear `WM_CLASS` con
  * `StartupWMClass` del `.desktop`. `app.setName()` no sustituye al ID de

@@ -3,7 +3,7 @@
   "desktopName": "catrip-connect.desktop",
   "productName": "catrip_multichat_electron",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Catrip Connect — cliente multi-cuenta de WhatsApp Web construido sobre Electron",
   "homepage": "https://github.com/alktrip/catrip-multichat-electron",
   "license": "MIT",
@@ -63,6 +63,7 @@
     "systray2": "^2.1.4"
   },
   "build": {
+    "afterPack": "_scripts/after-pack-linux.js",
     "appId": "com.catrip.catrip-multichat-electron",
     "productName": "Catrip Connect",
     "executableName": "catrip-connect",
