@@ -1,11 +1,15 @@
 /**
- * Cargar **antes** que `main.ts` para que las variables de entorno estén
- * fijadas cuando Chromium arranca. `CHROME_DESKTOP` enlaza la ventana con el
- * ID del `.desktop` (icono en dock / conmutador, sobre todo bajo Wayland).
+ * Cargar **antes** que `main.ts` para fijar `CHROME_DESKTOP` lo antes posible.
+ * En Electron Linux, `wayland_app_id` sólo se asigna si existe `CHROME_DESKTOP`
+ * (`GetXdgAppId()` en `platform_util_linux.cc`).
  *
- * Debe existir un fichero resoluble vía `XDG_DATA_DIRS`, p. ej.
- * `usr/share/applications/catrip-connect.desktop` (lo añade `after-pack-linux.js`
- * al AppImage; el `.deb` instala el mismo nombre en el sistema).
+ * **AppImage:** `assets/packaging/AppRun` (hook after-pack) ya exporta esta variable
+ * **antes** de `exec` del binario; Chromium lo necesita al arrancar el proceso nativo,
+ * antes de ejecutar JS. Este bloque cubre `.deb` y ejecución directa del binario.
+ *
+ * El `.desktop` debe ser resoluble vía `XDG_DATA_DIRS` (`after-pack` coloca
+ * `usr/share/applications/catrip-connect.desktop` en el AppDir). El tema `hicolor`
+ * debe incluir `index.theme` para que GTK resuelva `Icon=catrip-connect`.
  */
 if (process.platform === "linux") {
   if (!process.env.CHROME_DESKTOP) {

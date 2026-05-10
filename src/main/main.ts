@@ -582,6 +582,71 @@ function applyAutostartSettings(s: Settings) {
   }
 }
 
+/**
+ * AppImage: integrar con el escritorio instalando .desktop e iconos en
+ * ~/.local/share/ para que GNOME/KDE asocien la ventana con el icono correcto.
+ * Solo se ejecuta cuando `process.env.APPIMAGE` existe (es decir, estamos
+ * corriendo desde un AppImage).
+ */
+function integrateAppImageDesktop() {
+  if (!process.env.APPIMAGE) return;
+  if (process.platform !== "linux") return;
+
+  const dataHome = process.env.XDG_DATA_HOME?.trim() || path.join(os.homedir(), ".local", "share");
+  const appExec = process.env.APPIMAGE;
+
+  // 1. Instalar iconos
+  const iconDir = path.join(app.getAppPath(), "assets", "icons");
+  const sizes = [16, 32, 48, 64, 128, 256, 512];
+  for (const size of sizes) {
+    const src = path.join(iconDir, `${size}x${size}.png`);
+    const dest = path.join(dataHome, "icons", "hicolor", `${size}x${size}`, "apps", "catrip-connect.png");
+    try {
+      if (!fs.existsSync(src)) continue;
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(src, dest);
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Crear .desktop
+  const desktopPath = path.join(dataHome, "applications", "catrip-connect.desktop");
+  try {
+    fs.mkdirSync(path.dirname(desktopPath), { recursive: true });
+    const desktop = [
+      "[Desktop Entry]",
+      "Type=Application",
+      `Name=${APP_NAME}`,
+      "GenericName=Mensajer\u00eda",
+      "Comment=Cliente multi-cuenta de WhatsApp Web",
+      `Exec="${appExec}" %U`,
+      "Icon=catrip-connect",
+      "Categories=Network;Chat;InstantMessaging;",
+      "Keywords=whatsapp;chat;mensajer\u00eda;multi-cuenta;catrip;",
+      "StartupWMClass=catrip-connect",
+      "StartupNotify=true",
+      "Terminal=false",
+    ].join("\n");
+    fs.writeFileSync(desktopPath, desktop + "\n", "utf-8");
+  } catch {
+    // ignore
+  }
+
+  // 3. Refrescar icon cache del usuario
+  try {
+    const { execSync } = require("node:child_process");
+    execSync("gtk-update-icon-cache -f -t " + path.join(dataHome, "icons", "hicolor"), {
+      timeout: 5000,
+      stdio: "ignore",
+    });
+  } catch {
+    // ignore — puede no existir gtk-update-icon-cache
+  }
+
+  dbgEmbed("AppImage desktop integration", { desktopPath, appExec });
+}
+
 function persistWindowStateSoon() {
   const st = viewState;
   if (!st) return;
@@ -1819,6 +1884,9 @@ app.whenReady().then(() => {
     createAccount(s, "Cuenta 1");
     saveAccountsState(s);
   }
+
+  // AppImage: instalar .desktop e iconos en ~/.local/share/ para que el dock muestre el icono correcto.
+  integrateAppImageDesktop();
 
   // Limpia particiones huérfanas en disco antes de crear cualquier `session.fromPartition`,
   // para que Chromium no las re-aproveche con datos viejos accidentalmente.
