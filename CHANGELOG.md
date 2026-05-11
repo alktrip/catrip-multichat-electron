@@ -4,6 +4,16 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.1.0] — 2026-05-10
+
+### Corregido
+
+- **Linux (AppImage y `.deb`)**: arranque estable sin depender del binario **setuid** `chrome-sandbox`. Se aplica `disable-setuid-sandbox` en el proceso principal antes de `app.whenReady()`, evitando fallos habituales en AppImage (permisos SUID en el FS montado) y en instalaciones `.deb` sin postinst que configure `4755` sobre `chrome-sandbox`.
+
+### Cambiado
+
+- **AppImage**: el lanzador `catrip-connect.desktop` incluido en el paquete ya no fuerza `--no-sandbox` en la línea `Exec`; la política de sandbox queda alineada con el proceso principal (solo se desactiva el sandbox setuid de Chromium, no el sandbox por namespaces cuando el kernel lo permite).
+
 ## [1.0.4] — 2026-05-10
 
 ### Corregido
@@ -77,6 +87,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.1.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.0
 [1.0.4]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.4
 [1.0.3]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.3
 [1.0.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.2

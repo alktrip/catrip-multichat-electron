@@ -175,3 +175,11 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 - En **portátil**, revisa **Rendimiento** y **Red** si usas proxy corporativo.
 
 Para instalación, paquetes y detalles del proyecto, consulta el **[README](README.md)** y el **[CHANGELOG](CHANGELOG.md)**.
+
+---
+
+## 14. Linux: AppImage, `.deb` y arranque
+
+- **AppImage y FUSE**: muchos AppImage necesitan **libfuse2** en el sistema. Si ves `dlopen(): error loading libfuse.so.2`, instálala (p. ej. `sudo apt install libfuse2` o `libfuse2t64` en Ubuntu reciente). Como alternativa: `./MiApp.AppImage --appimage-extract-and-run`.
+- **Ejecutar desde terminal**: usa la ruta del binario o del fichero `.AppImage`. El sufijo **`%U`** solo pertenece al campo **`Exec=`** del fichero `.desktop`, no lo escribas al lanzar a mano.
+- **Sandbox Chromium**: a partir de la **1.1.0**, la aplicación evita el sandbox **setuid** clásico de Chromium en Linux para poder ejecutarse de forma coherente como AppImage y como `.deb` sin configuración manual de permisos sobre `chrome-sandbox`.

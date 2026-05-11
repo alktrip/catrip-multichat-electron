@@ -125,6 +125,10 @@ if (process.env.CATRIP_DISABLE_GPU === "1") {
  * `app.getPath("userData")`.
  */
 if (process.platform === "linux") {
+  // Chromium intenta usar chrome-sandbox con setuid (4755); en AppImage el FS temporal no
+  // conserva SUID y en muchos .deb el postinst no lo configura. Desactivar solo el
+  // setuid sandbox mantiene el sandbox por namespaces donde el kernel lo permite.
+  app.commandLine.appendSwitch("disable-setuid-sandbox");
   // X11: --class fija WM_CLASS directamente (app.setName no lo afecta en X11).
   app.commandLine.appendSwitch("class", "catrip-connect");
   try {
