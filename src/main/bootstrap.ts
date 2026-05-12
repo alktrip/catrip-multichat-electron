@@ -1,20 +1,24 @@
 /**
- * Cargar **antes** que `main.ts` para fijar `CHROME_DESKTOP` lo antes posible.
- * En Electron Linux, `wayland_app_id` sólo se asigna si existe `CHROME_DESKTOP`
- * (`GetXdgAppId()` en `platform_util_linux.cc`).
+ * Punto de entrada real (`package.json` → `main`). Aquí **solo** `electron` y este
+ * archivo corren antes que `main.ts`. Los `import` de `main.ts` se evalúan todos
+ * antes de su cuerpo: si los switches de Chromium van ahí, el sandbox setuid puede
+ * inicializarse antes de `appendSwitch` → `setuid_sandbox_host.cc`.
  *
- * **AppImage:** `assets/packaging/AppRun` (hook after-pack) ya exporta esta variable
- * **antes** de `exec` del binario; Chromium lo necesita al arrancar el proceso nativo,
- * antes de ejecutar JS. Este bloque cubre `.deb` y ejecución directa del binario.
+ * Orden obligatorio: `CHROME_DESKTOP` → `appendSwitch` → `require("./main")`.
  *
- * El `.desktop` debe ser resoluble vía `XDG_DATA_DIRS` (`after-pack` coloca
- * `usr/share/applications/catrip-connect.desktop` en el AppDir). El tema `hicolor`
- * debe incluir `index.theme` para que GTK resuelva `Icon=catrip-connect`.
+ * **AppImage:** `AppRun` ya exporta `CHROME_DESKTOP` antes del binario; este bloque
+ * cubre `.deb` y ejecución directa.
  */
+import { app } from "electron";
+
 if (process.platform === "linux") {
   if (!process.env.CHROME_DESKTOP) {
     process.env.CHROME_DESKTOP = "catrip-connect.desktop";
   }
+  // Antes de cargar main (y sus imports); Chromium parsea esto antes del helper setuid.
+  app.commandLine.appendSwitch("disable-setuid-sandbox");
+  // X11: WM_CLASS; debe ir también antes de `require("./main")`.
+  app.commandLine.appendSwitch("class", "catrip-connect");
 }
 
 require("./main");

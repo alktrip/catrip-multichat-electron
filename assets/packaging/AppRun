@@ -34,6 +34,11 @@ export CHROME_DESKTOP="${CHROME_DESKTOP:-catrip-connect.desktop}"
 
 BIN="$APPDIR/catrip-connect"
 
+# Chromium comprueba chrome-sandbox (setuid) en el arranque **nativo**, antes de
+# ejecutar el `main` de Node (`bootstrap.js`). `appendSwitch` en JS llega tarde en
+# Electron reciente → FATAL:setuid_sandbox_host.cc en AppImage (FS montado sin 4755).
+# Este flag debe ir en argv desde el primer exec.
+
 if [ -z "$APPIMAGE_EXIT_AFTER_INSTALL" ] ; then
   trap atexit EXIT
 fi
@@ -43,10 +48,21 @@ isEulaAccepted=1
 atexit()
 {
   if [ $isEulaAccepted == 1 ] ; then
+    local extra=()
+    local seen_setuid_switch=0
+    for a in "${args[@]}"; do
+      if [ "$a" = "--disable-setuid-sandbox" ]; then
+        seen_setuid_switch=1
+        break
+      fi
+    done
+    if [ "$seen_setuid_switch" -eq 0 ]; then
+      extra+=(--disable-setuid-sandbox)
+    fi
     if [ $NUMBER_OF_ARGS -eq 0 ] ; then
-      exec "$BIN"
+      exec "$BIN" "${extra[@]}"
     else
-      exec "$BIN" "${args[@]}"
+      exec "$BIN" "${extra[@]}" "${args[@]}"
     fi
   fi
 }

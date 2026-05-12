@@ -4,6 +4,12 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.1.1] — 2026-05-11
+
+### Corregido
+
+- **Linux — orden de arranque**: `disable-setuid-sandbox` y `--class` estaban en `main.ts`, **después** de todos los `import` del proceso principal. Chromium puede inicializar el sandbox setuid antes de ejecutar el cuerpo de ese módulo → los switches no aplicaban y seguía apareciendo `setuid_sandbox_host.cc`. Los mismos `appendSwitch` se ejecutan ahora en **`bootstrap.ts`** (entrada real del proceso), inmediatamente tras `require("electron")` y **antes** de `require("./main")`.
+
 ## [1.1.0] — 2026-05-10
 
 ### Corregido
@@ -87,6 +93,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.1.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.0
 [1.0.4]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.4
 [1.0.3]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.3

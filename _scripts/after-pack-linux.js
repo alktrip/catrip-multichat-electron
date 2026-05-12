@@ -20,6 +20,10 @@
  *    ella. Copiamos `assets/packaging/AppRun` sobre `linux-unpacked/AppRun`; al
  *    empaquetar el AppImage, `copyDir(appDir, stageDir)` sustituye el AppRun
  *    generado por uno que exporta `CHROME_DESKTOP` antes del binario.
+ *    Además, el AppRun antepone `--disable-setuid-sandbox` en argv: en Electron
+ *    reciente la comprobación de `chrome-sandbox` (4755) ocurre en el binario
+ *    **antes** de ejecutar JS; sin este flag, AppImage en FS montado falla con
+ *    `setuid_sandbox_host.cc` (p. ej. Ubuntu 24+).
  *
  * Referencia Electron v42: `wayland_app_id` solo se rellena si existe la
  * variable de entorno `CHROME_DESKTOP` (`platform_util_linux.cc` → `GetXdgAppId`).
