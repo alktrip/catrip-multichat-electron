@@ -46,12 +46,12 @@ sudo apt install dpkg fakeroot
 | `npm run dist:linux` | Ambos |
 | `npm run dist` | Todos los targets definidos en `package.json` → `build` |
 
-Artefactos en **`release/`** (versión actual en `package.json`, p. ej. **1.1.1**):
+Artefactos en **`release/`** (versión actual en `package.json`, p. ej. **1.1.2**):
 
 ```
 release/
-├── catrip-connect_1.1.1_amd64.deb
-└── catrip-connect_1.1.1_x86_64.AppImage
+├── catrip-connect_1.1.2_amd64.deb
+└── catrip-connect_1.1.2_x86_64.AppImage
 ```
 
 Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mjs`).
@@ -59,7 +59,7 @@ Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mj
 #### `.deb` — instalación
 
 ```bash
-sudo apt install ./release/catrip-connect_1.1.1_amd64.deb
+sudo apt install ./release/catrip-connect_1.1.2_amd64.deb
 ```
 
 Dependencias habituales las resuelve `apt` (`libgtk-3-0`, `libnotify4`, `libnss3`, …; recomendable `libappindicator3-1` para bandeja).
@@ -81,14 +81,14 @@ sudo apt remove catrip-multichat-electron
 Ejecutable autocontenido; permisos de ejecución:
 
 ```bash
-chmod +x release/catrip-connect_1.1.1_x86_64.AppImage
-./release/catrip-connect_1.1.1_x86_64.AppImage
+chmod +x release/catrip-connect_1.1.2_x86_64.AppImage
+./release/catrip-connect_1.1.2_x86_64.AppImage
 ```
 
 Para integrar menú e iconos en el escritorio del usuario (opcional pero recomendable si no usas AppImageLauncher):
 
 ```bash
-_scripts/install-appimage.sh release/catrip-connect_1.1.1_x86_64.AppImage
+_scripts/install-appimage.sh release/catrip-connect_1.1.2_x86_64.AppImage
 # revertir:
 _scripts/install-appimage.sh --uninstall
 ```

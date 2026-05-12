@@ -4,6 +4,12 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.1.2] — 2026-05-12
+
+### Cambiado
+
+- **Versión y artefactos**: incremento a **1.1.2** para empaquetado y documentación; sin cambios de código respecto a **1.1.1** (fix Linux sandbox / `AppRun`).
+
 ## [1.1.1] — 2026-05-11
 
 ### Corregido
@@ -93,6 +99,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.1.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.2
 [1.1.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.0
 [1.0.4]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.0.4
