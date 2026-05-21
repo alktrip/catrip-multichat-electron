@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.3.2**
+**Versión de esta guía:** **1.4.0**
 
 ---
 
@@ -45,7 +45,6 @@ Si en **Ajustes → General** desactivas **Mostrar barra lateral**, el rail desa
 - El comportamiento es el de **WhatsApp Web oficial** (chats, llamadas según soporte del navegador embebido, archivos, etc.).
 - **Tema**: se usa el **modo oscuro nativo** de WhatsApp Web; no se inyecta CSS de terceros para forzar tema.
 - **Recarga**: `F5` o menú **Chat → Recargar**.
-- **Abrir en el navegador del sistema**: `Ctrl+Shift+O` (útil para depuración o si prefieres una pestaña externa).
 
 ---
 
@@ -80,7 +79,6 @@ En Linux y Windows se usa **Ctrl**; en macOS suele usarse **Cmd** donde el siste
 | `Ctrl+Q` | Salir de la aplicación |
 | `F5` | Recargar la vista de WhatsApp Web |
 | `F11` | Pantalla completa |
-| `Ctrl+Shift+O` | Abrir la URL actual de WhatsApp Web en el navegador del sistema |
 
 Los mismos atajos aparecen reflejados en el **menú nativo** de la ventana (Archivo, Ver, Chat, Cuentas, Ayuda).
 
@@ -118,7 +116,7 @@ Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o u
    ```bash
    _scripts/install-appimage.sh /ruta/a/catrip-connect_*.AppImage
    ```
-2. Si el navegador muestra *«No hay aplicaciones disponibles»*, ejecuta:
+2. Si el navegador muestra *«No hay aplicaciones disponibles»*, usa **Ajustes → General → Registrar como app predeterminada (whatsapp://)** o ejecuta:
    ```bash
    npm run register:whatsapp
    # o: bash _scripts/register-whatsapp-protocol.sh
@@ -147,7 +145,8 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 - **Carpeta de descargas** (ruta de texto o selección con el diálogo del sistema)
 - **Escala de interfaz** (100 % a 200 %)
 - **Badge del tray** y **badge en el dock** (Linux) según no leídos de **todas** las cuentas (y badge manual para pruebas)
-- **Enlaces WhatsApp entrantes** (cuenta destino) y **buscar actualizaciones** al iniciar (GitHub Releases)
+- **Enlaces WhatsApp entrantes** (cuenta destino), **registrar protocolo** en el escritorio y **buscar actualizaciones** al iniciar (canal **estable** o **beta**)
+- **Abrir descargas** con la aplicación predeterminada del sistema (`xdg-open` / portal)
 
 ### Cuentas
 
@@ -161,6 +160,9 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 - **Notificaciones del sistema** (activar/desactivar)
 - **Mostrar nombre de la cuenta** en la notificación
 - **Mostrar detalle (preview)**
+- **No molestar** (sin avisos nativos; el badge del tray/dock sigue activo)
+- **Sonido del sistema** en notificaciones
+- Aviso cuando suben no leídos en **cualquier cuenta**; al pulsar la notificación se activa esa cuenta
 
 ### Red
 
@@ -169,7 +171,10 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 
 ### Rendimiento
 
-- Límites y herramientas relacionadas con proceso/renderer según la versión (p. ej. limpieza de caché HTTP, diagnósticos de medios).
+- **Refuerzo GPU al arrancar** (experimental): VA-API para vídeo en Linux, rasterización y zero-copy. Requiere **reiniciar** la app.
+- **Límite de procesos del renderer** (0 = predeterminado de Electron; 3–6 útil con varias cuentas). También requiere reinicio.
+- **Evitar suspensión durante videollamada** (bloqueo de energía mientras WhatsApp Web detecta una llamada).
+- Limpieza de caché HTTP y diagnósticos de medios (códecs WhatsApp Web).
 
 Los cambios se guardan en el almacenamiento local de la aplicación.
 
@@ -179,7 +184,11 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 
 - Al **cerrar** la ventana, según configuración la app puede **quedar en la bandeja** en lugar de salir.
 - El icono puede mostrar **badge** con el número de conversaciones no leídas (según las cuentas y la configuración).
-- En **Linux**, el icono y menú pueden variar según el escritorio (X11/Wayland); en algunos entornos el menú contextual está simplificado pero el icono sigue permitiendo **restaurar** la ventana al hacer clic.
+- En **Linux**, el menú de bandeja lista **cuentas** con estado (conectada / QR / sin red) y no leídos; el tooltip del icono resume el mismo estado por cuenta.
+- El **rail** muestra en el tooltip de cada cuenta el estado de sesión y los no leídos.
+- En algunos entornos Wayland el backend puede ser SNI/AppIndicator; el clic en el icono sigue permitiendo **restaurar** la ventana.
+- Clic en una **notificación** del sistema: enfoca la ventana y activa la cuenta (con pulso always-on-top en Wayland).
+- En GNOME/KDE, el menú del **lanzador** puede mostrar acciones: *Abrir*, *Enfocar ventana*, *Nueva cuenta* (tras `npm run register:whatsapp` o reinstalar el `.desktop`).
 
 ---
 
@@ -195,6 +204,8 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 | Variable | Efecto |
 |----------|--------|
 | `CATRIP_DISABLE_GPU=1` | Desactiva aceleración por GPU antes del arranque (útil si la vista embebida sale en negro en algunos controladores Linux/Wayland). |
+| `CATRIP_GPU_BOOST=1` | Activa flags GPU extra (VA-API, zero-copy); también en **Ajustes → Rendimiento**. |
+| `CATRIP_OZONE_PLATFORM=wayland\|x11` | Backend gráfico de Chromium (prueba si el compositor va lento). |
 | `CATRIP_TRANSPARENT_WINDOW=0\|1` | Fuerza ventana opaca o transparente. |
 | `CATRIP_DEBUG_EMBED=0\|1` | Logs de diagnóstico del embebido (en desarrollo suele estar activo salvo `0`). |
 | `CATRIP_E2E=1` | Modo pruebas automatizadas (no usar en uso normal). |

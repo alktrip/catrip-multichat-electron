@@ -29,6 +29,10 @@ write_user_desktop() {
   local apps_dir="$1"
   local exec_path="$2"
   mkdir -p "$apps_dir"
+  local exec_q="$exec_path"
+  if [[ "$exec_path" == *" "* ]]; then
+    exec_q="\"$exec_path\""
+  fi
   cat >"$apps_dir/$DESKTOP_NAME" <<EOF
 [Desktop Entry]
 Version=1.0
@@ -36,14 +40,30 @@ Type=Application
 Name=$APP_NAME
 GenericName=Mensajería
 Comment=Cliente multi-cuenta de WhatsApp Web
-Exec="$exec_path" %u
+Exec=$exec_q %U
 Terminal=false
 Icon=catrip-connect
 Categories=Network;Chat;InstantMessaging;
-Keywords=whatsapp;chat;mensajería;multi-cuenta;catrip;
+Keywords=whatsapp;chat;wa.me;catrip;
 MimeType=$MIME;
 StartupWMClass=catrip-connect
 StartupNotify=true
+Actions=Open;Focus;NewAccount;
+
+[Desktop Action Open]
+Name=Abrir Catrip Connect
+Exec=$exec_q --catrip-action=open
+Terminal=false
+
+[Desktop Action Focus]
+Name=Enfocar ventana
+Exec=$exec_q --catrip-action=focus
+Terminal=false
+
+[Desktop Action NewAccount]
+Name=Nueva cuenta
+Exec=$exec_q --catrip-action=new-account
+Terminal=false
 EOF
   chmod 644 "$apps_dir/$DESKTOP_NAME"
 }
@@ -111,7 +131,10 @@ main() {
     gio mime "$MIME" 2>/dev/null || true
   fi
   echo
-  echo "✔ Registro de whatsapp:// completado. Cierra el navegador y prueba de nuevo un enlace WhatsApp."
+  echo "✔ Registro de whatsapp:// y acciones del lanzador completado."
+  echo "  Los enlaces https://wa.me abiertos solo en el navegador no delegan solos a Catrip."
+  echo "  Usa whatsapp://, «Abrir con…» en el navegador o una extensión que redirija al protocolo."
+  echo "  Cierra el navegador y prueba de nuevo un enlace WhatsApp."
 }
 
 main "$@"

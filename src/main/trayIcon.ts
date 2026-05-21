@@ -1,25 +1,11 @@
 /**
  * Generador del icono del system tray para Catrip Connect.
  *
- * Estrategia visual (versión actual):
- *   - El logo propio de la app (`assets/icons/org.k3p.catrip-multichat.svg`,
- *     que internamente es un PNG 256×256 codificado en base64) es la **única**
- *     fuente de arte para el tray, en TODAS las plataformas (Windows, macOS,
- *     Linux GNOME/KDE/Cinnamon).
- *   - Encima se compone, opcionalmente, un badge numérico rojo en la esquina
- *     inferior derecha cuando hay mensajes sin leer.
- *
- * Histórico:
- *   Versiones anteriores incluían dos pictogramas vectoriales heredados
- *   (`TRAY_DEFAULT` con burbuja de chat verde + bezel y `TRAY_SYMBOLIC` con
- *   silueta monocroma para paneles claros/oscuros) tomados de un proyecto
- *   previo. Esos paths fueron eliminados por completo del repo para que la
- *   app dependa exclusivamente de su propio arte.
- *
- * Si por algún motivo el logo no se pudiera leer desde disco,
- * `trayNativeImage` devuelve `nativeImage.createEmpty()` y el llamador en
- * `main.ts` cae a `getAppIconNativeImage()` (que carga el mismo SVG por otra
- * vía).
+ * Estrategia visual:
+ *   - Linux (bandeja): `tray-white-*.png` — silueta blanca, fondo transparente.
+ *   - Otras plataformas: `tray-*.png` (verde WhatsApp #25D366).
+ *   - Generados por `_scripts/build-tray-icons.py` en el build.
+ *   - Con no leídos: se compone el badge en SVG y se rasteriza encima.
  */
 
 import * as fs from "node:fs";
@@ -27,32 +13,6 @@ import * as path from "node:path";
 import { app, nativeImage } from "electron";
 import { Resvg } from "@resvg/resvg-js";
 
-/**
- * Plantilla mínima: solo el logo (vía `<image>`) + el badge numérico opcional.
- * El badge se inyecta en `{notify}`; el logo en `{logo}`.
- */
-const TRAY_LOGO_TEMPLATE = `<?xml version="1.0" encoding="utf-8"?>
-<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-{logo}
-{notify}
-</svg>
-`;
-
-/**
- * Badge numérico (mensajes sin leer).
- *
- * Diseño:
- *   - Pastilla roja (`#dc2626`) con esquinas muy redondeadas; círculo perfecto
- *     cuando es un solo dígito.
- *   - Borde blanco de 8 px (≈0.75 px en el render final a 24 px) para que
- *     destaque sobre cualquier color del logo subyacente.
- *   - Posicionado en el cuadrante inferior derecho con margen de 10 px,
- *     ocupando ~31 % del lienzo (mucho menos que el badge anterior, que
- *     tapaba prácticamente media imagen).
- *   - El texto se centra horizontalmente con `text-anchor="middle"` y la
- *     línea base se calcula manualmente (`cy + fontSize * 0.35`) porque
- *     `dominant-baseline` no es 100 % portable entre rasterizadores.
- */
 const BADGE_TEMPLATE = `
   <g>
     <rect x="{x}" y="{y}" width="{width}" height="{height}" rx="{r}" ry="{r}" fill="#dc2626" stroke="#ffffff" stroke-width="8"/>
@@ -60,18 +20,8 @@ const BADGE_TEMPLATE = `
   </g>
 `;
 
-/**
- * Tipo público mantenido por compatibilidad con los call sites de `main.ts`.
- * Hoy solo existe un modo (`"default"`); los modos `symbolic*` se eliminaron
- * junto con el arte heredado.
- */
 export type TrayVisualMode = "default";
 
-/**
- * Calcula la geometría del badge en el lienzo 256×256 según el número de
- * dígitos del contador. Devuelve también la posición de la línea base del
- * texto (`ty`) para no depender de `dominant-baseline`.
- */
 function notificationGeometry(numStr: string): {
   x: number;
   y: number;
@@ -122,91 +72,136 @@ function badgeSvg(qtd: number): string {
     .replace("{number}", String(n));
 }
 
-/**
- * Lee el logo Catrip Connect del filesystem una sola vez y devuelve el
- * fragmento `<image …/>` listo para incrustar en otro SVG con
- * `viewBox="0 0 256 256"`. Si el archivo no está o no contiene `<image>`,
- * cachea `null` para evitar reintentos.
- */
-type LogoCacheState = { tag: string | null };
-let logoCache: LogoCacheState | null = null;
-function getAppLogoImageTag(): string | null {
-  if (logoCache) return logoCache.tag;
-  let tag: string | null = null;
-  try {
-    const p = path.join(app.getAppPath(), "assets/icons/org.k3p.catrip-multichat.svg");
-    if (fs.existsSync(p)) {
-      const raw = fs.readFileSync(p, "utf-8");
-      const m = raw.match(/href\s*=\s*["'](data:image\/[^"']+)["']/);
-      if (m) {
-        tag =
-          `<image x="0" y="0" width="256" height="256" ` +
-          `preserveAspectRatio="xMidYMid meet" href="${m[1]}"/>`;
+let trayBaseCache: Electron.NativeImage | null | undefined;
+
+function loadTrayBaseImage(): Electron.NativeImage | null {
+  if (trayBaseCache !== undefined) return trayBaseCache;
+  const dir = path.join(app.getAppPath(), "assets/icons");
+  const candidates =
+    process.platform === "linux"
+      ? ["tray-white-24.png", "tray-white-22.png", "tray-white-32.png"]
+      : ["tray-32.png", "tray-24.png", "tray-22.png", "256x256.png"];
+  for (const fname of candidates) {
+    const p = path.join(dir, fname);
+    try {
+      if (fs.existsSync(p)) {
+        const img = nativeImage.createFromPath(p);
+        if (!img.isEmpty()) {
+          trayBaseCache = img;
+          return img;
+        }
       }
+    } catch {
+      // siguiente candidato
     }
-  } catch {
-    tag = null;
   }
-  logoCache = { tag };
-  return tag;
+  trayBaseCache = null;
+  return null;
 }
 
-/**
- * Construye el SVG del tray (logo + badge opcional). Devuelve `null` si el
- * logo no se pudo cargar para que el llamador pueda aplicar un fallback.
- */
+function rasterSizeForTray(): number {
+  return process.platform === "linux" ? 24 : 32;
+}
+
+function resizeTrayIcon(img: Electron.NativeImage): Electron.NativeImage {
+  const target = rasterSizeForTray();
+  const resized = img.resize({ width: target, height: target });
+  return resized.isEmpty() ? img : resized;
+}
+
+/** Compone badge sobre la base verde pregenerada. */
+function composeTrayWithBadge(base: Electron.NativeImage, badgeCount: number): Electron.NativeImage {
+  const notify = badgeSvg(badgeCount);
+  if (!notify) return resizeTrayIcon(base);
+
+  const target = rasterSizeForTray();
+  const basePng = resizeTrayIcon(base).toPNG();
+  if (!basePng?.length) return resizeTrayIcon(base);
+
+  const baseDataUrl = `data:image/png;base64,${basePng.toString("base64")}`;
+  const svg = `<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image x="0" y="0" width="256" height="256" preserveAspectRatio="xMidYMid meet" href="${baseDataUrl}"/>
+  ${notify}
+</svg>`;
+
+  try {
+    const r = new Resvg(svg, {
+      fitTo: { mode: "width", value: target },
+      font: { loadSystemFonts: false },
+    });
+    const out = nativeImage.createFromBuffer(r.render().asPng());
+    if (!out.isEmpty()) return out;
+  } catch {
+    // ignore
+  }
+  return resizeTrayIcon(base);
+}
+
+/** @deprecated Mantenido por compatibilidad con tests; usa la base pregenerada. */
 export function buildTrayIconSvg(_mode: TrayVisualMode, qtd: number): string | null {
-  const logoTag = getAppLogoImageTag();
-  if (!logoTag) return null;
   const notify = badgeSvg(qtd);
-  return TRAY_LOGO_TEMPLATE.replace("{logo}", logoTag).replace("{notify}", notify);
+  const base = loadTrayBaseImage();
+  if (!base) return null;
+  const basePng = base.toPNG();
+  if (!basePng?.length) return null;
+  const baseDataUrl = `data:image/png;base64,${basePng.toString("base64")}`;
+  return `<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image x="0" y="0" width="256" height="256" preserveAspectRatio="xMidYMid meet" href="${baseDataUrl}"/>
+  ${notify}
+</svg>`;
 }
 
-/**
- * Catrip Connect usa la misma imagen (logo a color) en todas las plataformas.
- * Se mantiene este helper para no tocar los call sites de `main.ts` que
- * antes lo usaban para distinguir entre `default` y los modos simbólicos.
- */
 export function trayModeForPlatform(): TrayVisualMode {
   return "default";
 }
 
-export function trayNativeImage(mode: TrayVisualMode, badgeCount: number): Electron.NativeImage {
-  const svg = buildTrayIconSvg(mode, badgeCount);
-  if (!svg) return nativeImage.createEmpty();
-
-  // En algunos entornos Linux/Wayland, `createFromDataURL` puede devolver vacío.
-  // Preferimos rasterizar SVG con resvg para garantizar un PNG válido.
-  try {
-    const r = new Resvg(svg, {
-      fitTo: { mode: "width", value: 24 },
-      font: { loadSystemFonts: false },
-    });
-    const png = r.render().asPng();
-    const out = nativeImage.createFromBuffer(png);
-    if (!out.isEmpty()) return out;
-  } catch {
-    // fallback abajo
+/** Tinte de respaldo si solo hay PNG de app sin variante tray. */
+export function applyTrayGreenTint(img: Electron.NativeImage): Electron.NativeImage {
+  const WHATSAPP_GREEN_BGRA = { b: 102, g: 211, r: 37 } as const;
+  const { width, height } = img.getSize();
+  if (width <= 0 || height <= 0) return img;
+  const bitmap = Buffer.from(img.toBitmap());
+  for (let i = 0; i < bitmap.length; i += 4) {
+    const b = bitmap[i]!;
+    const g = bitmap[i + 1]!;
+    const r = bitmap[i + 2]!;
+    const a = bitmap[i + 3]!;
+    if (a === 0) continue;
+    if (a >= 64 && r > 160 && g < 120 && b < 120) continue;
+    if (a >= 64 && r > 200 && g > 200 && b > 200) continue;
+    bitmap[i] = WHATSAPP_GREEN_BGRA.b;
+    bitmap[i + 1] = WHATSAPP_GREEN_BGRA.g;
+    bitmap[i + 2] = WHATSAPP_GREEN_BGRA.r;
   }
-
-  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-  const img = nativeImage.createFromDataURL(url);
-  if (img.isEmpty()) return nativeImage.createEmpty();
-
-  // Linux: muchos trays no aceptan SVG como input "vivo" y muestran placeholder (…).
-  // Forzamos raster (PNG) y devolvemos SIEMPRE un tamaño "panel" típico (GNOME: 24px).
   try {
-    const rasterBase = nativeImage.createFromBuffer(img.toPNG());
-    if (rasterBase.isEmpty()) return img;
-
-    if (process.platform !== "linux") {
-      const resized = rasterBase.resize({ width: 32, height: 32 });
-      return resized.isEmpty() ? rasterBase : resized;
-    }
-    // 24 px suele ser el tamaño esperado en GNOME.
-    const resized24 = rasterBase.resize({ width: 24, height: 24 });
-    return resized24.isEmpty() ? rasterBase : resized24;
+    const rebuilt = nativeImage.createFromBitmap(bitmap, { width, height, scaleFactor: 1 });
+    if (rebuilt.isEmpty()) return img;
+    const png = rebuilt.toPNG();
+    if (png?.length) return nativeImage.createFromBuffer(png);
+    return rebuilt;
   } catch {
     return img;
   }
+}
+
+export function trayNativeImage(_mode: TrayVisualMode, badgeCount: number): Electron.NativeImage {
+  let base = loadTrayBaseImage();
+  if (!base) return nativeImage.createEmpty();
+
+  if (process.platform !== "linux") {
+    const fname = path.basename(
+      ["tray-24.png", "tray-32.png", "256x256.png"].find((f) =>
+        fs.existsSync(path.join(app.getAppPath(), "assets/icons", f)),
+      ) || "",
+    );
+    if (fname === "256x256.png") {
+      base = applyTrayGreenTint(base);
+    }
+  }
+
+  const out = composeTrayWithBadge(base, badgeCount);
+  if (!out.isEmpty()) return out;
+  return nativeImage.createEmpty();
 }

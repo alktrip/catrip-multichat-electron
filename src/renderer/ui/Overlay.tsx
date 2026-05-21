@@ -28,16 +28,6 @@ export function Overlay({
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.55)",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: 84,
-        zIndex: 9999,
-      }}
     >
       <div
         className="catrip-overlay-panel"

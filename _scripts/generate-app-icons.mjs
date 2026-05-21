@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
 
@@ -14,10 +15,10 @@ const sizes = [16, 32, 48, 64, 128, 256, 512, 1024];
 
 await mkdir(outDir, { recursive: true });
 
-const svg = await readFile(svgPath);
+const svgRaw = await readFile(svgPath, "utf8");
 
 for (const size of sizes) {
-  const resvg = new Resvg(svg, {
+  const resvg = new Resvg(svgRaw, {
     fitTo: { mode: "width", value: size },
     background: "transparent",
   });
@@ -26,4 +27,11 @@ for (const size of sizes) {
   await writeFile(outPath, pngData);
   // eslint-disable-next-line no-console
   console.log(`Wrote ${path.relative(projectRoot, outPath)}`);
+}
+
+const trayScript = path.join(projectRoot, "_scripts", "build-tray-icons.py");
+const trayRun = spawnSync("python3", [trayScript], { cwd: projectRoot, encoding: "utf-8" });
+if (trayRun.status !== 0) {
+  console.error(trayRun.stderr || trayRun.stdout);
+  process.exit(trayRun.status ?? 1);
 }

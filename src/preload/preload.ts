@@ -9,11 +9,18 @@ export type AccountDto = {
 
 export type AccountUnreadMap = Record<string, number>;
 
+export type AccountSessionStatus = "loading" | "qr" | "connected" | "offline";
+export type AccountStatusMap = Record<string, AccountSessionStatus>;
+
+export type RegisterProtocolResult = { ok: boolean; message: string };
+
 export type AppApi = {
   getVersion: () => Promise<string>;
   listAccounts: () => Promise<AccountDto[]>;
   getAccountsUnread: () => Promise<AccountUnreadMap>;
   onAccountsUnreadChanged: (cb: (map: AccountUnreadMap) => void) => () => void;
+  getAccountsStatus: () => Promise<AccountStatusMap>;
+  onAccountsStatusChanged: (cb: (map: AccountStatusMap) => void) => () => void;
   createAccount: (label?: string) => Promise<AccountDto>;
   createAccountV2: (payload?: { label?: string; icon?: unknown }) => Promise<AccountDto>;
   regenerateAccountIcon: (id: string) => Promise<AccountDto | null>;
@@ -54,6 +61,7 @@ export type AppApi = {
   runWhatsAppMediaDiagnostics: () => Promise<WhatsAppMediaDiagnosticsResult>;
   selectDownloadsDirectory: () => Promise<string | null>;
   clearHttpCacheAllAccounts: () => Promise<boolean>;
+  registerWhatsAppProtocol: () => Promise<RegisterProtocolResult>;
 };
 
 export type WhatsAppMediaDiagnosticsResult =
@@ -76,6 +84,13 @@ const api: AppApi = {
     const listener = (_evt: unknown, map: AccountUnreadMap) => cb(map ?? {});
     ipcRenderer.on("accounts:unreadChanged", listener);
     return () => ipcRenderer.removeListener("accounts:unreadChanged", listener);
+  },
+  getAccountsStatus: () =>
+    ipcRenderer.invoke("accounts:getStatus") as Promise<AccountStatusMap>,
+  onAccountsStatusChanged: (cb) => {
+    const listener = (_evt: unknown, map: AccountStatusMap) => cb(map ?? {});
+    ipcRenderer.on("accounts:statusChanged", listener);
+    return () => ipcRenderer.removeListener("accounts:statusChanged", listener);
   },
   createAccount: (label?: string) => ipcRenderer.invoke("accounts:create", label),
   createAccountV2: (payload?: { label?: string; icon?: unknown }) =>
@@ -172,6 +187,8 @@ const api: AppApi = {
     ipcRenderer.invoke("dialog:selectDownloadsDirectory") as Promise<string | null>,
   clearHttpCacheAllAccounts: () =>
     ipcRenderer.invoke("storage:clearHttpCacheAll") as Promise<boolean>,
+  registerWhatsAppProtocol: () =>
+    ipcRenderer.invoke("desktop:registerWhatsAppProtocol") as Promise<RegisterProtocolResult>,
 };
 
 contextBridge.exposeInMainWorld("catrip", api);

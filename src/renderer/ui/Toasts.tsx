@@ -50,6 +50,44 @@ const DEFAULT_DURATION_MS = 3500;
 
 const ToastsContext = React.createContext<ToastsApi | null>(null);
 
+const SVG_COMMON = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2.25,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+function ToastKindIcon({ kind }: { kind: ToastKind }) {
+  if (kind === "success") {
+    return (
+      <svg {...SVG_COMMON}>
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+    );
+  }
+  if (kind === "info") {
+    return (
+      <svg {...SVG_COMMON}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...SVG_COMMON}>
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
 export function ToastsProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = React.useState<ToastItem[]>([]);
   const idRef = React.useRef(1);
@@ -132,17 +170,11 @@ function ToastViewport({
   );
 }
 
-const ICON_BY_KIND: Record<ToastKind, string> = {
-  success: "✓",
-  info: "i",
-  error: "!",
-};
-
 function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
   return (
     <div role="status" className={`catrip-toast catrip-toast--${item.kind}`}>
-      <span className="catrip-toast-icon" aria-hidden>
-        {ICON_BY_KIND[item.kind]}
+      <span className="catrip-toast-icon">
+        <ToastKindIcon kind={item.kind} />
       </span>
       <span className="catrip-toast-message">{item.message}</span>
       <button

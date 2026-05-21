@@ -6,6 +6,33 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-05-21
+
+### Añadido
+
+- **Notificaciones**: avisos cuando suben no leídos en **cualquier cuenta** (throttle por cuenta); clic enfoca la ventana y **activa esa cuenta**; opciones **No molestar** y **sonido** en Ajustes.
+- **Estado de sesión por cuenta** (conectada / QR / sin red) en tooltips del rail, menú de bandeja y tooltip SNI.
+- **Actualizaciones**: canal **estable / beta**, changelog resumido en el diálogo de actualización y verificación **SHA-512** del `.deb` descargado.
+- **Linux / Wayland**: **Desktop Actions** en el lanzador (*Abrir*, *Enfocar ventana*, *Nueva cuenta*); botón **Registrar protocolo WhatsApp** en Ajustes; guía ampliada para enlaces `https://wa.me` en el navegador.
+- **Rendimiento**: flags Chromium al arranque (`chromiumLaunch.ts`) — rasterización GPU, VA-API en Linux, límite de procesos del renderer aplicado desde Ajustes; toggle **Refuerzo GPU** y **Evitar suspensión durante videollamada** (`powerSaveBlocker`).
+- **Descargas**: abrir archivos completados con la app predeterminada del sistema (`xdg-open` / portal).
+- **UI**: verde de marca unificado (`#25D366`), `:focus-visible`, switches y campos de formulario, toasts con iconos SVG, blur en overlays; menú contextual del `<select>` legible en tema oscuro (`color-scheme: dark`).
+- Tests unitarios para acciones de lanzador (`launchActions`).
+
+### Cambiado
+
+- **Bandeja**: menú con etiquetas de cuenta (estado + no leídos); tooltip SNI dinámico por cuenta.
+- **Enfoque de ventana** al pulsar notificaciones o segunda instancia: `app.focus({ steal: true })` y pulso breve de always-on-top (mejor en Wayland).
+- Eliminado del menú **Chat** la opción «Abrir WhatsApp Web en el navegador del sistema» (`Ctrl+Shift+O`).
+
+### Corregido
+
+- Desplegables de Ajustes con lista **blanca sobre texto claro** en Linux/Wayland.
+
+### Documentación
+
+- **USAGE.md** y **README.md** actualizados (variables `CATRIP_GPU_BOOST`, `CATRIP_OZONE_PLATFORM`, bandeja, rendimiento, Wayland).
+
 ## [1.3.2] — 2026-05-20
 
 ### Añadido
@@ -145,6 +172,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.4.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.0
 [1.3.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.2
 [1.3.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.1
 [1.3.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.0

@@ -5,7 +5,11 @@ import path from "node:path";
 export type Settings = {
   version: 1;
   performance: {
-    rendererProcessLimit: number; // 0 = default
+    rendererProcessLimit: number; // 0 = default Chromium; >0 requiere reinicio
+    /** Flags extra de GPU al arrancar (VA-API, zero-copy). Requiere reinicio. */
+    gpuBoost: boolean;
+    /** Evita suspensión del sistema durante videollamada (powerSaveBlocker / portal). */
+    inhibitSleepDuringCall: boolean;
   };
   network: {
     proxyEnabled: boolean;
@@ -48,6 +52,10 @@ export type Settings = {
     incomingLinkFixedAccountId: string | null;
     /** Si true, buscar actualizaciones al publicar releases en GitHub (app empaquetada). */
     checkForUpdates: boolean;
+    /** Canal de actualización: `stable` (releases) o `beta` (pre-releases). */
+    updateChannel: "stable" | "beta";
+    /** Tras descargar en WhatsApp Web, abrir con la app predeterminada (xdg-open / portal). */
+    openDownloadsWithDefaultApp: boolean;
   };
   notifications: {
     enabled: boolean;
@@ -55,12 +63,16 @@ export type Settings = {
     showAccountName: boolean;
     /** Mostrar texto detallado (p. ej. contador) en el cuerpo. */
     showPreview: boolean;
+    /** No mostrar notificaciones nativas (badge tray/dock sigue activo). */
+    doNotDisturb: boolean;
+    /** Si false, notificaciones silenciosas (sin sonido del sistema). */
+    playSound: boolean;
   };
 };
 
 const DEFAULTS: Settings = {
   version: 1,
-  performance: { rendererProcessLimit: 3 },
+  performance: { rendererProcessLimit: 3, gpuBoost: false, inhibitSleepDuringCall: true },
   network: { proxyEnabled: false, proxyRules: "" },
   general: {
     startMinimized: false,
@@ -80,8 +92,16 @@ const DEFAULTS: Settings = {
     incomingLinkMode: "auto",
     incomingLinkFixedAccountId: null,
     checkForUpdates: true,
+    updateChannel: "stable",
+    openDownloadsWithDefaultApp: true,
   },
-  notifications: { enabled: true, showAccountName: true, showPreview: true },
+  notifications: {
+    enabled: true,
+    showAccountName: true,
+    showPreview: true,
+    doNotDisturb: false,
+    playSound: true,
+  },
 };
 
 function settingsPath() {
@@ -102,6 +122,15 @@ export function loadSettings(): Settings {
           typeof parsed.performance?.rendererProcessLimit === "number"
             ? parsed.performance.rendererProcessLimit
             : DEFAULTS.performance.rendererProcessLimit,
+        gpuBoost:
+          typeof (parsed.performance as { gpuBoost?: boolean })?.gpuBoost === "boolean"
+            ? (parsed.performance as { gpuBoost: boolean }).gpuBoost
+            : DEFAULTS.performance.gpuBoost,
+        inhibitSleepDuringCall:
+          typeof (parsed.performance as { inhibitSleepDuringCall?: boolean })
+            ?.inhibitSleepDuringCall === "boolean"
+            ? (parsed.performance as { inhibitSleepDuringCall: boolean }).inhibitSleepDuringCall
+            : DEFAULTS.performance.inhibitSleepDuringCall,
       },
       network: {
         proxyEnabled:
@@ -193,6 +222,12 @@ export function loadSettings(): Settings {
           typeof (parsed.general as any)?.checkForUpdates === "boolean"
             ? (parsed.general as any).checkForUpdates
             : DEFAULTS.general.checkForUpdates,
+        updateChannel:
+          (parsed.general as any)?.updateChannel === "beta" ? "beta" : "stable",
+        openDownloadsWithDefaultApp:
+          typeof (parsed.general as any)?.openDownloadsWithDefaultApp === "boolean"
+            ? (parsed.general as any).openDownloadsWithDefaultApp
+            : DEFAULTS.general.openDownloadsWithDefaultApp,
       },
       notifications: {
         enabled:
@@ -207,6 +242,14 @@ export function loadSettings(): Settings {
           typeof (parsed.notifications as any)?.showPreview === "boolean"
             ? (parsed.notifications as any).showPreview
             : DEFAULTS.notifications.showPreview,
+        doNotDisturb:
+          typeof (parsed.notifications as any)?.doNotDisturb === "boolean"
+            ? (parsed.notifications as any).doNotDisturb
+            : DEFAULTS.notifications.doNotDisturb,
+        playSound:
+          typeof (parsed.notifications as any)?.playSound === "boolean"
+            ? (parsed.notifications as any).playSound
+            : DEFAULTS.notifications.playSound,
       },
     };
   } catch {

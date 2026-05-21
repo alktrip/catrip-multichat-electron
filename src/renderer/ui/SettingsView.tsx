@@ -1,13 +1,18 @@
 import React from "react";
 import AccountAvatar from "./AccountAvatar";
 import { Overlay } from "./Overlay";
+import { ToggleRow } from "./primitives";
 import { useToasts } from "./Toasts";
 
 export type SettingsPage = "general" | "accounts" | "notifications" | "network" | "performance";
 
 type Settings = {
   version: 1;
-  performance: { rendererProcessLimit: number };
+  performance: {
+    rendererProcessLimit: number;
+    gpuBoost: boolean;
+    inhibitSleepDuringCall: boolean;
+  };
   network: { proxyEnabled: boolean; proxyRules: string };
   general: {
     startMinimized: boolean;
@@ -24,31 +29,17 @@ type Settings = {
     incomingLinkMode: "auto" | "active" | "fixed";
     incomingLinkFixedAccountId: string | null;
     checkForUpdates: boolean;
+    updateChannel: "stable" | "beta";
+    openDownloadsWithDefaultApp: boolean;
   };
-  notifications: { enabled: boolean; showAccountName: boolean; showPreview: boolean };
+  notifications: {
+    enabled: boolean;
+    showAccountName: boolean;
+    showPreview: boolean;
+    doNotDisturb: boolean;
+    playSound: boolean;
+  };
 };
-
-function ToggleRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0" }}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        style={{ width: 16, height: 16 }}
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
 
 type SidebarButtonProps = {
   active: boolean;
@@ -72,7 +63,7 @@ const SidebarButton = React.forwardRef<HTMLButtonElement, SidebarButtonProps>(
           border: "none",
           borderRadius: 4,
           background: "transparent",
-          color: active ? "#21c063" : "#E1E1E1",
+          color: active ? "var(--catrip-accent)" : "#E1E1E1",
           cursor: active ? "default" : "pointer",
           // Reservamos los 3 px del lado izquierdo siempre para que la
           // tipografía no salte 3 px al activarse: el indicador "viajero"
@@ -367,8 +358,8 @@ export default function SettingsView({
                       style={{
                         borderRadius: 10,
                         padding: "10px 12px",
-                        border: "1px solid rgba(33,192,99,0.45)",
-                        background: "rgba(33,192,99,0.14)",
+                        border: "1px solid var(--catrip-accent-border)",
+                        background: "var(--catrip-accent-soft)",
                         color: "#e8f8ef",
                         cursor: "pointer",
                         fontWeight: 650,
@@ -376,7 +367,7 @@ export default function SettingsView({
                     >
                       Nueva cuenta
                     </button>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    <div className="catrip-text-hint">
                       Renombra y selecciona un ícono por cuenta. El rail usa estos mismos datos.
                     </div>
                   </div>
@@ -430,19 +421,12 @@ export default function SettingsView({
                             {editing ? (
                               <input
                                 type="text"
+                                className="catrip-field"
                                 aria-label="Nombre de la cuenta"
                                 autoFocus
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
-                                style={{
-                                  width: "100%",
-                                  borderRadius: 10,
-                                  padding: "10px 12px",
-                                  border: "1px solid rgba(255,255,255,0.14)",
-                                  background: "rgba(255,255,255,0.06)",
-                                  color: "inherit",
-                                  outline: "none",
-                                }}
+                                style={{ width: "100%" }}
                               />
                             ) : (
                               <div
@@ -456,29 +440,19 @@ export default function SettingsView({
                                 {a.label}
                               </div>
                             )}
-                            <div style={{ fontSize: 12, opacity: 0.65, marginTop: 4 }}>{a.id}</div>
-                            <label
-                              style={{
-                                display: "flex",
-                                gap: 8,
-                                alignItems: "center",
-                                marginTop: 8,
-                                fontSize: 12,
-                                opacity: 0.9,
-                              }}
-                            >
-                              <input
-                                type="checkbox"
+                            <details className="catrip-settings-id">
+                              <summary>Identificador interno</summary>
+                              {a.id}
+                            </details>
+                            <div style={{ marginTop: 4 }}>
+                              <ToggleRow
+                                label="Notificaciones para esta cuenta"
                                 checked={a.notificationsEnabled !== false}
-                                onChange={(e) =>
-                                  void window.catrip.setAccountNotificationsEnabled(
-                                    a.id,
-                                    e.target.checked,
-                                  )
+                                onChange={(v) =>
+                                  void window.catrip.setAccountNotificationsEnabled(a.id, v)
                                 }
                               />
-                              Notificaciones para esta cuenta
-                            </label>
+                            </div>
                           </div>
 
                           <div
@@ -514,8 +488,8 @@ export default function SettingsView({
                                   style={{
                                     borderRadius: 10,
                                     padding: "10px 12px",
-                                    border: "1px solid rgba(33,192,99,0.45)",
-                                    background: "rgba(33,192,99,0.14)",
+                                    border: "1px solid var(--catrip-accent-border)",
+                                    background: "var(--catrip-accent-soft)",
                                     color: "#e8f8ef",
                                     cursor: "pointer",
                                     fontWeight: 650,
@@ -650,11 +624,11 @@ export default function SettingsView({
                                     borderRadius: 12,
                                     border:
                                       a.icon === svg
-                                        ? "1px solid rgba(33,192,99,0.75)"
+                                        ? "1px solid var(--catrip-accent-border-strong)"
                                         : "1px solid rgba(255,255,255,0.12)",
                                     background:
                                       a.icon === svg
-                                        ? "rgba(33,192,99,0.12)"
+                                        ? "var(--catrip-accent-soft)"
                                         : "rgba(255,255,255,0.04)",
                                     cursor: "pointer",
                                     padding: 0,
@@ -679,6 +653,7 @@ export default function SettingsView({
                 <div style={{ opacity: 0.92 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>Escala</div>
                   <select
+                    className="catrip-select"
                     value={String(settings.general.uiScale ?? 1)}
                     onChange={(e) => {
                       const n = Number(e.target.value);
@@ -688,16 +663,7 @@ export default function SettingsView({
                         general: { ...settings.general, uiScale: Math.max(0.75, Math.min(2, n)) },
                       });
                     }}
-                    style={{
-                      borderRadius: 10,
-                      padding: "10px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "inherit",
-                      outline: "none",
-                      minWidth: 220,
-                      marginBottom: 8,
-                    }}
+                    style={{ minWidth: 220, marginBottom: 8 }}
                   >
                     <option value="1">100%</option>
                     <option value="1.1">110%</option>
@@ -706,7 +672,7 @@ export default function SettingsView({
                     <option value="1.75">175%</option>
                     <option value="2">200%</option>
                   </select>
-                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>
+                  <div className="catrip-text-hint" style={{ marginBottom: 10 }}>
                     Afecta la UI y WhatsApp Web. Se aplica al instante.
                   </div>
                   <ToggleRow
@@ -748,11 +714,12 @@ export default function SettingsView({
                   <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
                     Enlaces WhatsApp entrantes
                   </div>
-                  <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 8 }}>
+                  <div className="catrip-text-hint" style={{ marginBottom: 8 }}>
                     Al abrir <code style={{ fontSize: 11 }}>whatsapp://</code> o{" "}
                     <code style={{ fontSize: 11 }}>wa.me</code> desde el sistema.
                   </div>
                   <select
+                    className="catrip-select"
                     value={settings.general.incomingLinkMode ?? "auto"}
                     onChange={(e) => {
                       const mode = e.target.value as "auto" | "active" | "fixed";
@@ -770,16 +737,7 @@ export default function SettingsView({
                         },
                       });
                     }}
-                    style={{
-                      borderRadius: 10,
-                      padding: "10px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "inherit",
-                      outline: "none",
-                      minWidth: 280,
-                      marginBottom: 8,
-                    }}
+                    style={{ minWidth: 280, marginBottom: 8 }}
                   >
                     <option value="auto">Preguntar si hay varias cuentas</option>
                     <option value="active">Siempre la cuenta activa</option>
@@ -787,6 +745,7 @@ export default function SettingsView({
                   </select>
                   {(settings.general.incomingLinkMode ?? "auto") === "fixed" ? (
                     <select
+                      className="catrip-select"
                       value={settings.general.incomingLinkFixedAccountId || ""}
                       onChange={(e) =>
                         update({
@@ -797,16 +756,7 @@ export default function SettingsView({
                           },
                         })
                       }
-                      style={{
-                        borderRadius: 10,
-                        padding: "10px 12px",
-                        border: "1px solid rgba(255,255,255,0.14)",
-                        background: "rgba(255,255,255,0.06)",
-                        color: "inherit",
-                        outline: "none",
-                        minWidth: 280,
-                        marginBottom: 8,
-                      }}
+                      style={{ minWidth: 280, marginBottom: 8 }}
                     >
                       {accounts.length === 0 ? (
                         <option value="">(sin cuentas)</option>
@@ -819,6 +769,58 @@ export default function SettingsView({
                       )}
                     </select>
                   ) : null}
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+                    <button
+                      type="button"
+                      className="catrip-btn"
+                      onClick={() => {
+                        void window.catrip.registerWhatsAppProtocol().then((r) => {
+                          if (r.ok) toasts.success(r.message);
+                          else toasts.error(r.message, { duration: 6000 });
+                        });
+                      }}
+                      style={{
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        border: "1px solid rgba(255,255,255,0.14)",
+                        background: "rgba(255,255,255,0.04)",
+                        color: "inherit",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Registrar como app predeterminada (whatsapp://)
+                    </button>
+                  </div>
+                  <div
+                    className="catrip-text-hint"
+                    style={{ marginBottom: 10, lineHeight: 1.5 }}
+                  >
+                    <strong>whatsapp://</strong> — Tras registrar, el sistema puede abrir enlaces
+                    compatibles directamente en Catrip.
+                    <br />
+                    <strong>https://wa.me en el navegador</strong> — En Wayland/Linux el navegador
+                    no delega HTTPS a apps arbitrarias. Opciones reales:
+                    <ol style={{ margin: "8px 0 0 18px", padding: 0 }}>
+                      <li>
+                        Usar enlaces que redirijan a <code style={{ fontSize: 11 }}>whatsapp://</code>{" "}
+                        (p. ej. desde otra app o marcador).
+                      </li>
+                      <li>
+                        En el navegador: menú del enlace → <em>Abrir con…</em> → Catrip Connect (si
+                        aparece tras registrar).
+                      </li>
+                      <li>
+                        Extensión del navegador que envíe <code style={{ fontSize: 11 }}>wa.me</code> al
+                        protocolo (no incluida en Catrip).
+                      </li>
+                      <li>
+                        Dentro de la app: <kbd>Ctrl+M</kbd> (chat por número) o pegar el enlace si
+                        el sistema lo entrega a Catrip.
+                      </li>
+                    </ol>
+                    También puedes ejecutar en terminal:{" "}
+                    <code style={{ fontSize: 11 }}>npm run register:whatsapp</code>
+                  </div>
                   <ToggleRow
                     label="Buscar actualizaciones al iniciar (GitHub Releases)"
                     checked={settings.general.checkForUpdates !== false}
@@ -829,10 +831,46 @@ export default function SettingsView({
                       })
                     }
                   />
+                  {settings.general.checkForUpdates !== false ? (
+                    <div style={{ padding: "6px 0 10px", opacity: 0.92 }}>
+                      <div style={{ fontSize: 13, marginBottom: 6 }}>Canal de actualización</div>
+                      <select
+                        className="catrip-select"
+                        value={settings.general.updateChannel === "beta" ? "beta" : "stable"}
+                        onChange={(e) =>
+                          update({
+                            ...settings,
+                            general: {
+                              ...settings.general,
+                              updateChannel: e.target.value === "beta" ? "beta" : "stable",
+                            },
+                          })
+                        }
+                        style={{ minWidth: 280 }}
+                      >
+                        <option value="stable">Estable (releases)</option>
+                        <option value="beta">Beta (pre-releases)</option>
+                      </select>
+                      <div className="catrip-text-hint" style={{ marginTop: 8 }}>
+                        El diálogo de actualización incluye un resumen del changelog de GitHub y
+                        verifica SHA-512 del .deb cuando está publicado.
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />
                   <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
                     Descargas
                   </div>
+                  <ToggleRow
+                    label="Abrir archivos descargados con la app predeterminada"
+                    checked={settings.general.openDownloadsWithDefaultApp !== false}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        general: { ...settings.general, openDownloadsWithDefaultApp: v },
+                      })
+                    }
+                  />
                   <ToggleRow
                     label="Preguntar siempre “Guardar como…”"
                     checked={settings.general.downloadsAskSaveAs}
@@ -849,6 +887,7 @@ export default function SettingsView({
                       style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}
                     >
                       <input
+                        className="catrip-field"
                         value={settings.general.downloadsDirectory || ""}
                         placeholder="(usar la carpeta del sistema)"
                         onChange={(e) =>
@@ -860,15 +899,7 @@ export default function SettingsView({
                             },
                           })
                         }
-                        style={{
-                          flex: "1 1 360px",
-                          borderRadius: 10,
-                          padding: "10px 12px",
-                          border: "1px solid rgba(255,255,255,0.14)",
-                          background: "rgba(255,255,255,0.06)",
-                          color: "inherit",
-                          outline: "none",
-                        }}
+                        style={{ flex: "1 1 360px" }}
                       />
                       <button
                         type="button"
@@ -914,7 +945,7 @@ export default function SettingsView({
                         Restablecer
                       </button>
                     </div>
-                    <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+                    <div className="catrip-text-hint" style={{ marginTop: 8 }}>
                       WhatsApp Web controla el nombre del archivo. Si un archivo existe, se generará
                       un nombre alternativo.
                     </div>
@@ -940,7 +971,7 @@ export default function SettingsView({
                       update({ ...settings, general: { ...settings.general, dockUnreadBadge: v } })
                     }
                   />
-                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
+                  <div className="catrip-text-hint" style={{ marginBottom: 8 }}>
                     Suma no leídos de todas las cuentas. Requiere soporte del entorno (GNOME/KDE).
                   </div>
                   <label
@@ -955,6 +986,7 @@ export default function SettingsView({
                     <span>Badge manual (prueba; vacío = automático)</span>
                     <input
                       type="number"
+                      className="catrip-field catrip-field--narrow"
                       min={0}
                       max={999}
                       placeholder="Automático"
@@ -983,14 +1015,6 @@ export default function SettingsView({
                           },
                         });
                       }}
-                      style={{
-                        maxWidth: 120,
-                        padding: "6px 8px",
-                        borderRadius: 4,
-                        border: "1px solid rgba(255,255,255,0.15)",
-                        background: "rgba(0,0,0,0.25)",
-                        color: "#E1E1E1",
-                      }}
                     />
                   </label>
                 </div>
@@ -1005,6 +1029,7 @@ export default function SettingsView({
                   />
                   <div style={{ marginTop: 10, opacity: 0.85 }}>Reglas del proxy</div>
                   <input
+                    className="catrip-field"
                     value={settings.network.proxyRules}
                     onChange={(e) =>
                       update({
@@ -1013,18 +1038,9 @@ export default function SettingsView({
                       })
                     }
                     placeholder='Ej: "http=127.0.0.1:8080;https=127.0.0.1:8080"'
-                    style={{
-                      width: "100%",
-                      marginTop: 6,
-                      borderRadius: 10,
-                      padding: "10px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "inherit",
-                      outline: "none",
-                    }}
+                    style={{ width: "100%", marginTop: 6 }}
                   />
-                  <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
+                  <div className="catrip-text-hint" style={{ marginTop: 8 }}>
                     Se aplica al guardar (no hay botón Apply aún).
                   </div>
                 </div>
@@ -1060,16 +1076,58 @@ export default function SettingsView({
                       })
                     }
                   />
-                  <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
-                    Actualmente las notificaciones nativas se basan en el contador de no leídos.
+                  <ToggleRow
+                    label="No molestar (sin avisos nativos)"
+                    checked={!!settings.notifications.doNotDisturb}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        notifications: { ...settings.notifications, doNotDisturb: v },
+                      })
+                    }
+                  />
+                  <ToggleRow
+                    label="Sonido del sistema en notificaciones"
+                    checked={settings.notifications.playSound !== false}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        notifications: { ...settings.notifications, playSound: v },
+                      })
+                    }
+                  />
+                  <div className="catrip-text-hint" style={{ marginTop: 8 }}>
+                    Aviso cuando suben los no leídos en cualquier cuenta (con límite por cuenta). Al
+                    pulsar la notificación se enfoca la ventana y se activa esa cuenta.
                   </div>
                 </div>
               ) : (
                 <div style={{ opacity: 0.92 }}>
+                  <div className="catrip-text-hint" style={{ marginBottom: 14 }}>
+                    Catrip Connect usa la GPU de Chromium para dibujar la ventana, el rail y cada
+                    cuenta de WhatsApp Web. En Linux la ventana va <strong>opaca</strong> por
+                    defecto (mejor composición). Solo desactiva la GPU si ves pantalla negra:{" "}
+                    <code style={{ fontSize: 11 }}>CATRIP_DISABLE_GPU=1</code>.
+                  </div>
+                  <ToggleRow
+                    label="Refuerzo GPU al arrancar (experimental)"
+                    checked={!!settings.performance.gpuBoost}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        performance: { ...settings.performance, gpuBoost: v },
+                      })
+                    }
+                  />
+                  <div className="catrip-text-hint" style={{ marginBottom: 12 }}>
+                    Activa rasterización reforzada, zero-copy y VA-API ampliado en Linux. Reinicia
+                    la app tras cambiar esta opción o el límite de procesos.
+                  </div>
                   <div style={{ opacity: 0.85, marginBottom: 8 }}>
                     Límite de procesos del renderer
                   </div>
                   <select
+                    className="catrip-select"
                     value={String(settings.performance.rendererProcessLimit)}
                     onChange={(e) =>
                       update({
@@ -1080,14 +1138,6 @@ export default function SettingsView({
                         },
                       })
                     }
-                    style={{
-                      borderRadius: 10,
-                      padding: "10px 12px",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "inherit",
-                      outline: "none",
-                    }}
                   >
                     <option value="0">Predeterminado</option>
                     <option value="1">1</option>
@@ -1096,6 +1146,27 @@ export default function SettingsView({
                     <option value="4">4</option>
                     <option value="6">6</option>
                   </select>
+                  <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                    Más procesos pueden ayudar con varias cuentas abiertas a la vez; consume más RAM.
+                    Valor 0 = política por defecto de Electron.
+                  </div>
+                  <ToggleRow
+                    label="Evitar suspensión durante videollamada"
+                    checked={settings.performance.inhibitSleepDuringCall !== false}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          inhibitSleepDuringCall: v,
+                        },
+                      })
+                    }
+                  />
+                  <div className="catrip-text-hint" style={{ marginBottom: 16 }}>
+                    Usa el bloqueo de energía de Electron (equivalente a portal/systemd-inhibit en
+                    Linux) mientras WhatsApp Web detecta una llamada activa.
+                  </div>
 
                   <div
                     style={{
@@ -1130,7 +1201,9 @@ export default function SettingsView({
                       {cacheBusy ? "Limpiando…" : "Limpiar caché HTTP (todas las cuentas)"}
                     </button>
                     {cacheMsg ? (
-                      <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>{cacheMsg}</div>
+                      <div className="catrip-text-hint" style={{ marginTop: 10 }}>
+                        {cacheMsg}
+                      </div>
                     ) : null}
 
                     <div className="catrip-gradient-divider" style={{ margin: "18px 0" }} />
@@ -1152,10 +1225,10 @@ export default function SettingsView({
                       style={{
                         borderRadius: 10,
                         padding: "10px 16px",
-                        border: "1px solid rgba(33,192,99,0.45)",
+                        border: "1px solid var(--catrip-accent-border)",
                         background: mediaDiagBusy
                           ? "rgba(255,255,255,0.04)"
-                          : "rgba(33,192,99,0.14)",
+                          : "var(--catrip-accent-soft)",
                         color: "#e8f8ef",
                         cursor: mediaDiagBusy ? "wait" : "pointer",
                         fontWeight: 600,
@@ -1184,7 +1257,8 @@ export default function SettingsView({
                       </pre>
                     ) : null}
                     <p
-                      style={{ margin: "12px 0 0", opacity: 0.65, fontSize: 12, lineHeight: 1.45 }}
+                      className="catrip-text-hint"
+                      style={{ margin: "12px 0 0", lineHeight: 1.45 }}
                     >
                       Si{" "}
                       <code style={{ color: "#b8e8cc" }}>decodingInfo_mp4_h264_aac.supported</code>{" "}
@@ -1268,7 +1342,7 @@ export default function SettingsView({
                     margin: "0 0 18px",
                     fontSize: 12,
                     lineHeight: 1.5,
-                    color: "#9aa6a6",
+                    color: "var(--catrip-text-hint)",
                   }}
                 >
                   Si solo quieres dejar de recibir notificaciones, puedes desactivarlas desde la

@@ -10,6 +10,9 @@
  * cubre `.deb` y ejecución directa.
  */
 import { app } from "electron";
+import { applyChromiumLaunchSwitches } from "./chromiumLaunch";
+
+applyChromiumLaunchSwitches(app);
 
 if (process.platform === "linux") {
   if (!process.env.CHROME_DESKTOP) {

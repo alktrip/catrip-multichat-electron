@@ -1,7 +1,22 @@
 import { app, dialog } from "electron";
 import { autoUpdater } from "electron-updater";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import type { Settings } from "./settings";
 
 const E2E_MODE = process.env.CATRIP_E2E === "1";
+
+export type UpdateChannel = "stable" | "beta";
+
+type PendingUpdate = {
+  version: string;
+  changelog: string;
+  filePath: string | null;
+};
+
+let pendingUpdate: PendingUpdate | null = null;
+let getChannel: () => UpdateChannel = () => "stable";
 
 function log(...parts: unknown[]) {
   if (process.env.CATRIP_DEBUG_UPDATER === "1" || !app.isPackaged) {
@@ -9,26 +24,136 @@ function log(...parts: unknown[]) {
   }
 }
 
+function applyChannel(channel: UpdateChannel) {
+  autoUpdater.allowPrerelease = channel === "beta";
+  autoUpdater.channel = channel === "beta" ? "beta" : "latest";
+}
+
+async function fetchGithubReleaseNotes(version: string, channel: UpdateChannel): Promise<string> {
+  const tag = version.startsWith("v") ? version : `v${version}`;
+  const repo = "alktrip/catrip-multichat-electron";
+  try {
+    const url =
+      channel === "beta"
+        ? `https://api.github.com/repos/${repo}/releases?per_page=8`
+        : `https://api.github.com/repos/${repo}/releases/tags/${tag}`;
+    const res = await fetch(url, {
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "CatripConnect" },
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    if (channel === "beta" && Array.isArray(data)) {
+      const hit = data.find((r: { tag_name?: string }) => r?.tag_name === tag);
+      return typeof hit?.body === "string" ? hit.body.trim().slice(0, 1200) : "";
+    }
+    return typeof (data as { body?: string })?.body === "string"
+      ? (data as { body: string }).body.trim().slice(0, 1200)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+function sha512File(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash("sha512");
+    const stream = fs.createReadStream(filePath);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("base64")));
+    stream.on("error", reject);
+  });
+}
+
+async function verifyDownloadedArtifact(
+  filePath: string,
+  expectedSha512: string | undefined,
+): Promise<{ ok: boolean; message: string }> {
+  if (!expectedSha512 || !fs.existsSync(filePath)) {
+    return { ok: true, message: "" };
+  }
+  try {
+    const actual = await sha512File(filePath);
+    if (actual === expectedSha512) {
+      return { ok: true, message: "Integridad verificada (SHA-512)." };
+    }
+    return {
+      ok: false,
+      message: "La suma SHA-512 del archivo descargado no coincide con la publicada en GitHub.",
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 /** Comprueba actualizaciones en GitHub Releases (solo app empaquetada). */
-export function setupAutoUpdater() {
+export function setupAutoUpdater(opts?: { getUpdateChannel?: () => UpdateChannel }) {
   if (!app.isPackaged || E2E_MODE) return;
+
+  if (opts?.getUpdateChannel) getChannel = opts.getUpdateChannel;
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  applyChannel(getChannel());
 
   autoUpdater.on("checking-for-update", () => log("checking"));
-  autoUpdater.on("update-available", (info) => log("available", info?.version));
+  autoUpdater.on("update-available", async (info) => {
+    log("available", info?.version);
+    const version = info?.version ?? "";
+    const changelog =
+      (typeof info?.releaseNotes === "string" ? info.releaseNotes : "") ||
+      (await fetchGithubReleaseNotes(version, getChannel()));
+    pendingUpdate = {
+      version,
+      changelog: changelog || "Sin notas de la versión en GitHub.",
+      filePath: null,
+    };
+  });
   autoUpdater.on("update-not-available", () => log("not available"));
   autoUpdater.on("error", (err) => log("error", err?.message ?? err));
 
-  autoUpdater.on("update-downloaded", (info) => {
-    const version = info?.version ?? "";
+  autoUpdater.on("update-downloaded", async (info) => {
+    const version = info?.version ?? pendingUpdate?.version ?? "";
+    let changelog = pendingUpdate?.changelog ?? "";
+    if (!changelog && version) {
+      changelog = await fetchGithubReleaseNotes(version, getChannel());
+    }
+    if (!changelog) changelog = "Sin notas de la versión.";
+
+    const files = (info as { files?: Array<{ url?: string; sha512?: string }> })?.files ?? [];
+    const deb =
+      files.find((f) => f.url?.endsWith(".deb")) ??
+      files.find((f) => (info as { path?: string }).path?.endsWith?.(".deb"));
+    const filePath =
+      (info as { downloadedFile?: string })?.downloadedFile ??
+      (info as { path?: string })?.path ??
+      null;
+
+    let integrityLine = "";
+    if (filePath && deb?.sha512 && filePath.endsWith(".deb")) {
+      const v = await verifyDownloadedArtifact(filePath, deb.sha512);
+      integrityLine = v.ok ? `\n\n${v.message}` : `\n\n⚠ ${v.message}`;
+      if (!v.ok) {
+        await dialog.showMessageBox({
+          type: "warning",
+          title: "Verificación de descarga",
+          message: "No se pudo verificar el paquete .deb",
+          detail: v.message,
+          buttons: ["Entendido"],
+        });
+      }
+    }
+
+    const detail = `${changelog}${integrityLine}\n\nLa aplicación se reiniciará para aplicar la actualización.`;
+
     void dialog
       .showMessageBox({
         type: "info",
         title: "Actualización disponible",
         message: `Catrip Connect ${version} está listo para instalar.`,
-        detail: "La aplicación se reiniciará para aplicar la actualización.",
+        detail,
         buttons: ["Reiniciar ahora", "Más tarde"],
         defaultId: 0,
         cancelId: 1,
@@ -36,10 +161,16 @@ export function setupAutoUpdater() {
       .then((r) => {
         if (r.response === 0) autoUpdater.quitAndInstall(false, true);
       });
+
+    pendingUpdate = { version, changelog, filePath };
   });
 
-  // Tras el arranque, sin bloquear la UI.
   setTimeout(() => {
+    applyChannel(getChannel());
     void autoUpdater.checkForUpdatesAndNotify().catch((err) => log("check failed", err));
   }, 12_000);
+}
+
+export function refreshUpdaterChannel(channel: UpdateChannel) {
+  applyChannel(channel);
 }

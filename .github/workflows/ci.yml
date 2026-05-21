@@ -63,7 +63,7 @@ jobs:
         run: npm ci
 
       - name: Instalar dependencias de empaquetado (deb/AppImage)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg fakeroot
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg fakeroot python3-pil
 
       - name: Build AppImage
         run: npm run dist:appimage

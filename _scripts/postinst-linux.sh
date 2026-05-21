@@ -44,14 +44,30 @@ Type=Application
 Name=Catrip Connect
 GenericName=Mensajería
 Comment=Cliente multi-cuenta de WhatsApp Web
-Exec="$EXEC_PATH" %u
+Exec="$EXEC_PATH" %U
 Terminal=false
 Icon=catrip-connect
 Categories=Network;Chat;InstantMessaging;
-Keywords=whatsapp;chat;mensajería;multi-cuenta;catrip;
+Keywords=whatsapp;chat;wa.me;catrip;
 MimeType=$MIME;
 StartupWMClass=catrip-connect
 StartupNotify=true
+Actions=Open;Focus;NewAccount;
+
+[Desktop Action Open]
+Name=Abrir Catrip Connect
+Exec="$EXEC_PATH" --catrip-action=open
+Terminal=false
+
+[Desktop Action Focus]
+Name=Enfocar ventana
+Exec="$EXEC_PATH" --catrip-action=focus
+Terminal=false
+
+[Desktop Action NewAccount]
+Name=Nueva cuenta
+Exec="$EXEC_PATH" --catrip-action=new-account
+Terminal=false
 EOF
         chown "$SUDO_USER:$SUDO_USER" "$USER_APPS/$DESKTOP_NAME" 2>/dev/null || true
         chmod 644 "$USER_APPS/$DESKTOP_NAME"

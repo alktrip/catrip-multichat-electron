@@ -9,16 +9,47 @@ function v(sig: string, val: any): Variant {
   return new (dbus as any).Variant(sig, val);
 }
 
+function premultiplyBgra(bitmap: Buffer): void {
+  for (let i = 0; i < bitmap.length; i += 4) {
+    const b = bitmap[i]!;
+    const g = bitmap[i + 1]!;
+    const r = bitmap[i + 2]!;
+    const a = bitmap[i + 3]!;
+    if (a === 255) continue;
+    if (a === 0) {
+      bitmap[i] = 0;
+      bitmap[i + 1] = 0;
+      bitmap[i + 2] = 0;
+      continue;
+    }
+    const f = a / 255;
+    bitmap[i] = Math.round(b * f);
+    bitmap[i + 1] = Math.round(g * f);
+    bitmap[i + 2] = Math.round(r * f);
+  }
+}
+
+function pixmapFromImage(img: Electron.NativeImage, size: number): [number, number, Uint8Array] | null {
+  const resized = img.resize({ width: size, height: size });
+  const source = resized.isEmpty() ? img : resized;
+  const w = Math.max(1, source.getSize().width | 0);
+  const h = Math.max(1, source.getSize().height | 0);
+  const expected = w * h * 4;
+  const bgra = Buffer.from(source.toBitmap());
+  if (bgra.length !== expected) return null;
+  premultiplyBgra(bgra);
+  return [w, h, new Uint8Array(bgra)];
+}
+
 function nativeImageToIconPixmap(img: Electron.NativeImage): Array<[number, number, Uint8Array]> {
-  // `IconPixmap` usa a(iiay) donde `ay` es ARGB32 por pixel.
-  // Importante: ARGB32 en D-Bus se interpreta como uint32 nativo.
-  // En máquinas little-endian (Linux x86_64) el orden en memoria es **BGRA**.
-  // Electron `toBitmap()` ya devuelve **BGRA**, así que NO convertimos.
-  const size = img.getSize();
-  const w = Math.max(1, size.width | 0);
-  const h = Math.max(1, size.height | 0);
-  const bgra = img.toBitmap();
-  return [[w, h, new Uint8Array(bgra)]];
+  // Varios tamaños: GNOME/AppIndicator elige el que encaje en el panel.
+  const pixmaps: Array<[number, number, Uint8Array]> = [];
+  for (const size of [24, 22, 32]) {
+    const pix = pixmapFromImage(img, size);
+    if (pix) pixmaps.push(pix);
+  }
+  if (pixmaps.length > 0) return pixmaps;
+  return fallbackSolidPixmap(24);
 }
 
 function fallbackSolidPixmap(size = 24): Array<[number, number, Uint8Array]> {
@@ -63,7 +94,8 @@ export type LinuxSniTrayHandle = {
 
 export async function createLinuxSniTray(opts: {
   id: string;
-  title: string;
+  /** Texto en tooltip / título SNI (p. ej. resumen de cuentas). */
+  getTitle: () => string;
   getIcon: () => Electron.NativeImage;
   onActivate: () => void;
   onContextMenu?: (x: number, y: number) => void;
@@ -178,7 +210,7 @@ export async function createLinuxSniTray(opts: {
       return opts.id;
     }
     get Title() {
-      return opts.title;
+      return opts.getTitle();
     }
     get Status() {
       return "Active";
@@ -193,7 +225,7 @@ export async function createLinuxSniTray(opts: {
       return "";
     }
     get IconAccessibleDesc() {
-      return opts.title;
+      return opts.getTitle();
     }
 
     get AttentionIconName() {
@@ -222,16 +254,20 @@ export async function createLinuxSniTray(opts: {
       return menuPath;
     }
     get IconPixmap() {
-      const img = safeRaster24(opts.getIcon(), opts.log);
-      let pix = nativeImageToIconPixmap(img);
+      const img = opts.getIcon();
+      if (img.isEmpty()) {
+        opts.log?.("linux-sni IconPixmap empty getIcon, using fallback");
+        return fallbackSolidPixmap(24);
+      }
+      const pix = nativeImageToIconPixmap(img);
       try {
         const [w, h, bytes] = pix[0]!;
-        opts.log?.("linux-sni IconPixmap", { w, h, bytes: bytes.length });
-        if (bytes.length === 0) {
-          pix = fallbackSolidPixmap(24);
-          const [fw, fh, fbytes] = pix[0]!;
-          opts.log?.("linux-sni IconPixmap fallback", { w: fw, h: fh, bytes: fbytes.length });
-        }
+        opts.log?.("linux-sni IconPixmap", {
+          w,
+          h,
+          bytes: bytes.length,
+          variants: pix.length,
+        });
       } catch {
         // ignore
       }
@@ -239,7 +275,7 @@ export async function createLinuxSniTray(opts: {
     }
     get ToolTip() {
       const img = safeRaster24(opts.getIcon(), opts.log);
-      return ["", nativeImageToIconPixmap(img), opts.title, ""] as any;
+      return ["", nativeImageToIconPixmap(img), opts.getTitle(), ""] as any;
     }
 
     Activate(_x: number, _y: number) {

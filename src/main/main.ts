@@ -4,7 +4,6 @@ import {
   BrowserWindow,
   dialog,
   Menu,
-  Notification,
   Tray,
   WebContentsView,
   ipcMain,
@@ -29,9 +28,28 @@ import {
   type Account,
 } from "./accounts";
 import { loadSettings, saveSettings, type Settings } from "./settings";
-import { trayModeForPlatform, trayNativeImage } from "./trayIcon";
+import { applyTrayGreenTint, trayModeForPlatform, trayNativeImage } from "./trayIcon";
 import { createLinuxSniTray, type LinuxSniTrayHandle } from "./linuxSniTray";
-import { setupAutoUpdater } from "./autoUpdater";
+import { setupAutoUpdater, refreshUpdaterChannel } from "./autoUpdater";
+import {
+  ACCOUNT_SESSION_STATUS_LABEL,
+  WHATSAPP_SESSION_STATUS_JS,
+  type AccountSessionStatus,
+} from "./accountSessionStatus";
+import { initNotificationHub, maybeNotifyUnreadIncrease } from "./notificationHub";
+import {
+  buildDesktopEntryContent,
+  openPathWithDefaultApp,
+  registerWhatsAppProtocolForUser,
+  runBundledRegisterScript,
+} from "./desktopIntegration";
+import { parseLaunchAction, type CatripLaunchAction } from "./launchActions";
+import { raiseMainWindow } from "./windowFocus";
+import {
+  startCallSessionGuard,
+  stopCallSessionGuard,
+  WHATSAPP_CALL_ACTIVE_JS,
+} from "./whatsappCallDetect";
 import {
   buildWhatsAppSendUrl,
   extractWhatsAppUrlFromArgv,
@@ -106,10 +124,7 @@ function dbgEmbed(...parts: unknown[]) {
   console.log("[catrip-embed]", new Date().toISOString(), ...parts);
 }
 
-/** Si es `1`, desactiva aceleración por GPU antes de `ready` (algunos drivers Linux/Wayland + ventana transparente dejan WebContentsView en negro). */
-if (process.env.CATRIP_DISABLE_GPU === "1") {
-  app.disableHardwareAcceleration();
-}
+/** Aceleración GPU y flags Chromium: `bootstrap.ts` → `chromiumLaunch.ts` (antes de cargar este módulo). */
 
 /**
  * Empaquetado Linux: el fichero real es `catrip-connect.desktop` (véase
@@ -518,8 +533,10 @@ async function applySettingsToRuntime(s: Settings) {
   }
 
   restartUnreadPolling();
+  restartAccountStatusPolling();
   refreshTrayIcon();
   applyAutostartSettings(s);
+  refreshUpdaterChannel(s.general.updateChannel === "beta" ? "beta" : "stable");
 }
 
 function linuxAutostartDesktopPath(): string {
@@ -601,22 +618,7 @@ function integrateAppImageDesktop() {
   const desktopPath = path.join(dataHome, "applications", "catrip-connect.desktop");
   try {
     fs.mkdirSync(path.dirname(desktopPath), { recursive: true });
-    const desktop = [
-      "[Desktop Entry]",
-      "Type=Application",
-      `Name=${APP_NAME}`,
-      "GenericName=Mensajer\u00eda",
-      "Comment=Cliente multi-cuenta de WhatsApp Web",
-      `Exec="${appExec}" %U`,
-      "Icon=catrip-connect",
-      "Categories=Network;Chat;InstantMessaging;",
-      "Keywords=whatsapp;chat;mensajer\u00eda;multi-cuenta;catrip;",
-      "MimeType=x-scheme-handler/whatsapp;",
-      "StartupWMClass=catrip-connect",
-      "StartupNotify=true",
-      "Terminal=false",
-    ].join("\n");
-    fs.writeFileSync(desktopPath, desktop + "\n", "utf-8");
+    fs.writeFileSync(desktopPath, buildDesktopEntryContent(appExec) + "\n", "utf-8");
   } catch {
     // ignore
   }
@@ -737,7 +739,41 @@ async function disposeTrayBackend(): Promise<void> {
 function requestAppQuit(): void {
   if (isQuitting && trayDisposed) return;
   isQuitting = true;
+  stopCallSessionGuard();
   void disposeTrayBackend().finally(() => app.quit());
+}
+
+let pendingLaunchAction: CatripLaunchAction | null = parseLaunchAction(process.argv);
+
+function applyLaunchAction(action: CatripLaunchAction | null) {
+  if (!action || !viewState) return;
+  switch (action) {
+    case "open":
+    case "focus":
+      focusMainWindow();
+      break;
+    case "new-account":
+      focusMainWindow();
+      createAccountAndNotify();
+      break;
+  }
+}
+
+async function evalAnyWhatsAppCallActive(): Promise<boolean> {
+  const st = viewState;
+  if (!st || E2E_MODE) return false;
+  for (const view of st.viewsById.values()) {
+    if (view.webContents.isDestroyed()) continue;
+    try {
+      const url = view.webContents.getURL();
+      if (!url.includes("web.whatsapp.com")) continue;
+      const active = await view.webContents.executeJavaScript(WHATSAPP_CALL_ACTIVE_JS, true);
+      if (active === true) return true;
+    } catch {
+      // ignore
+    }
+  }
+  return false;
 }
 
 process.on("uncaughtException", (err) => {
@@ -765,6 +801,7 @@ type ViewState = {
   trayUnreadDetected: number;
   /** No leídos detectados por cuenta. Usado por el rail (punto verde de pulso). */
   unreadByAccount: Record<string, number>;
+  accountStatusById: Record<string, AccountSessionStatus>;
 };
 
 type TrayBackend =
@@ -789,7 +826,14 @@ let unreadInactivePollTimer: ReturnType<typeof setInterval> | null = null;
 let unreadTitleDebounce: NodeJS.Timeout | null = null;
 const downloadSessionsHooked = new WeakSet<Electron.Session>();
 const permissionSessionsHooked = new WeakSet<Electron.Session>();
-let lastUnreadNotifyAt = 0;
+let accountStatusPollTimer: ReturnType<typeof setInterval> | null = null;
+
+const STATUS_SHORT: Record<AccountSessionStatus, string> = {
+  loading: "…",
+  qr: "QR",
+  connected: "✓",
+  offline: "!",
+};
 
 function clampTrayBadge(n: number): number {
   return Math.max(0, Math.min(999, Math.floor(n)));
@@ -850,6 +894,94 @@ function schedulePollUnreadFromTitle() {
 /** Evalúa el contador de no leídos en la WebContentsView de una cuenta.
  * Devuelve null si la cuenta no tiene vista, está destruida, o no está en
  * WhatsApp Web (no logueada / página de QR). */
+async function evalAccountSessionStatus(id: string): Promise<AccountSessionStatus | null> {
+  const st = ensureState();
+  const view = st.viewsById.get(id);
+  if (!view || view.webContents.isDestroyed()) return null;
+  try {
+    const raw = await view.webContents.executeJavaScript(WHATSAPP_SESSION_STATUS_JS, true);
+    if (raw === "qr" || raw === "connected" || raw === "offline" || raw === "loading") {
+      return raw;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function broadcastAccountStatusIfChanged(next: Record<string, AccountSessionStatus>) {
+  const st = ensureState();
+  const prev = st.accountStatusById;
+  let changed = Object.keys(prev).length !== Object.keys(next).length;
+  if (!changed) {
+    for (const k of Object.keys(next)) {
+      if (prev[k] !== next[k]) {
+        changed = true;
+        break;
+      }
+    }
+  }
+  if (!changed) return;
+  st.accountStatusById = next;
+  refreshTrayIcon();
+  try {
+    void st.shellView.webContents.send("accounts:statusChanged", next);
+  } catch {
+    // ignore
+  }
+}
+
+async function pollAccountSessionStatuses() {
+  const st = viewState;
+  if (!st) return;
+  const next: Record<string, AccountSessionStatus> = { ...st.accountStatusById };
+  let any = false;
+  for (const a of st.accounts) {
+    const s = await evalAccountSessionStatus(a.id);
+    if (s == null) continue;
+    if (next[a.id] !== s) {
+      next[a.id] = s;
+      any = true;
+    }
+  }
+  if (any) broadcastAccountStatusIfChanged(next);
+}
+
+function restartAccountStatusPolling() {
+  if (accountStatusPollTimer != null) {
+    clearInterval(accountStatusPollTimer);
+    accountStatusPollTimer = null;
+  }
+  if (!viewState) return;
+  accountStatusPollTimer = setInterval(() => {
+    void pollAccountSessionStatuses();
+  }, 25_000);
+  void pollAccountSessionStatuses();
+}
+
+function buildTrayTooltipSummary(): string {
+  const st = ensureState();
+  if (st.accounts.length === 0) return APP_NAME;
+  const parts = st.accounts.map((a) => {
+    const unread = clampTrayBadge(st.unreadByAccount[a.id] ?? 0);
+    const status = st.accountStatusById[a.id] ?? "loading";
+    const mark = STATUS_SHORT[status];
+    const unreadBit = unread > 0 ? ` · ${unread}` : "";
+    return `${a.label} ${mark}${unreadBit}`;
+  });
+  return `${APP_NAME} — ${parts.join(" | ")}`;
+}
+
+function trayAccountMenuLabel(a: Account): string {
+  const st = ensureState();
+  const unread = clampTrayBadge(st.unreadByAccount[a.id] ?? 0);
+  const status = st.accountStatusById[a.id] ?? "loading";
+  const statusLabel = ACCOUNT_SESSION_STATUS_LABEL[status];
+  const unreadBit = unread > 0 ? ` · ${unread} sin leer` : "";
+  const activeBit = a.id === st.activeId ? " ✓" : "";
+  return `${a.label} (${statusLabel}${unreadBit})${activeBit}`;
+}
+
 async function evalUnreadForAccount(id: string): Promise<number | null> {
   const st = ensureState();
   const view = st.viewsById.get(id);
@@ -925,34 +1057,8 @@ async function pollTrayUnreadFromActiveView() {
     const num = await evalUnreadForAccount(id);
     if (num == null) return;
     setUnreadFor(id, num);
-    // Notificación nativa (solo si sube en la cuenta activa; throttle para evitar spam).
-    if (st.settings.notifications.enabled && perAccountNotifs && num > prevActive) {
-      const now = Date.now();
-      if (now - lastUnreadNotifyAt > 8000) {
-        lastUnreadNotifyAt = now;
-        try {
-          const showAcc = !!st.settings.notifications.showAccountName;
-          const showPreview = st.settings.notifications.showPreview !== false;
-          const title = showAcc && acc?.label ? `WhatsApp · ${acc.label}` : "WhatsApp";
-          const body = showPreview
-            ? num === 1
-              ? "Tienes 1 chat sin leer."
-              : `Tienes ${num} chats sin leer.`
-            : "Tienes chats sin leer.";
-          const notif = new Notification({ title, body, silent: false });
-          notif.on("click", () => {
-            try {
-              st.win.show();
-              st.win.focus();
-            } catch {
-              /* ignore */
-            }
-          });
-          notif.show();
-        } catch {
-          /* ignore */
-        }
-      }
+    if (perAccountNotifs) {
+      maybeNotifyUnreadIncrease(id, prevActive, num);
     }
   } catch {
     // ignorar
@@ -970,6 +1076,7 @@ async function pollUnreadInactiveAccounts() {
   let any = false;
   for (const a of st.accounts) {
     if (a.id === activeId) continue;
+    const prevN = clampTrayBadge(next[a.id] ?? 0);
     const n = await evalUnreadForAccount(a.id);
     if (n == null) {
       // Sin medición: limpiar a 0 si había un valor previo (la vista pudo
@@ -981,6 +1088,9 @@ async function pollUnreadInactiveAccounts() {
       continue;
     }
     if ((next[a.id] ?? 0) !== n) {
+      if (a.notificationsEnabled !== false) {
+        maybeNotifyUnreadIncrease(a.id, prevN, n);
+      }
       next[a.id] = n;
       any = true;
     }
@@ -1085,11 +1195,19 @@ function attachDownloadHandlersOnce(ses: Electron.Session) {
       });
     });
     item.once("done", (_e, state) => {
+      const savePath = item.getSavePath();
       dbgEmbed("download done", {
         state,
-        path: item.getSavePath(),
+        path: savePath,
         filename: item.getFilename(),
       });
+      if (
+        state === "completed" &&
+        savePath &&
+        st.settings.general.openDownloadsWithDefaultApp !== false
+      ) {
+        void openPathWithDefaultApp(savePath);
+      }
     });
   });
 }
@@ -1337,7 +1455,7 @@ function buildTrayMenu() {
     {
       label: "Cuentas",
       submenu: st.accounts.map((a) => ({
-        label: a.label,
+        label: trayAccountMenuLabel(a),
         type: "radio" as const,
         checked: a.id === st.activeId,
         click: () => setActiveAccount(a.id),
@@ -1365,14 +1483,6 @@ function buildAppMenu() {
         // ignore
       }
     }
-  };
-
-  const openInSystemBrowser = () => {
-    if (!inBrowser()) return;
-    if (!st.activeId) return;
-    const view = st.viewsById.get(st.activeId);
-    const url = view?.webContents.getURL?.() || WHATSAPP_URL;
-    void shell.openExternal(url);
   };
 
   const toggleFullscreen = () => {
@@ -1428,11 +1538,6 @@ function buildAppMenu() {
       label: "Chat",
       submenu: [
         { label: "Recargar", accelerator: "F5", click: () => reloadPages() },
-        {
-          label: "Abrir WhatsApp Web en el navegador del sistema",
-          accelerator: "Ctrl+Shift+O",
-          click: () => openInSystemBrowser(),
-        },
         { type: "separator" },
         {
           label: "Nuevo chat",
@@ -1650,13 +1755,7 @@ function resolveIncomingLinkAccountId(st: {
 function focusMainWindow() {
   const st = viewState;
   if (!st) return;
-  try {
-    if (st.win.isMinimized()) st.win.restore();
-    st.win.show();
-    st.win.focus();
-  } catch {
-    // ignore
-  }
+  raiseMainWindow(st.win);
 }
 
 function ensureBrowserModeFromMain(st: NonNullable<typeof viewState>) {
@@ -1769,13 +1868,13 @@ function createTray() {
     dbgEmbed("tray backend", { backend: "linux-sni" });
     void createLinuxSniTray({
       id: "catrip-multichat-electron",
-      title: APP_NAME,
+      getTitle: () => buildTrayTooltipSummary(),
       getIcon: () => {
         const img = trayNativeImage(trayModeForPlatform(), getEffectiveTrayBadge());
         // Si por cualquier motivo el SVG->PNG falla, usar el icono principal como fallback.
         if (!img.isEmpty()) return img;
         const appIcon = getAppIconNativeImage();
-        if (!appIcon.isEmpty()) return appIcon;
+        if (!appIcon.isEmpty()) return applyTrayGreenTint(appIcon.resize({ width: 128, height: 128 }));
         // Fallback ultra seguro: PNG 1x1 (evita IconPixmap vacío).
         try {
           return nativeImage.createFromDataURL(
@@ -1966,17 +2065,19 @@ function buildSystray2Menu() {
 
   const accountsItems = st.accounts.map((a) =>
     mk(
-      a.label,
+      trayAccountMenuLabel(a),
       () => setActiveAccount(a.id),
       // systray2 no tiene radio; usamos check para mostrar la activa.
       { checked: a.id === st.activeId },
     ),
   );
 
+  const summary = buildTrayTooltipSummary();
+
   return {
     icon: trayIconPngPath(),
-    title: APP_NAME,
-    tooltip: APP_NAME,
+    title: summary,
+    tooltip: summary,
     items: [
       mk("Mostrar", () => {
         st.win.show();
@@ -2047,14 +2148,19 @@ if (!gotLock) {
   if (launchArgvUrl) pendingIncomingWhatsAppUrl = launchArgvUrl;
 
   app.on("second-instance", (_event, argv) => {
+    const action = parseLaunchAction(argv);
+    if (action) {
+      applyLaunchAction(action);
+      const url = extractWhatsAppUrlFromArgv(argv);
+      if (url) queueOrHandleIncomingWhatsAppUrl(url);
+      return;
+    }
     focusMainWindow();
     const url = extractWhatsAppUrlFromArgv(argv);
     if (url) queueOrHandleIncomingWhatsAppUrl(url);
     else {
       for (const w of BaseWindow.getAllWindows()) {
-        if (w.isMinimized()) w.restore();
-        w.show();
-        w.focus();
+        if (!w.isDestroyed()) raiseMainWindow(w as BrowserWindow);
         return;
       }
     }
@@ -2149,6 +2255,7 @@ app.whenReady().then(() => {
     attachedViewId: null,
     trayUnreadDetected: 0,
     unreadByAccount: {},
+    accountStatusById: {},
   };
 
   const { win, shellView } = createMainWindow();
@@ -2170,7 +2277,31 @@ app.whenReady().then(() => {
 
   flushPendingIncomingWhatsAppUrl();
 
-  if (viewState.settings.general.checkForUpdates) setupAutoUpdater();
+  initNotificationHub({
+    getSettings: () => ensureState().settings,
+    getAccounts: () => ensureState().accounts,
+    focusAndActivateAccount: (accountId) => {
+      focusMainWindow();
+      setActiveAccount(accountId);
+    },
+  });
+
+  if (viewState.settings.general.checkForUpdates) {
+    setupAutoUpdater({
+      getUpdateChannel: () =>
+        ensureState().settings.general.updateChannel === "beta" ? "beta" : "stable",
+    });
+  }
+
+  restartAccountStatusPolling();
+
+  startCallSessionGuard({
+    getEnabled: () => ensureState().settings.performance.inhibitSleepDuringCall !== false,
+    evalAnyCallActive: evalAnyWhatsAppCallActive,
+  });
+
+  applyLaunchAction(pendingLaunchAction);
+  pendingLaunchAction = null;
 
   if (app.isPackaged) registerWhatsAppProtocolLinux();
 
@@ -2577,6 +2708,18 @@ ipcMain.handle("settings:set", (_evt, next: Settings) => {
   st.settings = next;
   saveSettings(next);
   void applySettingsToRuntime(next);
+});
+
+ipcMain.handle("desktop:registerWhatsAppProtocol", async () => {
+  if (app.isPackaged) {
+    return runBundledRegisterScript();
+  }
+  return registerWhatsAppProtocolForUser();
+});
+
+ipcMain.handle("accounts:getStatus", () => {
+  const st = ensureState();
+  return st.accountStatusById;
 });
 
 ipcMain.handle("dialog:selectDownloadsDirectory", async () => {

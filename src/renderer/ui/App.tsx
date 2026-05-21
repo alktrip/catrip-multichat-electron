@@ -11,7 +11,14 @@ import {
   type Command,
   type CommandIcon,
 } from "./commands";
-import type { AppApi } from "../../preload/preload";
+import type { AccountSessionStatus, AppApi } from "../../preload/preload";
+
+const SESSION_STATUS_LABEL: Record<AccountSessionStatus, string> = {
+  loading: "Cargando…",
+  qr: "Esperando QR",
+  connected: "Conectada",
+  offline: "Sin red",
+};
 
 declare global {
   interface Window {
@@ -40,7 +47,7 @@ const modalSectionTitle: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#21c063",
+  color: "var(--catrip-accent)",
 };
 
 /**
@@ -122,8 +129,8 @@ function CommandIconView({ icon, size }: { icon: CommandIcon; size: number }) {
         width: size,
         height: size,
         borderRadius: 8,
-        background: "rgba(33,192,99,0.10)",
-        border: "1px solid rgba(33,192,99,0.30)",
+        background: "var(--catrip-accent-softer)",
+        border: "1px solid rgb(var(--catrip-accent-rgb) / 0.3)",
         color: "#c8f5dc",
         display: "flex",
         alignItems: "center",
@@ -166,6 +173,9 @@ export default function App() {
   >([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [unreadByAccount, setUnreadByAccount] = React.useState<Record<string, number>>({});
+  const [accountStatusById, setAccountStatusById] = React.useState<
+    Record<string, AccountSessionStatus>
+  >({});
   /**
    * Token por cuenta que se incrementa cada vez que su contador de no leídos
    * SUBE. Se usa como `key` del `<span>` del unread-dot para forzar remount
@@ -237,14 +247,20 @@ export default function App() {
       .getAccountsUnread()
       .then((m) => mounted && setUnreadByAccount(m ?? {}))
       .catch(() => {});
+    api
+      .getAccountsStatus()
+      .then((m) => mounted && setAccountStatusById(m ?? {}))
+      .catch(() => {});
 
     const offList = api.onAccountsListChanged((a) => setAccounts(a));
     const offActive = api.onActiveAccountChanged((id) => setActiveId(id));
     const offUnread = api.onAccountsUnreadChanged((m) => setUnreadByAccount(m ?? {}));
+    const offStatus = api.onAccountsStatusChanged((m) => setAccountStatusById(m ?? {}));
     return () => {
       offList();
       offActive();
       offUnread();
+      offStatus();
       mounted = false;
     };
   }, []);
@@ -498,9 +514,6 @@ export default function App() {
             <ShortcutRow keys="Esc">Salir del modo Zen</ShortcutRow>
             <dt style={modalSectionTitle}>Chat</dt>
             <ShortcutRow keys="F5">Recargar WhatsApp Web</ShortcutRow>
-            <ShortcutRow keys="Ctrl+Shift+O">
-              Abrir la URL actual en el navegador del sistema
-            </ShortcutRow>
             <ShortcutRow keys="Ctrl+N">Nuevo chat (WhatsApp Web)</ShortcutRow>
             <ShortcutRow keys="Ctrl+M">Chat por número de teléfono</ShortcutRow>
             <dt style={modalSectionTitle}>Cuentas</dt>
@@ -513,7 +526,7 @@ export default function App() {
               paddingTop: 14,
               borderTop: "1px solid rgba(255,255,255,0.12)",
               fontSize: 12,
-              color: "#9aa6a6",
+              color: "var(--catrip-text-hint)",
               lineHeight: 1.45,
             }}
           >
@@ -554,8 +567,8 @@ export default function App() {
               gap: 8,
               padding: "10px 14px",
               borderRadius: 10,
-              background: "rgba(33,192,99,0.12)",
-              border: "1px solid rgba(33,192,99,0.45)",
+              background: "var(--catrip-accent-soft)",
+              border: "1px solid var(--catrip-accent-border)",
               color: "#c8f5dc",
               fontSize: 14,
               fontWeight: 600,
@@ -563,10 +576,10 @@ export default function App() {
           >
             Versión <span style={{ color: "#ffffff" }}>{version || "…"}</span>
           </div>
-          <p style={{ margin: "18px 0 0", fontSize: 12, color: "#9aa6a6", lineHeight: 1.55 }}>
+          <p className="catrip-text-hint" style={{ margin: "18px 0 0", lineHeight: 1.55 }}>
             Electron + Chromium embebido para reproducir audio y vídeo de forma fiable.
           </p>
-          <p style={{ margin: "12px 0 0", fontSize: 12, color: "#9aa6a6", lineHeight: 1.55 }}>
+          <p className="catrip-text-hint" style={{ margin: "12px 0 0", lineHeight: 1.55 }}>
             Inspirado en ideas del proyecto{" "}
             <a
               href="https://github.com/rafatosta/zapzap"
@@ -621,9 +634,11 @@ export default function App() {
                 const selected = a.id === activeId;
                 const unread = unreadByAccount[a.id] ?? 0;
                 const showUnreadDot = unread > 0 && a.notificationsEnabled !== false;
-                const tooltip = showUnreadDot
-                  ? `${a.label} · ${unread} sin leer · Arrastrar para reordenar`
-                  : `${a.label} · Arrastrar para reordenar · Clic derecho: variante`;
+                const status = accountStatusById[a.id] ?? "loading";
+                const statusLabel = SESSION_STATUS_LABEL[status];
+                const unreadPart =
+                  showUnreadDot ? ` · ${unread} sin leer` : "";
+                const tooltip = `${a.label} · ${statusLabel}${unreadPart} · Arrastrar para reordenar · Clic derecho: variante`;
                 const isDragging = dragId === a.id;
                 const showSlotBefore = dropIndex === idx;
                 const accentRgb = extractAccountAccentRgb(a.icon);
@@ -844,8 +859,8 @@ export default function App() {
                   fontSize: 14,
                   fontWeight: 600,
                   color: "#ffffff",
-                  background: "rgb(33, 192, 99)",
-                  border: "1px solid rgba(33, 192, 99, 0.85)",
+                  background: "var(--catrip-accent)",
+                  border: "1px solid rgb(var(--catrip-accent-rgb) / 0.85)",
                   borderRadius: 12,
                   padding: "12px 22px",
                   cursor: "pointer",
@@ -919,7 +934,9 @@ export default function App() {
             />
             <div ref={paletteListRef} style={{ marginTop: 10, maxHeight: 360, overflow: "auto" }}>
               {filteredCommands.length === 0 ? (
-                <div style={{ opacity: 0.7, padding: "10px 2px" }}>Sin resultados</div>
+                <div className="catrip-text-hint" style={{ padding: "10px 2px" }}>
+                  Sin resultados
+                </div>
               ) : (
                 (() => {
                   const indexByCmd = new Map<string, number>(
@@ -965,9 +982,8 @@ export default function App() {
                                 </span>
                                 {cmd.description ? (
                                   <span
+                                    className="catrip-text-hint"
                                     style={{
-                                      fontSize: 12,
-                                      opacity: 0.7,
                                       whiteSpace: "nowrap",
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
@@ -987,7 +1003,7 @@ export default function App() {
                 })()
               )}
             </div>
-            <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
+            <div className="catrip-text-hint" style={{ marginTop: 8 }}>
               ↑ ↓ para navegar • Intro para ejecutar • Esc para cerrar
             </div>
           </div>
@@ -1005,7 +1021,7 @@ export default function App() {
             <div style={{ opacity: 0.85, fontSize: 13, marginBottom: 10 }}>
               Destino: <strong>{incomingLinkPreview}</strong>
               {incomingLinkHasText ? (
-                <span style={{ display: "block", marginTop: 4, opacity: 0.75 }}>
+                <span className="catrip-text-hint" style={{ display: "block", marginTop: 4 }}>
                   Incluye mensaje precargado.
                 </span>
               ) : null}
@@ -1121,8 +1137,8 @@ export default function App() {
                 style={{
                   borderRadius: 10,
                   padding: "8px 12px",
-                  border: "1px solid rgba(33,192,99,0.50)",
-                  background: "rgba(33,192,99,0.18)",
+                  border: "1px solid rgb(var(--catrip-accent-rgb) / 0.5)",
+                  background: "var(--catrip-accent-muted)",
                   color: "inherit",
                   cursor: "pointer",
                 }}
@@ -1130,7 +1146,7 @@ export default function App() {
                 Aceptar
               </button>
             </div>
-            <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
+            <div className="catrip-text-hint" style={{ marginTop: 8 }}>
               Intro para abrir el chat • Esc para cerrar
             </div>
           </div>
