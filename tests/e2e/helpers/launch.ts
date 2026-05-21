@@ -11,6 +11,48 @@ export interface LaunchedApp {
   userDataDir: string;
 }
 
+export type LaunchOptions = {
+  extraArgs?: string[];
+  settingsPatch?: Record<string, unknown>;
+};
+
+function writeE2ESettings(userDataDir: string, patch?: Record<string, unknown>) {
+  const settingsPath = path.join(userDataDir, "settings.json");
+  const base = {
+    version: 1,
+    performance: { rendererProcessLimit: 3 },
+    network: { proxyEnabled: false, proxyRules: "" },
+    general: {
+      startMinimized: false,
+      showSidebar: true,
+      showMenuBar: false,
+      zen: false,
+      windowBounds: null,
+      windowMaximized: false,
+      downloadsDirectory: null,
+      downloadsAskSaveAs: false,
+      closeToTray: false,
+      autoStart: false,
+      trayUnreadBadge: false,
+      trayBadgeManual: null,
+      uiScale: 1,
+      incomingLinkMode: "active",
+      incomingLinkFixedAccountId: null,
+      checkForUpdates: false,
+    },
+    notifications: { enabled: false, showAccountName: false, showPreview: false },
+  };
+  const merged = patch
+    ? {
+        ...base,
+        ...patch,
+        general: { ...base.general, ...((patch.general as object) || {}) },
+      }
+    : base;
+  fs.mkdirSync(userDataDir, { recursive: true });
+  fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2), "utf-8");
+}
+
 /**
  * Lanza la app de Electron en modo E2E, con un `userData` aislado en /tmp y
  * sin tocar el del usuario real.
@@ -20,11 +62,19 @@ export interface LaunchedApp {
  * - `CATRIP_E2E=1` hace que cada cuenta cargue `about:blank` (sin red) y que
  *   no se cree el icono de bandeja.
  */
-export async function launchApp(): Promise<LaunchedApp> {
+export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedApp> {
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "catrip-e2e-"));
+  writeE2ESettings(userDataDir, options.settingsPatch);
+
+  const args = [
+    ".",
+    `--user-data-dir=${userDataDir}`,
+    "--no-sandbox",
+    ...(options.extraArgs ?? []),
+  ];
 
   const app = await electron.launch({
-    args: [".", `--user-data-dir=${userDataDir}`, "--no-sandbox"],
+    args,
     cwd: projectRoot,
     env: {
       ...process.env,

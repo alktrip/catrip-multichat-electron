@@ -29,6 +29,14 @@ export type AppApi = {
   onActiveAccountChanged: (cb: (id: string | null) => void) => () => void;
   openChatByPhone: (phoneRaw: string) => Promise<void>;
   triggerNewChat: () => Promise<void>;
+  confirmIncomingLinkAccount: (accountId: string) => Promise<boolean>;
+  cancelIncomingLink: () => Promise<boolean>;
+  onPickAccountForIncomingLink: (
+    cb: (payload: { preview: string; hasText?: boolean }) => void,
+  ) => () => void;
+  e2eGetLastIncomingNavigation: () => Promise<{ accountId: string; url: string } | null>;
+  e2eParseWhatsAppUrl: (raw: string) => Promise<unknown>;
+  e2eSimulateIncomingUrl: (raw: string) => Promise<boolean>;
   getSettings: () => Promise<unknown>;
   setSettings: (next: unknown) => Promise<void>;
   setChromeMetrics: (m: { sidebarWidth: number; topHeight: number }) => Promise<void>;
@@ -97,6 +105,22 @@ const api: AppApi = {
   },
   openChatByPhone: (phoneRaw: string) => ipcRenderer.invoke("chat:openByPhone", phoneRaw),
   triggerNewChat: () => ipcRenderer.invoke("chat:triggerNewChat"),
+  confirmIncomingLinkAccount: (accountId: string) =>
+    ipcRenderer.invoke("incomingLink:confirmAccount", accountId),
+  cancelIncomingLink: () => ipcRenderer.invoke("incomingLink:cancel"),
+  onPickAccountForIncomingLink: (cb) => {
+    const listener = (_evt: unknown, payload: { preview: string; hasText?: boolean }) =>
+      cb(payload ?? { preview: "" });
+    ipcRenderer.on("ui:pickAccountForIncomingLink", listener);
+    return () => ipcRenderer.removeListener("ui:pickAccountForIncomingLink", listener);
+  },
+  e2eGetLastIncomingNavigation: () =>
+    ipcRenderer.invoke("e2e:getLastIncomingNavigation") as Promise<{
+      accountId: string;
+      url: string;
+    } | null>,
+  e2eParseWhatsAppUrl: (raw: string) => ipcRenderer.invoke("e2e:parseWhatsAppUrl", raw),
+  e2eSimulateIncomingUrl: (raw: string) => ipcRenderer.invoke("e2e:simulateIncomingUrl", raw),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: (next: unknown) => ipcRenderer.invoke("settings:set", next),
   setChromeMetrics: (m: { sidebarWidth: number; topHeight: number }) =>

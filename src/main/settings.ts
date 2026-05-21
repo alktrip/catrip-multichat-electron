@@ -35,6 +35,17 @@ export type Settings = {
     trayBadgeManual: number | null;
     /** Escala UI (zoom factor). 1.0 = 100%. */
     uiScale: number;
+    /**
+     * Cuenta para enlaces `whatsapp://` / `wa.me` entrantes.
+     * - `auto`: una sola cuenta → esa; varias → diálogo de elección.
+     * - `active`: siempre la cuenta activa.
+     * - `fixed`: usar `incomingLinkFixedAccountId`.
+     */
+    incomingLinkMode: "auto" | "active" | "fixed";
+    /** Id de cuenta cuando `incomingLinkMode` es `fixed`. */
+    incomingLinkFixedAccountId: string | null;
+    /** Si true, buscar actualizaciones al publicar releases en GitHub (app empaquetada). */
+    checkForUpdates: boolean;
   };
   notifications: {
     enabled: boolean;
@@ -63,6 +74,9 @@ const DEFAULTS: Settings = {
     trayUnreadBadge: true,
     trayBadgeManual: null,
     uiScale: 1,
+    incomingLinkMode: "auto",
+    incomingLinkFixedAccountId: null,
+    checkForUpdates: true,
   },
   notifications: { enabled: true, showAccountName: true, showPreview: true },
 };
@@ -159,6 +173,19 @@ export function loadSettings(): Settings {
           if (!Number.isFinite(n)) return DEFAULTS.general.uiScale;
           return Math.max(0.75, Math.min(2, n));
         })(),
+        incomingLinkMode: (() => {
+          const m = (parsed.general as any)?.incomingLinkMode;
+          if (m === "active" || m === "fixed" || m === "auto") return m;
+          return DEFAULTS.general.incomingLinkMode;
+        })(),
+        incomingLinkFixedAccountId:
+          typeof (parsed.general as any)?.incomingLinkFixedAccountId === "string"
+            ? (parsed.general as any).incomingLinkFixedAccountId
+            : DEFAULTS.general.incomingLinkFixedAccountId,
+        checkForUpdates:
+          typeof (parsed.general as any)?.checkForUpdates === "boolean"
+            ? (parsed.general as any).checkForUpdates
+            : DEFAULTS.general.checkForUpdates,
       },
       notifications: {
         enabled:

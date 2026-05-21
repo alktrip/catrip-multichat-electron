@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.2.0**
+**Versión de esta guía:** **1.3.0**
 
 ---
 
@@ -113,11 +113,14 @@ Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o u
 
 **Configuración en Linux (una vez por usuario):**
 
-1. Instala o integra el AppImage (menú de aplicaciones / script de integración).
-2. Abre **Ajustes del sistema → Aplicaciones predeterminadas** (o el diálogo que aparezca al abrir un enlace `whatsapp://`).
-3. Asigna **Catrip Connect** como aplicación para enlaces **WhatsApp** / protocolo `whatsapp`.
+1. Instala el **`.deb`** (el postinst intenta registrar `whatsapp://` automáticamente) o integra el AppImage (`_scripts/install-appimage.sh`).
+2. Si hace falta, abre **Ajustes del sistema → Aplicaciones predeterminadas** y asigna **Catrip Connect** para enlaces **WhatsApp** / protocolo `whatsapp://`.
+3. En **Ajustes → General → Enlaces WhatsApp entrantes** elige:
+   - **Preguntar si hay varias cuentas** (por defecto),
+   - **Siempre la cuenta activa**, o
+   - **Cuenta fija** (lista desplegable).
 
-Los enlaces `https://wa.me/…` abiertos **solo en el navegador** siguen yendo al navegador salvo que la página redirija a `whatsapp://` o elijas “Abrir en la aplicación”. Para esos casos también puedes usar `Ctrl+M` y pegar el número.
+Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `whatsapp://`). Los `https://wa.me/…` abiertos **solo en el navegador** siguen yendo al navegador salvo redirección a `whatsapp://`; también puedes usar `Ctrl+M`.
 
 ---
 
@@ -134,6 +137,7 @@ Los enlaces `https://wa.me/…` abiertos **solo en el navegador** siguen yendo a
 - **Carpeta de descargas** (ruta de texto o selección con el diálogo del sistema)
 - **Escala de interfaz** (100 % a 200 %)
 - **Badge del tray** según no leídos de WhatsApp Web (y opción de badge manual para pruebas)
+- **Enlaces WhatsApp entrantes** (cuenta destino) y **buscar actualizaciones** al iniciar (GitHub Releases)
 
 ### Cuentas
 
@@ -201,5 +205,5 @@ Para instalación, paquetes y detalles del proyecto, consulta el **[README](READ
 
 - **AppImage y FUSE**: muchos AppImage necesitan **libfuse2** en el sistema. Si ves `dlopen(): error loading libfuse.so.2`, instálala (p. ej. `sudo apt install libfuse2` o `libfuse2t64` en Ubuntu reciente). Como alternativa: `./MiApp.AppImage --appimage-extract-and-run`.
 - **Ejecutar desde terminal**: usa la ruta del binario o del fichero `.AppImage`. El sufijo **`%U`** solo pertenece al campo **`Exec=`** del fichero `.desktop`, no lo escribas al lanzar a mano.
-- **Enlaces WhatsApp (desde 1.2.0)**: tras instalar o integrar el AppImage, configura **Catrip Connect** como app predeterminada para el protocolo `whatsapp://` (véase §8). Los `https://wa.me/…` abiertos solo en el navegador no delegan automáticamente a la app.
-- **Sandbox Chromium**: en **1.1.1** y posteriores (**1.2.0**, etc.), los switches (`disable-setuid-sandbox`, clase X11) se aplican en `bootstrap.ts` **antes** de cargar el resto del proceso principal; en **1.1.0** el switch en `main.ts` podía aplicarse demasiado tarde (después de los `import`), de modo que el arranque no reflejaba el cambio.
+- **Enlaces WhatsApp (desde 1.2.0, cuenta destino y texto en 1.3.0)**: tras instalar el `.deb` o integrar el AppImage, configura **Catrip Connect** para `whatsapp://` (véase §8). Los `https://wa.me/…` en el navegador no delegan solos a la app.
+- **Sandbox Chromium**: en **1.1.1** y posteriores (**1.3.0**, etc.), los switches (`disable-setuid-sandbox`, clase X11) se aplican en `bootstrap.ts` **antes** de cargar el resto del proceso principal; en **1.1.0** el switch en `main.ts` podía aplicarse demasiado tarde (después de los `import`), de modo que el arranque no reflejaba el cambio.

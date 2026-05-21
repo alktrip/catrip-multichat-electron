@@ -20,6 +20,9 @@ type Settings = {
     trayUnreadBadge: boolean;
     trayBadgeManual: number | null;
     uiScale: number;
+    incomingLinkMode: "auto" | "active" | "fixed";
+    incomingLinkFixedAccountId: string | null;
+    checkForUpdates: boolean;
   };
   notifications: { enabled: boolean; showAccountName: boolean; showPreview: boolean };
 };
@@ -738,6 +741,91 @@ export default function SettingsView({
                     checked={settings.general.autoStart}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, autoStart: v } })
+                    }
+                  />
+                  <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
+                    Enlaces WhatsApp entrantes
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 8 }}>
+                    Al abrir <code style={{ fontSize: 11 }}>whatsapp://</code> o{" "}
+                    <code style={{ fontSize: 11 }}>wa.me</code> desde el sistema.
+                  </div>
+                  <select
+                    value={settings.general.incomingLinkMode ?? "auto"}
+                    onChange={(e) => {
+                      const mode = e.target.value as "auto" | "active" | "fixed";
+                      update({
+                        ...settings,
+                        general: {
+                          ...settings.general,
+                          incomingLinkMode: mode,
+                          incomingLinkFixedAccountId:
+                            mode === "fixed"
+                              ? settings.general.incomingLinkFixedAccountId ||
+                                accounts[0]?.id ||
+                                null
+                              : settings.general.incomingLinkFixedAccountId,
+                        },
+                      });
+                    }}
+                    style={{
+                      borderRadius: 10,
+                      padding: "10px 12px",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "inherit",
+                      outline: "none",
+                      minWidth: 280,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <option value="auto">Preguntar si hay varias cuentas</option>
+                    <option value="active">Siempre la cuenta activa</option>
+                    <option value="fixed">Cuenta fija</option>
+                  </select>
+                  {(settings.general.incomingLinkMode ?? "auto") === "fixed" ? (
+                    <select
+                      value={settings.general.incomingLinkFixedAccountId || ""}
+                      onChange={(e) =>
+                        update({
+                          ...settings,
+                          general: {
+                            ...settings.general,
+                            incomingLinkFixedAccountId: e.target.value || null,
+                          },
+                        })
+                      }
+                      style={{
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        border: "1px solid rgba(255,255,255,0.14)",
+                        background: "rgba(255,255,255,0.06)",
+                        color: "inherit",
+                        outline: "none",
+                        minWidth: 280,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {accounts.length === 0 ? (
+                        <option value="">(sin cuentas)</option>
+                      ) : (
+                        accounts.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  ) : null}
+                  <ToggleRow
+                    label="Buscar actualizaciones al iniciar (GitHub Releases)"
+                    checked={settings.general.checkForUpdates !== false}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        general: { ...settings.general, checkForUpdates: v },
+                      })
                     }
                   />
                   <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />

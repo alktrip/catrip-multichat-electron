@@ -31,6 +31,15 @@ import {
 import { loadSettings, saveSettings, type Settings } from "./settings";
 import { trayModeForPlatform, trayNativeImage } from "./trayIcon";
 import { createLinuxSniTray, type LinuxSniTrayHandle } from "./linuxSniTray";
+import { setupAutoUpdater } from "./autoUpdater";
+import {
+  buildWhatsAppSendUrl,
+  extractWhatsAppUrlFromArgv,
+  parseWhatsAppIncomingUrl,
+  resolveTargetUrl,
+  normalizeE164Digits,
+  type WhatsAppIncomingLink,
+} from "./whatsappLinks";
 
 // Linux (GNOME/Wayland): `Tray` de Electron puede registrar `chrome_status_icon_1` sin IconPixmap,
 // lo que acaba en placeholder (“...”). `systray2` usa un binario Go y evita ese camino.
@@ -147,7 +156,6 @@ if (process.platform === "linux") {
  */
 const APP_NAME = "Catrip Connect";
 const WHATSAPP_URL = "https://web.whatsapp.com/";
-const WHATSAPP_SEND_URL = "https://web.whatsapp.com/send?phone=";
 
 // Modo de pruebas E2E (Playwright). Cuando está activo:
 // - cada cuenta carga `about:blank` en lugar de WhatsApp Web (sin red, instantáneo).
@@ -1505,81 +1513,30 @@ function setActiveAccount(id: string) {
   void pollTrayUnreadFromActiveView();
 }
 
-function normalizeE164Digits(input: string): string | null {
-  const raw = (input || "").trim();
-  if (!raw) return null;
-  let digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.length < 9 || digits.length > 15) return null;
-  return digits;
-}
-
-type WhatsAppIncomingLink =
-  | { kind: "phone"; digits: string }
-  | { kind: "webSend"; url: string };
-
-/** Enlace entrante (protocolo `whatsapp://`, `wa.me`, API/Web) → teléfono o URL de envío. */
-function parseWhatsAppIncomingUrl(raw: string): WhatsAppIncomingLink | null {
-  const s = (raw || "").trim();
-  if (!s) return null;
-  let url: URL;
-  try {
-    url = new URL(s);
-  } catch {
-    return null;
-  }
-  const host = url.hostname.replace(/^www\./i, "").toLowerCase();
-  const proto = url.protocol.replace(/:$/, "").toLowerCase();
-
-  if (proto === "whatsapp") {
-    const phone =
-      url.searchParams.get("phone") ||
-      url.pathname.replace(/^\/+/, "").split("/")[0] ||
-      "";
-    const digits = normalizeE164Digits(phone);
-    if (digits) return { kind: "phone", digits };
-    return null;
-  }
-
-  if (host === "wa.me" || host === "wa.link") {
-    const seg = url.pathname.replace(/^\/+/, "").split("/")[0] || "";
-    const digits = normalizeE164Digits(seg);
-    if (digits) return { kind: "phone", digits };
-    return null;
-  }
-
-  if (host === "api.whatsapp.com" || host === "web.whatsapp.com") {
-    const phone = url.searchParams.get("phone");
-    if (phone) {
-      const digits = normalizeE164Digits(phone);
-      if (digits) return { kind: "phone", digits };
-    }
-    if (host === "web.whatsapp.com" && /^\/send\b/i.test(url.pathname)) {
-      return { kind: "webSend", url: url.toString() };
-    }
-  }
-
-  return null;
-}
-
-function extractWhatsAppUrlFromArgv(argv: string[]): string | null {
-  for (let i = argv.length - 1; i >= 0; i--) {
-    const a = argv[i];
-    if (!a || a.startsWith("-")) continue;
-    if (
-      /^whatsapp:/i.test(a) ||
-      /wa\.me/i.test(a) ||
-      /wa\.link/i.test(a) ||
-      /web\.whatsapp\.com/i.test(a) ||
-      /api\.whatsapp\.com/i.test(a)
-    ) {
-      return a;
-    }
-  }
-  return null;
-}
-
 let pendingIncomingWhatsAppUrl: string | null = null;
+let pendingIncomingPicker: { raw: string; link: WhatsAppIncomingLink } | null = null;
+let e2eLastIncomingNavigation: { accountId: string; url: string } | null = null;
+
+type IncomingLinkAccountResolution = "pick" | string | null;
+
+function resolveIncomingLinkAccountId(st: {
+  accounts: Account[];
+  activeId: string | null;
+  settings: Settings;
+}): IncomingLinkAccountResolution {
+  const g = st.settings.general;
+  if (g.incomingLinkMode === "fixed") {
+    const id = g.incomingLinkFixedAccountId;
+    if (id && st.accounts.some((a) => a.id === id)) return id;
+    return st.activeId ?? (st.accounts[0]?.id ?? null);
+  }
+  if (g.incomingLinkMode === "active") {
+    return st.activeId ?? (st.accounts[0]?.id ?? null);
+  }
+  if (st.accounts.length === 1) return st.accounts[0].id;
+  if (st.accounts.length > 1) return "pick";
+  return st.activeId ?? null;
+}
 
 function focusMainWindow() {
   const st = viewState;
@@ -1603,18 +1560,19 @@ function ensureBrowserModeFromMain(st: NonNullable<typeof viewState>) {
   layoutActiveView();
 }
 
-function loadWhatsAppIncomingInActiveView(link: WhatsAppIncomingLink) {
+function loadWhatsAppIncomingInAccount(accountId: string, link: WhatsAppIncomingLink) {
   const st = ensureState();
-  const id = st.activeId;
-  if (!id) return;
+  if (!st.accounts.some((a) => a.id === accountId)) return;
+  const target = resolveTargetUrl(link);
+  e2eLastIncomingNavigation = { accountId, url: target };
   focusMainWindow();
   ensureBrowserModeFromMain(st);
-  attachBrowserViewForAccount(id);
-  const view = ensureViewForAccount(id);
-  const target =
-    link.kind === "phone" ? `${WHATSAPP_SEND_URL}${link.digits}` : link.url;
+  if (st.activeId !== accountId) setActiveAccount(accountId);
+  const view = ensureViewForAccount(accountId);
   void view.webContents.loadURL(target);
-  dbgEmbed("loadWhatsAppIncomingInActiveView", { accountId: id, link, target });
+  if (!E2E_MODE) attachBrowserViewForAccount(accountId);
+  else layoutActiveView();
+  dbgEmbed("loadWhatsAppIncomingInAccount", { accountId, link, target, e2e: E2E_MODE });
 }
 
 function queueOrHandleIncomingWhatsAppUrl(raw: string) {
@@ -1625,7 +1583,19 @@ function queueOrHandleIncomingWhatsAppUrl(raw: string) {
     dbgEmbed("queue incoming WhatsApp URL (app not ready)", { raw });
     return;
   }
-  loadWhatsAppIncomingInActiveView(link);
+  const st = ensureState();
+  const target = resolveIncomingLinkAccountId(st);
+  if (target === "pick") {
+    pendingIncomingPicker = { raw, link };
+    void st.shellView.webContents.send("ui:pickAccountForIncomingLink", {
+      preview: link.kind === "phone" ? `+${link.digits}` : raw,
+      hasText: link.kind === "phone" && !!link.text,
+    });
+    focusMainWindow();
+    return;
+  }
+  if (!target) return;
+  loadWhatsAppIncomingInAccount(target, link);
 }
 
 function flushPendingIncomingWhatsAppUrl() {
@@ -1663,7 +1633,7 @@ function openChatByPhone(phoneRaw: string) {
   if (st.chrome.mode !== "browser") return;
   attachBrowserViewForAccount(id);
   const view = ensureViewForAccount(id);
-  void view.webContents.loadURL(`${WHATSAPP_SEND_URL}${digits}`);
+  void view.webContents.loadURL(buildWhatsAppSendUrl(digits));
 }
 
 function triggerNewChatInActiveView() {
@@ -2086,6 +2056,8 @@ app.whenReady().then(() => {
 
   flushPendingIncomingWhatsAppUrl();
 
+  if (viewState.settings.general.checkForUpdates) setupAutoUpdater();
+
   // Notificar Zen inicial al renderer (para que el rail se oculte si procede).
   void viewState.shellView.webContents.send("ui:zenChanged", viewState.chrome.zen);
 
@@ -2451,6 +2423,30 @@ ipcMain.handle("chat:openByPhone", (_evt, phoneRaw: string) => {
 ipcMain.handle("chat:triggerNewChat", () => {
   triggerNewChatInActiveView();
 });
+
+ipcMain.handle("incomingLink:confirmAccount", (_evt, accountId: string) => {
+  const pending = pendingIncomingPicker;
+  if (!pending || typeof accountId !== "string" || !accountId.trim()) return false;
+  pendingIncomingPicker = null;
+  loadWhatsAppIncomingInAccount(accountId.trim(), pending.link);
+  return true;
+});
+
+ipcMain.handle("incomingLink:cancel", () => {
+  pendingIncomingPicker = null;
+  return true;
+});
+
+if (E2E_MODE) {
+  ipcMain.handle("e2e:getLastIncomingNavigation", () => e2eLastIncomingNavigation);
+  ipcMain.handle("e2e:parseWhatsAppUrl", (_evt, raw: string) =>
+    parseWhatsAppIncomingUrl(typeof raw === "string" ? raw : ""),
+  );
+  ipcMain.handle("e2e:simulateIncomingUrl", (_evt, raw: string) => {
+    queueOrHandleIncomingWhatsAppUrl(typeof raw === "string" ? raw : "");
+    return true;
+  });
+}
 
 ipcMain.handle("settings:get", () => {
   const st = ensureState();

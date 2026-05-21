@@ -4,6 +4,19 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.3.0] — 2026-05-21
+
+### Añadido
+
+- **Actualizaciones automáticas** desde GitHub Releases (`electron-updater`), activables en Ajustes → General.
+- **Enlaces entrantes**: mensaje precargado (`?text=`), elección de cuenta (automático / activa / fija) y diálogo si hay varias cuentas.
+- **CI** en cada push/PR (lint, formato, typecheck, build, tests unitarios y E2E).
+- **Tests E2E** del protocolo y parser de enlaces WhatsApp (`src/main/whatsappLinks.ts`).
+
+### Cambiado
+
+- **postinst (.deb)**: registra `Catrip Connect` como manejador predeterminado de `whatsapp://` vía `xdg-mime`.
+
 ## [1.2.0] — 2026-05-20
 
 ### Añadido
@@ -111,6 +124,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.3.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.0
 [1.2.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.2.0
 [1.1.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.2
 [1.1.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.1

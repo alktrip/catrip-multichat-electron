@@ -198,6 +198,9 @@ export default function App() {
   const [phoneOpen, setPhoneOpen] = React.useState(false);
   const [phoneValue, setPhoneValue] = React.useState("+");
   const phoneInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [incomingLinkOpen, setIncomingLinkOpen] = React.useState(false);
+  const [incomingLinkPreview, setIncomingLinkPreview] = React.useState("");
+  const [incomingLinkHasText, setIncomingLinkHasText] = React.useState(false);
   const sidebarWidthPx = 72;
   const [zen, setZen] = React.useState(false);
   const [mode, setMode] = React.useState<"browser" | "settings">("browser");
@@ -283,12 +286,20 @@ export default function App() {
     });
     const offShortcuts = window.catrip.onOpenShortcutsHelp(() => setShortcutsOpen(true));
     const offAbout = window.catrip.onOpenAbout(() => setAboutOpen(true));
+    const offIncoming = window.catrip.onPickAccountForIncomingLink((payload) => {
+      setIncomingLinkPreview(payload.preview || "");
+      setIncomingLinkHasText(!!payload.hasText);
+      setIncomingLinkOpen(true);
+      setQuickOpen(false);
+      setPhoneOpen(false);
+    });
     return () => {
       offQuick();
       offPhone();
       offZen();
       offShortcuts();
       offAbout();
+      offIncoming();
     };
   }, []);
 
@@ -444,7 +455,8 @@ export default function App() {
       void window.catrip.setZenMode(false);
     }
     const modalBlocking =
-      mode === "browser" && (quickOpen || phoneOpen || shortcutsOpen || aboutOpen);
+      mode === "browser" &&
+      (quickOpen || phoneOpen || incomingLinkOpen || shortcutsOpen || aboutOpen);
     if (import.meta.env.DEV) {
       console.log("[catrip-embed-renderer]", "setMode+modal", { mode, modalBlocking });
     }
@@ -452,7 +464,7 @@ export default function App() {
       await window.catrip.setMode(mode);
       await window.catrip.setRendererModalOpen(modalBlocking);
     })();
-  }, [mode, quickOpen, phoneOpen, shortcutsOpen, aboutOpen, zen]);
+  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, zen]);
 
   const sidebarAllowed = settings?.general?.showSidebar !== false;
 
@@ -977,6 +989,75 @@ export default function App() {
             </div>
             <div style={{ opacity: 0.7, fontSize: 12, marginTop: 8 }}>
               ↑ ↓ para navegar • Intro para ejecutar • Esc para cerrar
+            </div>
+          </div>
+        </Overlay>
+
+        <Overlay
+          open={incomingLinkOpen}
+          onClose={() => {
+            setIncomingLinkOpen(false);
+            void window.catrip.cancelIncomingLink();
+          }}
+        >
+          <div style={{ padding: 12, minWidth: 320 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Abrir enlace de WhatsApp</div>
+            <div style={{ opacity: 0.85, fontSize: 13, marginBottom: 10 }}>
+              Destino: <strong>{incomingLinkPreview}</strong>
+              {incomingLinkHasText ? (
+                <span style={{ display: "block", marginTop: 4, opacity: 0.75 }}>
+                  Incluye mensaje precargado.
+                </span>
+              ) : null}
+            </div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>Elige la cuenta:</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {accounts.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  className="catrip-btn"
+                  onClick={() => {
+                    setIncomingLinkOpen(false);
+                    void window.catrip.confirmIncomingLinkAccount(a.id);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "inherit",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <AccountAvatar icon={a.icon} labelFallback={a.label} size={36} />
+                  <span>{a.label}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+              <button
+                type="button"
+                className="catrip-btn"
+                onClick={() => {
+                  setIncomingLinkOpen(false);
+                  void window.catrip.cancelIncomingLink();
+                }}
+                style={{
+                  borderRadius: 10,
+                  padding: "8px 12px",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.04)",
+                  color: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </Overlay>

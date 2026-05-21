@@ -3,7 +3,7 @@
   "desktopName": "catrip-connect.desktop",
   "productName": "catrip_multichat_electron",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Catrip Connect — cliente multi-cuenta de WhatsApp Web construido sobre Electron",
   "homepage": "https://github.com/alktrip/catrip-multichat-electron",
   "license": "MIT",
@@ -32,6 +32,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "pretest:e2e": "npm run build",
+    "test:unit": "npm run build:main && node --test tests/unit/whatsapp-links.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
   },
@@ -60,7 +61,8 @@
     "dbus-next": "^0.10.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "systray2": "^2.1.4"
+    "systray2": "^2.1.4",
+    "electron-updater": "^6.8.3"
   },
   "build": {
     "afterPack": "_scripts/after-pack-linux.js",
@@ -80,6 +82,11 @@
         "schemes": ["whatsapp"]
       }
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "alktrip",
+      "repo": "catrip-multichat-electron"
+    },
     "directories": {
       "buildResources": "assets",
       "output": "release"
