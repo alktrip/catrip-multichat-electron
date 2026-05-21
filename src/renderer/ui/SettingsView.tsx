@@ -18,6 +18,7 @@ type Settings = {
     closeToTray: boolean;
     autoStart: boolean;
     trayUnreadBadge: boolean;
+    dockUnreadBadge: boolean;
     trayBadgeManual: number | null;
     uiScale: number;
     incomingLinkMode: "auto" | "active" | "fixed";
@@ -922,9 +923,26 @@ export default function SettingsView({
                     label="Badge del tray según WhatsApp Web (no leídos)"
                     checked={settings.general.trayUnreadBadge}
                     onChange={(v) =>
-                      update({ ...settings, general: { ...settings.general, trayUnreadBadge: v } })
+                      update({
+                        ...settings,
+                        general: {
+                          ...settings.general,
+                          trayUnreadBadge: v,
+                          dockUnreadBadge: v ? settings.general.dockUnreadBadge : false,
+                        },
+                      })
                     }
                   />
+                  <ToggleRow
+                    label="Badge en el icono del dock / lanzador (Linux)"
+                    checked={settings.general.dockUnreadBadge !== false}
+                    onChange={(v) =>
+                      update({ ...settings, general: { ...settings.general, dockUnreadBadge: v } })
+                    }
+                  />
+                  <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
+                    Suma no leídos de todas las cuentas. Requiere soporte del entorno (GNOME/KDE).
+                  </div>
                   <label
                     style={{
                       display: "flex",

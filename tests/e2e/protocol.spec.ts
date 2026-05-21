@@ -57,6 +57,33 @@ test.describe("enlaces WhatsApp entrantes", () => {
     }
   });
 
+  test("invitación a grupo chat.whatsapp.com", async () => {
+    const launched = await launchApp({
+      settingsPatch: { general: { incomingLinkMode: "active" } },
+    });
+    try {
+      const { shell } = launched;
+      await expect(shell.locator(".catrip-rail-account-btn").first()).toBeVisible({
+        timeout: 15_000,
+      });
+      await shell.evaluate(async () => {
+        await window.catrip.e2eSimulateIncomingUrl(
+          "https://chat.whatsapp.com/InviteE2EGroup99",
+        );
+      });
+      await expect
+        .poll(
+          async () => shell.evaluate(async () => window.catrip.e2eGetLastIncomingNavigation()),
+          { timeout: 10_000 },
+        )
+        .toMatchObject({
+          url: expect.stringMatching(/web\.whatsapp\.com\/accept\?code=InviteE2EGroup99/),
+        });
+    } finally {
+      await closeApp(launched);
+    }
+  });
+
   test("modo fixed abre en la cuenta configurada", async () => {
     const launched = await launchApp({
       settingsPatch: { general: { incomingLinkMode: "fixed" } },

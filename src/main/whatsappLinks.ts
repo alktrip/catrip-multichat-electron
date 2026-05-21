@@ -2,7 +2,15 @@ export const WHATSAPP_SEND_URL = "https://web.whatsapp.com/send?phone=";
 
 export type WhatsAppIncomingLink =
   | { kind: "phone"; digits: string; text?: string }
-  | { kind: "webSend"; url: string };
+  | { kind: "webSend"; url: string }
+  | { kind: "groupInvite"; url: string };
+
+const GROUP_INVITE_CODE_RE = /^[A-Za-z0-9_-]{8,256}$/;
+
+export function buildGroupInviteWebUrl(inviteCode: string): string {
+  const code = (inviteCode || "").trim();
+  return `https://web.whatsapp.com/accept?code=${encodeURIComponent(code)}`;
+}
 
 export function normalizeE164Digits(input: string): string | null {
   const raw = (input || "").trim();
@@ -29,6 +37,10 @@ export function parseWhatsAppIncomingUrl(raw: string): WhatsAppIncomingLink | nu
   const textParam = url.searchParams.get("text")?.trim() || undefined;
 
   if (proto === "whatsapp") {
+    const inviteCode = url.searchParams.get("code")?.trim() || "";
+    if (GROUP_INVITE_CODE_RE.test(inviteCode)) {
+      return { kind: "groupInvite", url: buildGroupInviteWebUrl(inviteCode) };
+    }
     const phone =
       url.searchParams.get("phone") ||
       url.pathname.replace(/^\/+/, "").split("/")[0] ||
@@ -45,14 +57,31 @@ export function parseWhatsAppIncomingUrl(raw: string): WhatsAppIncomingLink | nu
     return null;
   }
 
+  if (host === "chat.whatsapp.com") {
+    const code = url.pathname.replace(/^\/+/, "").split("/")[0] || "";
+    if (GROUP_INVITE_CODE_RE.test(code)) {
+      return { kind: "groupInvite", url: buildGroupInviteWebUrl(code) };
+    }
+    return null;
+  }
+
   if (host === "api.whatsapp.com" || host === "web.whatsapp.com") {
     const phone = url.searchParams.get("phone");
     if (phone) {
       const digits = normalizeE164Digits(phone);
       if (digits) return { kind: "phone", digits, text: textParam };
     }
+    const inviteCode =
+      url.searchParams.get("code")?.trim() ||
+      (/\/invite\/?/i.test(url.pathname) ? url.pathname.split("/").pop() || "" : "");
+    if (GROUP_INVITE_CODE_RE.test(inviteCode)) {
+      return { kind: "groupInvite", url: buildGroupInviteWebUrl(inviteCode) };
+    }
     if (host === "web.whatsapp.com" && /^\/send\b/i.test(url.pathname)) {
       return { kind: "webSend", url: url.toString() };
+    }
+    if (host === "web.whatsapp.com" && /^\/accept\b/i.test(url.pathname) && inviteCode) {
+      return { kind: "groupInvite", url: url.toString() };
     }
   }
 
@@ -66,7 +95,7 @@ export function buildWhatsAppSendUrl(digits: string, text?: string): string {
 }
 
 export function resolveTargetUrl(link: WhatsAppIncomingLink): string {
-  if (link.kind === "webSend") return link.url;
+  if (link.kind === "webSend" || link.kind === "groupInvite") return link.url;
   return buildWhatsAppSendUrl(link.digits, link.text);
 }
 
@@ -79,7 +108,8 @@ export function extractWhatsAppUrlFromArgv(argv: string[]): string | null {
       /wa\.me/i.test(a) ||
       /wa\.link/i.test(a) ||
       /web\.whatsapp\.com/i.test(a) ||
-      /api\.whatsapp\.com/i.test(a)
+      /api\.whatsapp\.com/i.test(a) ||
+      /chat\.whatsapp\.com/i.test(a)
     ) {
       return a;
     }

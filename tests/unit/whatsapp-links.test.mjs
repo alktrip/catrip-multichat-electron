@@ -38,6 +38,22 @@ test("normalizeE164Digits rechaza números cortos", () => {
   assert.equal(normalizeE164Digits("+34600111222"), "34600111222");
 });
 
+test("parse chat.whatsapp.com como invitación a grupo", () => {
+  const link = parseWhatsAppIncomingUrl("https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQr");
+  assert.equal(link?.kind, "groupInvite");
+  if (link?.kind === "groupInvite") {
+    assert.ok(link.url.includes("web.whatsapp.com/accept"));
+    assert.ok(link.url.includes("AbCdEfGhIjKlMnOpQr"));
+  }
+});
+
+test("parse web.whatsapp.com/accept?code=", () => {
+  const link = parseWhatsAppIncomingUrl(
+    "https://web.whatsapp.com/accept?code=InviteCode123",
+  );
+  assert.equal(link?.kind, "groupInvite");
+});
+
 test("extractWhatsAppUrlFromArgv toma el último enlace", () => {
   const url = extractWhatsAppUrlFromArgv([
     "electron",

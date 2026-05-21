@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.3.1**
+**Versión de esta guía:** **1.3.2**
 
 ---
 
@@ -110,6 +110,7 @@ Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o u
 - `https://wa.me/…`
 - `https://api.whatsapp.com/send?phone=…`
 - `https://web.whatsapp.com/send?phone=…`
+- `https://chat.whatsapp.com/…` (invitación a grupo)
 
 **Configuración en Linux (una vez por usuario):**
 
@@ -145,7 +146,7 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 - **Preguntar siempre “Guardar como…”** al descargar
 - **Carpeta de descargas** (ruta de texto o selección con el diálogo del sistema)
 - **Escala de interfaz** (100 % a 200 %)
-- **Badge del tray** según no leídos de WhatsApp Web (y opción de badge manual para pruebas)
+- **Badge del tray** y **badge en el dock** (Linux) según no leídos de **todas** las cuentas (y badge manual para pruebas)
 - **Enlaces WhatsApp entrantes** (cuenta destino) y **buscar actualizaciones** al iniciar (GitHub Releases)
 
 ### Cuentas

@@ -1,4 +1,4 @@
-import { app, nativeImage } from "electron";
+import { nativeImage } from "electron";
 import * as dbus from "dbus-next";
 
 type Bus = any;
@@ -342,7 +342,15 @@ export async function createLinuxSniTray(opts: {
     });
   });
 
+  let closed = false;
+
+  function isDbusClosedError(e: unknown): boolean {
+    const msg = e instanceof Error ? e.message : String(e);
+    return /stream is closed|Cannot send message/i.test(msg);
+  }
+
   async function update() {
+    if (closed) return;
     try {
       (dbus as any).interface.Interface.emitPropertiesChanged(
         sni,
@@ -352,12 +360,14 @@ export async function createLinuxSniTray(opts: {
         },
         [],
       );
-    } catch {
-      // ignore
+    } catch (e) {
+      if (isDbusClosedError(e)) closed = true;
     }
   }
 
   async function dispose() {
+    if (closed) return;
+    closed = true;
     try {
       bus.unexport(objPath);
     } catch {
@@ -374,11 +384,6 @@ export async function createLinuxSniTray(opts: {
       // ignore
     }
   }
-
-  // Refrescar cuando cambie el tema/escala (aprox) y en intervalos largos para badge.
-  app.on("before-quit", () => {
-    void dispose();
-  });
 
   return { update, dispose };
 }

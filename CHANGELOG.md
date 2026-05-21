@@ -4,6 +4,21 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [Unreleased]
+
+## [1.3.2] — 2026-05-20
+
+### Añadido
+
+- **No leídos más fiables**: heurísticas ampliadas (título multidioma, filas de chat, `aria-label`) y total sumado en **todas** las cuentas para tray y dock.
+- **Invitaciones a grupo** (`chat.whatsapp.com`, `web.whatsapp.com/accept?code=`).
+- **Badge en el dock** (Linux, `app.setBadgeCount`) configurable en Ajustes.
+- **CI**: job que construye **AppImage** + `latest-linux.yml` en cada push a `master`; workflow **Release** en tags `v*`.
+
+### Corregido
+
+- **Salir desde el icono de bandeja (SNI / D-Bus)**: al elegir «Salir» ya no aparece el diálogo *Cannot send message, stream is closed*; el tray D-Bus se cierra de forma ordenada antes de terminar el proceso.
+
 ## [1.3.1] — 2026-05-21
 
 ### Corregido
@@ -130,6 +145,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.3.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.2
 [1.3.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.1
 [1.3.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.0
 [1.2.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.2.0

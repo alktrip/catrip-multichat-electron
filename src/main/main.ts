@@ -40,6 +40,7 @@ import {
   normalizeE164Digits,
   type WhatsAppIncomingLink,
 } from "./whatsappLinks";
+import { WHATSAPP_UNREAD_COUNT_JS } from "./whatsappUnread";
 
 // Linux (GNOME/Wayland): `Tray` de Electron puede registrar `chrome_status_icon_1` sin IconPixmap,
 // lo que acaba en placeholder (“...”). `systray2` usa un binario Go y evita ese camino.
@@ -262,25 +263,6 @@ const WHATSAPP_MEDIA_DIAG_JS = `
   return out;
 })()
 `;
-
-/** Evaluado en WhatsApp Web: intenta inferir mensajes no leídos (título + heurística DOM). */
-const WHATSAPP_UNREAD_JS = `(() => {
-  try {
-    var t = document.title || "";
-    var m = t.match(/\\((\\d+)\\)/);
-    if (m) return parseInt(m[1], 10);
-    var badges = document.querySelectorAll('span[data-testid="icon-unread-count"], span[data-testid="unread-count"]');
-    var sum = 0;
-    for (var i = 0; i < badges.length; i++) {
-      var txt = (badges[i].textContent || "").trim().replace(/\\D/g, "");
-      var n = parseInt(txt, 10);
-      if (!isNaN(n)) sum += n;
-    }
-    return sum > 0 ? sum : 0;
-  } catch (_e) {
-    return 0;
-  }
-})()`;
 
 function isDev() {
   return !app.isPackaged;
@@ -729,6 +711,38 @@ function persistWindowStateSoon() {
 
 let persistWindowTimer: NodeJS.Timeout | null = null;
 let isQuitting = false;
+let trayDisposed = false;
+
+function isDbusStreamClosedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /stream is closed|Cannot send message/i.test(msg);
+}
+
+async function disposeTrayBackend(): Promise<void> {
+  if (trayDisposed) return;
+  trayDisposed = true;
+  const st = viewState;
+  if (!st?.tray) return;
+  const tb = st.tray;
+  st.tray = undefined;
+  try {
+    if (tb.kind === "linux-sni") await tb.handle.dispose();
+    else if (tb.kind === "systray2") await tb.tray.kill(true);
+    else tb.tray.destroy();
+  } catch {
+    // ignore
+  }
+}
+
+function requestAppQuit(): void {
+  if (isQuitting && trayDisposed) return;
+  isQuitting = true;
+  void disposeTrayBackend().finally(() => app.quit());
+}
+
+process.on("uncaughtException", (err) => {
+  if (isQuitting && isDbusStreamClosedError(err)) return;
+});
 
 type ViewState = {
   /** BrowserWindow con webContents vacío; shell y WhatsApp son WebContentsView hijas de contentView. */
@@ -781,6 +795,15 @@ function clampTrayBadge(n: number): number {
   return Math.max(0, Math.min(999, Math.floor(n)));
 }
 
+function getTotalUnreadFromAccounts(): number {
+  const st = ensureState();
+  let sum = 0;
+  for (const a of st.accounts) {
+    sum += clampTrayBadge(st.unreadByAccount[a.id] ?? 0);
+  }
+  return clampTrayBadge(sum);
+}
+
 function getEffectiveTrayBadge(): number {
   const st = ensureState();
   const g = st.settings.general;
@@ -788,7 +811,32 @@ function getEffectiveTrayBadge(): number {
     return clampTrayBadge(g.trayBadgeManual);
   }
   if (!g.trayUnreadBadge) return 0;
-  return clampTrayBadge(st.trayUnreadDetected ?? 0);
+  return getTotalUnreadFromAccounts();
+}
+
+function recomputeTrayUnreadTotal() {
+  const st = ensureState();
+  st.trayUnreadDetected = getTotalUnreadFromAccounts();
+}
+
+/** Badge numérico en el icono del dock / lanzador (Linux; Electron `setBadgeCount`). */
+function refreshDockBadge() {
+  if (process.platform !== "linux" || E2E_MODE) return;
+  const st = ensureState();
+  const g = st.settings.general;
+  try {
+    if (!g.dockUnreadBadge || !g.trayUnreadBadge) {
+      app.setBadgeCount(0);
+      return;
+    }
+    if (g.trayBadgeManual != null && Number.isFinite(g.trayBadgeManual)) {
+      app.setBadgeCount(clampTrayBadge(g.trayBadgeManual));
+      return;
+    }
+    app.setBadgeCount(getEffectiveTrayBadge());
+  } catch {
+    // ignore — depende del entorno de escritorio (Unity/GNOME…)
+  }
 }
 
 function schedulePollUnreadFromTitle() {
@@ -814,7 +862,7 @@ async function evalUnreadForAccount(id: string): Promise<number | null> {
   }
   if (!url.includes("web.whatsapp.com")) return null;
   try {
-    const n = await view.webContents.executeJavaScript(WHATSAPP_UNREAD_JS, true);
+    const n = await view.webContents.executeJavaScript(WHATSAPP_UNREAD_COUNT_JS, true);
     return typeof n === "number" && Number.isFinite(n) ? clampTrayBadge(n) : 0;
   } catch {
     return null;
@@ -839,6 +887,9 @@ function broadcastUnreadIfChanged(next: Record<string, number>) {
   }
   if (!changed) return;
   st.unreadByAccount = next;
+  recomputeTrayUnreadTotal();
+  refreshTrayIcon();
+  refreshDockBadge();
   try {
     void st.shellView.webContents.send("accounts:unreadChanged", next);
   } catch {
@@ -870,14 +921,12 @@ async function pollTrayUnreadFromActiveView() {
   const acc = st.accounts.find((a) => a.id === id) || null;
   const perAccountNotifs = acc?.notificationsEnabled !== false;
   try {
-    const prev = clampTrayBadge(st.trayUnreadDetected ?? 0);
+    const prevActive = clampTrayBadge(st.unreadByAccount[id] ?? 0);
     const num = await evalUnreadForAccount(id);
     if (num == null) return;
-    st.trayUnreadDetected = num;
     setUnreadFor(id, num);
-    refreshTrayIcon();
-    // Notificación nativa (solo si sube el contador; throttle para evitar spam).
-    if (st.settings.notifications.enabled && perAccountNotifs && num > prev) {
+    // Notificación nativa (solo si sube en la cuenta activa; throttle para evitar spam).
+    if (st.settings.notifications.enabled && perAccountNotifs && num > prevActive) {
       const now = Date.now();
       if (now - lastUnreadNotifyAt > 8000) {
         lastUnreadNotifyAt = now;
@@ -936,7 +985,13 @@ async function pollUnreadInactiveAccounts() {
       any = true;
     }
   }
-  if (any) broadcastUnreadIfChanged(next);
+  if (any) {
+    broadcastUnreadIfChanged(next);
+  } else {
+    recomputeTrayUnreadTotal();
+    refreshTrayIcon();
+    refreshDockBadge();
+  }
 }
 
 function restartUnreadPolling() {
@@ -954,12 +1009,12 @@ function restartUnreadPolling() {
   if (!g.trayUnreadBadge || g.trayBadgeManual != null) return;
   unreadPollTimer = setInterval(() => {
     void pollTrayUnreadFromActiveView();
-  }, 14000);
+  }, 10000);
   // Las cuentas inactivas se muestrean con menor frecuencia para no
   // martillar a Chromium con executeJavaScript en BrowserViews secundarias.
   unreadInactivePollTimer = setInterval(() => {
     void pollUnreadInactiveAccounts();
-  }, 30000);
+  }, 20000);
   // Lanzamiento inmediato (no esperar 30 s al arranque).
   void pollUnreadInactiveAccounts();
 }
@@ -1083,7 +1138,10 @@ function attachPermissionHandlersOnce(ses: Electron.Session) {
 }
 
 function refreshTrayIcon() {
+  if (isQuitting) return;
   const st = ensureState();
+  recomputeTrayUnreadTotal();
+  refreshDockBadge();
   const tb = st.tray;
   if (!tb) return;
   if (tb.kind === "linux-sni") {
@@ -1286,7 +1344,7 @@ function buildTrayMenu() {
       })),
     },
     { type: "separator" },
-    { label: "Salir", click: () => app.quit() },
+    { label: "Salir", click: () => requestAppQuit() },
   ]);
 }
 
@@ -1344,7 +1402,7 @@ function buildAppMenu() {
         { label: "Ajustes", accelerator: "Ctrl+P", click: () => send("ui:openSettings") },
         { type: "separator" },
         { label: "Ocultar", accelerator: "Ctrl+W", click: () => st.win.hide() },
-        { label: "Salir", accelerator: "Ctrl+Q", click: () => app.quit() },
+        { label: "Salir", accelerator: "Ctrl+Q", click: () => requestAppQuit() },
       ],
     },
     {
@@ -1639,7 +1697,12 @@ function queueOrHandleIncomingWhatsAppUrl(raw: string) {
   if (target === "pick") {
     pendingIncomingPicker = { raw, link };
     void st.shellView.webContents.send("ui:pickAccountForIncomingLink", {
-      preview: link.kind === "phone" ? `+${link.digits}` : raw,
+      preview:
+        link.kind === "phone"
+          ? `+${link.digits}`
+          : link.kind === "groupInvite"
+            ? "Invitación a grupo"
+            : raw,
       hasText: link.kind === "phone" && !!link.text,
     });
     focusMainWindow();
@@ -1762,7 +1825,7 @@ function createTray() {
           // ignore
         }
       },
-      onQuit: () => app.quit(),
+      onQuit: () => requestAppQuit(),
       log: (...args: any[]) => dbgEmbed(...args),
     })
       .then((handle) => {
@@ -1946,7 +2009,7 @@ function buildSystray2Menu() {
         items: accountsItems,
       },
       SysTrayCtor.separator,
-      mk("Salir", () => app.quit()),
+      mk("Salir", () => requestAppQuit()),
     ],
   };
 }
@@ -2167,11 +2230,14 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  if (process.platform !== "darwin") requestAppQuit();
 });
 
-app.on("before-quit", () => {
+app.on("before-quit", (e) => {
   isQuitting = true;
+  if (trayDisposed) return;
+  e.preventDefault();
+  void disposeTrayBackend().finally(() => app.quit());
 });
 
 ipcMain.handle("diagnostics:whatsappMedia", async () => {

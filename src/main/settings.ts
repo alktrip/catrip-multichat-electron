@@ -31,6 +31,8 @@ export type Settings = {
     autoStart: boolean;
     /** Si true, se intenta leer mensajes no leídos desde WhatsApp Web para el badge del tray. */
     trayUnreadBadge: boolean;
+    /** Si true, muestra el total de no leídos en el icono del dock/lanzador (Linux). */
+    dockUnreadBadge: boolean;
     /** Si es un número, fija el badge (pruebas); `null` = usar detección / IPC. */
     trayBadgeManual: number | null;
     /** Escala UI (zoom factor). 1.0 = 100%. */
@@ -72,6 +74,7 @@ const DEFAULTS: Settings = {
     closeToTray: true,
     autoStart: false,
     trayUnreadBadge: true,
+    dockUnreadBadge: true,
     trayBadgeManual: null,
     uiScale: 1,
     incomingLinkMode: "auto",
@@ -161,6 +164,10 @@ export function loadSettings(): Settings {
           typeof parsed.general?.trayUnreadBadge === "boolean"
             ? parsed.general.trayUnreadBadge
             : DEFAULTS.general.trayUnreadBadge,
+        dockUnreadBadge:
+          typeof (parsed.general as any)?.dockUnreadBadge === "boolean"
+            ? (parsed.general as any).dockUnreadBadge
+            : DEFAULTS.general.dockUnreadBadge,
         trayBadgeManual:
           parsed.general?.trayBadgeManual === null || parsed.general?.trayBadgeManual === undefined
             ? DEFAULTS.general.trayBadgeManual
