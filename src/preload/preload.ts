@@ -36,6 +36,7 @@ export type AppApi = {
   setTrayBadgeCount: (count: number) => Promise<void>;
   setZenMode: (enabled: boolean) => Promise<void>;
   setMode: (mode: "browser" | "settings") => Promise<void>;
+  onModeChanged: (cb: (mode: "browser" | "settings") => void) => () => void;
   onOpenSettings: (cb: () => void) => () => void;
   onOpenQuickSwitcher: (cb: () => void) => () => void;
   onOpenPhoneChat: (cb: () => void) => () => void;
@@ -104,6 +105,13 @@ const api: AppApi = {
   setTrayBadgeCount: (count: number) => ipcRenderer.invoke("tray:setBadgeCount", count),
   setZenMode: (enabled: boolean) => ipcRenderer.invoke("ui:setZenMode", enabled),
   setMode: (mode: "browser" | "settings") => ipcRenderer.invoke("ui:setMode", mode),
+  onModeChanged: (cb) => {
+    const listener = (_evt: unknown, mode: "browser" | "settings") => {
+      cb(mode === "settings" ? "settings" : "browser");
+    };
+    ipcRenderer.on("ui:modeChanged", listener);
+    return () => ipcRenderer.removeListener("ui:modeChanged", listener);
+  },
   onOpenSettings: (cb) => {
     const listener = () => cb();
     ipcRenderer.on("ui:openSettings", listener);

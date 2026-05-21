@@ -9,4 +9,5 @@ GenericName=Mensajería
 Comment=Catrip Connect: ejecuta múltiples sesiones de WhatsApp Web aisladas en una sola aplicación de escritorio, con bandeja del sistema, atajos globales y notificaciones nativas.
 Categories=Network;Chat;InstantMessaging;
 Keywords=whatsapp;chat;mensajería;multi-cuenta;catrip;
+MimeType=x-scheme-handler/whatsapp;
 StartupNotify=true

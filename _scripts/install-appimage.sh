@@ -74,6 +74,7 @@ StartupWMClass=catrip-connect
 StartupNotify=true
 Categories=Network;Chat;InstantMessaging;
 Keywords=whatsapp;chat;mensajería;multi-cuenta;catrip;
+MimeType=x-scheme-handler/whatsapp;
 EOF
   chmod 644 "$DESKTOP_FILE"
 

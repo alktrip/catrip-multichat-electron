@@ -263,6 +263,11 @@ export default function App() {
   }, [enterSettings]);
 
   React.useEffect(() => {
+    const offMode = window.catrip.onModeChanged((next) => setMode(next));
+    return () => offMode();
+  }, []);
+
+  React.useEffect(() => {
     const offQuick = window.catrip.onOpenQuickSwitcher(() => {
       setQuickQuery("");
       setQuickOpen(true);

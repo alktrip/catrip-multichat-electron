@@ -2,6 +2,8 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
+**Versión de esta guía:** **1.2.0**
+
 ---
 
 ## 1. Conceptos básicos
@@ -100,6 +102,23 @@ Al entrar en **Ajustes**, el modo Zen se desactiva automáticamente.
 2. Introduce el número en formato internacional (p. ej. `+34…`).
 3. Confirma para abrir la conversación en la cuenta activa.
 
+### Enlaces desde Internet (`whatsapp://`, `wa.me`, …)
+
+Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o una página web lanzan un enlace compatible:
+
+- `whatsapp://send?phone=…`
+- `https://wa.me/…`
+- `https://api.whatsapp.com/send?phone=…`
+- `https://web.whatsapp.com/send?phone=…`
+
+**Configuración en Linux (una vez por usuario):**
+
+1. Instala o integra el AppImage (menú de aplicaciones / script de integración).
+2. Abre **Ajustes del sistema → Aplicaciones predeterminadas** (o el diálogo que aparezca al abrir un enlace `whatsapp://`).
+3. Asigna **Catrip Connect** como aplicación para enlaces **WhatsApp** / protocolo `whatsapp`.
+
+Los enlaces `https://wa.me/…` abiertos **solo en el navegador** siguen yendo al navegador salvo que la página redirija a `whatsapp://` o elijas “Abrir en la aplicación”. Para esos casos también puedes usar `Ctrl+M` y pegar el número.
+
 ---
 
 ## 9. Ajustes (resumen por sección)
@@ -182,4 +201,5 @@ Para instalación, paquetes y detalles del proyecto, consulta el **[README](READ
 
 - **AppImage y FUSE**: muchos AppImage necesitan **libfuse2** en el sistema. Si ves `dlopen(): error loading libfuse.so.2`, instálala (p. ej. `sudo apt install libfuse2` o `libfuse2t64` en Ubuntu reciente). Como alternativa: `./MiApp.AppImage --appimage-extract-and-run`.
 - **Ejecutar desde terminal**: usa la ruta del binario o del fichero `.AppImage`. El sufijo **`%U`** solo pertenece al campo **`Exec=`** del fichero `.desktop`, no lo escribas al lanzar a mano.
-- **Sandbox Chromium**: en **1.1.1** y posteriores (**1.1.2**, etc.), los switches (`disable-setuid-sandbox`, clase X11) se aplican en `bootstrap.ts` **antes** de cargar el resto del proceso principal; en **1.1.0** el switch en `main.ts` podía aplicarse demasiado tarde (después de los `import`), de modo que el arranque no reflejaba el cambio.
+- **Enlaces WhatsApp (desde 1.2.0)**: tras instalar o integrar el AppImage, configura **Catrip Connect** como app predeterminada para el protocolo `whatsapp://` (véase §8). Los `https://wa.me/…` abiertos solo en el navegador no delegan automáticamente a la app.
+- **Sandbox Chromium**: en **1.1.1** y posteriores (**1.2.0**, etc.), los switches (`disable-setuid-sandbox`, clase X11) se aplican en `bootstrap.ts` **antes** de cargar el resto del proceso principal; en **1.1.0** el switch en `main.ts` podía aplicarse demasiado tarde (después de los `import`), de modo que el arranque no reflejaba el cambio.

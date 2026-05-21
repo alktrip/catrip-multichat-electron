@@ -621,6 +621,7 @@ function integrateAppImageDesktop() {
       "Icon=catrip-connect",
       "Categories=Network;Chat;InstantMessaging;",
       "Keywords=whatsapp;chat;mensajer\u00eda;multi-cuenta;catrip;",
+      "MimeType=x-scheme-handler/whatsapp;",
       "StartupWMClass=catrip-connect",
       "StartupNotify=true",
       "Terminal=false",
@@ -1513,6 +1514,146 @@ function normalizeE164Digits(input: string): string | null {
   return digits;
 }
 
+type WhatsAppIncomingLink =
+  | { kind: "phone"; digits: string }
+  | { kind: "webSend"; url: string };
+
+/** Enlace entrante (protocolo `whatsapp://`, `wa.me`, API/Web) → teléfono o URL de envío. */
+function parseWhatsAppIncomingUrl(raw: string): WhatsAppIncomingLink | null {
+  const s = (raw || "").trim();
+  if (!s) return null;
+  let url: URL;
+  try {
+    url = new URL(s);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+  const proto = url.protocol.replace(/:$/, "").toLowerCase();
+
+  if (proto === "whatsapp") {
+    const phone =
+      url.searchParams.get("phone") ||
+      url.pathname.replace(/^\/+/, "").split("/")[0] ||
+      "";
+    const digits = normalizeE164Digits(phone);
+    if (digits) return { kind: "phone", digits };
+    return null;
+  }
+
+  if (host === "wa.me" || host === "wa.link") {
+    const seg = url.pathname.replace(/^\/+/, "").split("/")[0] || "";
+    const digits = normalizeE164Digits(seg);
+    if (digits) return { kind: "phone", digits };
+    return null;
+  }
+
+  if (host === "api.whatsapp.com" || host === "web.whatsapp.com") {
+    const phone = url.searchParams.get("phone");
+    if (phone) {
+      const digits = normalizeE164Digits(phone);
+      if (digits) return { kind: "phone", digits };
+    }
+    if (host === "web.whatsapp.com" && /^\/send\b/i.test(url.pathname)) {
+      return { kind: "webSend", url: url.toString() };
+    }
+  }
+
+  return null;
+}
+
+function extractWhatsAppUrlFromArgv(argv: string[]): string | null {
+  for (let i = argv.length - 1; i >= 0; i--) {
+    const a = argv[i];
+    if (!a || a.startsWith("-")) continue;
+    if (
+      /^whatsapp:/i.test(a) ||
+      /wa\.me/i.test(a) ||
+      /wa\.link/i.test(a) ||
+      /web\.whatsapp\.com/i.test(a) ||
+      /api\.whatsapp\.com/i.test(a)
+    ) {
+      return a;
+    }
+  }
+  return null;
+}
+
+let pendingIncomingWhatsAppUrl: string | null = null;
+
+function focusMainWindow() {
+  const st = viewState;
+  if (!st) return;
+  try {
+    if (st.win.isMinimized()) st.win.restore();
+    st.win.show();
+    st.win.focus();
+  } catch {
+    // ignore
+  }
+}
+
+function ensureBrowserModeFromMain(st: NonNullable<typeof viewState>) {
+  if (st.chrome.mode === "browser") return;
+  st.chrome.mode = "browser";
+  if (st.activeId && !rendererModalOpen) attachBrowserViewForAccount(st.activeId);
+  void st.shellView.webContents.send("ui:modeChanged", "browser");
+  refreshMenus();
+  restartUnreadPolling();
+  layoutActiveView();
+}
+
+function loadWhatsAppIncomingInActiveView(link: WhatsAppIncomingLink) {
+  const st = ensureState();
+  const id = st.activeId;
+  if (!id) return;
+  focusMainWindow();
+  ensureBrowserModeFromMain(st);
+  attachBrowserViewForAccount(id);
+  const view = ensureViewForAccount(id);
+  const target =
+    link.kind === "phone" ? `${WHATSAPP_SEND_URL}${link.digits}` : link.url;
+  void view.webContents.loadURL(target);
+  dbgEmbed("loadWhatsAppIncomingInActiveView", { accountId: id, link, target });
+}
+
+function queueOrHandleIncomingWhatsAppUrl(raw: string) {
+  const link = parseWhatsAppIncomingUrl(raw);
+  if (!link) return;
+  if (!viewState) {
+    pendingIncomingWhatsAppUrl = raw;
+    dbgEmbed("queue incoming WhatsApp URL (app not ready)", { raw });
+    return;
+  }
+  loadWhatsAppIncomingInActiveView(link);
+}
+
+function flushPendingIncomingWhatsAppUrl() {
+  const raw = pendingIncomingWhatsAppUrl;
+  if (!raw) return;
+  pendingIncomingWhatsAppUrl = null;
+  queueOrHandleIncomingWhatsAppUrl(raw);
+}
+
+function registerWhatsAppProtocolClient() {
+  if (E2E_MODE) return;
+  const scheme = "whatsapp";
+  try {
+    if (process.defaultApp) {
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient(scheme, process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
+        return;
+      }
+    }
+    app.setAsDefaultProtocolClient(scheme);
+    dbgEmbed("registered default protocol client", { scheme, packaged: app.isPackaged });
+  } catch (err) {
+    dbgEmbed("setAsDefaultProtocolClient failed", { err: String(err) });
+  }
+}
+
 function openChatByPhone(phoneRaw: string) {
   const st = ensureState();
   const id = st.activeId;
@@ -1809,12 +1950,29 @@ const gotLock = enforceSingleInstance ? app.requestSingleInstanceLock() : true;
 if (!gotLock) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
-    for (const w of BaseWindow.getAllWindows()) {
-      if (w.isMinimized()) w.restore();
-      w.show();
-      w.focus();
-      return;
+  registerWhatsAppProtocolClient();
+
+  if (process.platform === "darwin") {
+    app.on("open-url", (event, url) => {
+      event.preventDefault();
+      queueOrHandleIncomingWhatsAppUrl(url);
+    });
+  }
+
+  const launchArgvUrl = extractWhatsAppUrlFromArgv(process.argv);
+  if (launchArgvUrl) pendingIncomingWhatsAppUrl = launchArgvUrl;
+
+  app.on("second-instance", (_event, argv) => {
+    focusMainWindow();
+    const url = extractWhatsAppUrlFromArgv(argv);
+    if (url) queueOrHandleIncomingWhatsAppUrl(url);
+    else {
+      for (const w of BaseWindow.getAllWindows()) {
+        if (w.isMinimized()) w.restore();
+        w.show();
+        w.focus();
+        return;
+      }
     }
   });
 }
@@ -1925,6 +2083,8 @@ app.whenReady().then(() => {
 
   // Activar cuenta al arrancar.
   if (viewState.activeId) setActiveAccount(viewState.activeId);
+
+  flushPendingIncomingWhatsAppUrl();
 
   // Notificar Zen inicial al renderer (para que el rail se oculte si procede).
   void viewState.shellView.webContents.send("ui:zenChanged", viewState.chrome.zen);
