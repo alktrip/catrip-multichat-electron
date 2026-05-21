@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg fakeroot
 
       - name: Build paquetes Linux (.deb + AppImage)
-        run: npm run dist:linux
+        run: npm run build && node _scripts/generate-app-icons.mjs && npx electron-builder --linux deb AppImage --publish never
 
       - name: Publicar en GitHub Releases
         uses: softprops/action-gh-release@v2
