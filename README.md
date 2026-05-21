@@ -7,7 +7,7 @@ Cliente de escritorio (**Electron**) para WhatsApp Web con **varias cuentas** y 
 | **[USAGE.md](USAGE.md)** | Guía detallada de uso: interfaz, atajos, ajustes, bandeja, enlaces `whatsapp://` y consejos. |
 | **[CHANGELOG.md](CHANGELOG.md)** | Historial de versiones y cambios destacados. |
 
-**Versión actual:** **1.3.0** — enlaces `whatsapp://` / `wa.me` con mensaje opcional, elección de cuenta destino, actualizaciones desde GitHub Releases y CI automatizada.
+**Versión actual:** **1.3.1** — enlaces `whatsapp://` / `wa.me` con mensaje opcional, elección de cuenta destino, actualizaciones desde GitHub Releases y CI automatizada.
 
 > El identificador técnico del paquete npm sigue siendo `catrip_multichat_electron` para no romper la persistencia existente (`~/.config/catrip_multichat_electron/`). El nombre visible (**Catrip Connect**), el ejecutable **`catrip-connect`** y el lanzador del escritorio están alineados para integración en Linux.
 
@@ -50,12 +50,12 @@ sudo apt install dpkg fakeroot
 | `npm run dist:linux` | Ambos |
 | `npm run dist` | Todos los targets definidos en `package.json` → `build` |
 
-Artefactos en **`release/`** (versión actual en `package.json`, **1.3.0**):
+Artefactos en **`release/`** (versión actual en `package.json`, **1.3.1**):
 
 ```
 release/
-├── catrip-connect_1.3.0_amd64.deb
-└── catrip-connect_1.3.0_x86_64.AppImage
+├── catrip-connect_1.3.1_amd64.deb
+└── catrip-connect_1.3.1_x86_64.AppImage
 ```
 
 Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mjs`).
@@ -63,7 +63,7 @@ Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mj
 #### `.deb` — instalación
 
 ```bash
-sudo apt install ./release/catrip-connect_1.3.0_amd64.deb
+sudo apt install ./release/catrip-connect_1.3.1_amd64.deb
 ```
 
 Dependencias habituales las resuelve `apt` (`libgtk-3-0`, `libnotify4`, `libnss3`, …; recomendable `libappindicator3-1` para bandeja).
@@ -87,14 +87,14 @@ sudo apt remove catrip-multichat-electron
 Ejecutable autocontenido; permisos de ejecución:
 
 ```bash
-chmod +x release/catrip-connect_1.3.0_x86_64.AppImage
-./release/catrip-connect_1.3.0_x86_64.AppImage
+chmod +x release/catrip-connect_1.3.1_x86_64.AppImage
+./release/catrip-connect_1.3.1_x86_64.AppImage
 ```
 
 Para integrar menú e iconos en el escritorio del usuario (opcional pero recomendable si no usas AppImageLauncher):
 
 ```bash
-_scripts/install-appimage.sh release/catrip-connect_1.3.0_x86_64.AppImage
+_scripts/install-appimage.sh release/catrip-connect_1.3.1_x86_64.AppImage
 # revertir:
 _scripts/install-appimage.sh --uninstall
 ```

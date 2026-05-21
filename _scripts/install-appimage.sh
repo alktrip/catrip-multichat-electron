@@ -85,6 +85,13 @@ EOF
     gtk-update-icon-cache -f -t "$ICONS_ROOT" 2>/dev/null || true
   fi
 
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [[ -f "$script_dir/register-whatsapp-protocol.sh" ]]; then
+    echo "→ Registrando protocolo whatsapp://…"
+    APPIMAGE="$appimage" bash "$script_dir/register-whatsapp-protocol.sh" || true
+  fi
+
   echo
   echo "✔ Catrip Connect registrado para tu usuario."
   echo "  Lanzador:  $DESKTOP_FILE"

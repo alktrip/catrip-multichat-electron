@@ -4,6 +4,12 @@ Todos los cambios relevantes del proyecto se documentan en este archivo.
 
 El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [1.3.1] — 2026-05-21
+
+### Corregido
+
+- **Enlaces `whatsapp://` en GNOME**: el sistema mostraba *«No hay aplicaciones disponibles»* porque faltaba indexar el lanzador (`update-desktop-database`). Nuevo script `register-whatsapp-protocol.sh`, postinst del `.deb` que crea el `.desktop` en `~/.local/share/applications` del usuario, registro al arrancar la app y `npm run register:whatsapp`.
+
 ## [1.3.0] — 2026-05-21
 
 ### Añadido
@@ -124,6 +130,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.3.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.1
 [1.3.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.0
 [1.2.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.2.0
 [1.1.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.1.2

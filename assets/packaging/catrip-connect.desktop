@@ -1,6 +1,7 @@
 [Desktop Entry]
+Version=1.0
 Name=Catrip Connect
-Exec=AppRun %U
+Exec=AppRun %u
 Terminal=false
 Type=Application
 Icon=catrip-connect

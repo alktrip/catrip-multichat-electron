@@ -650,7 +650,58 @@ function integrateAppImageDesktop() {
     // ignore — puede no existir gtk-update-icon-cache
   }
 
+  registerWhatsAppProtocolLinux(desktopPath, appExec);
+
   dbgEmbed("AppImage desktop integration", { desktopPath, appExec });
+}
+
+/** GNOME solo ofrece abrir whatsapp:// si el .desktop está indexado (update-desktop-database). */
+function registerWhatsAppProtocolLinux(userDesktopPath?: string, execPath?: string) {
+  if (process.platform !== "linux" || E2E_MODE) return;
+  try {
+    const { execSync } = require("node:child_process");
+    const dataHome = process.env.XDG_DATA_HOME?.trim() || path.join(os.homedir(), ".local", "share");
+    const appsDir = path.join(dataHome, "applications");
+    const desktopPath = userDesktopPath || path.join(appsDir, "catrip-connect.desktop");
+    const bin =
+      execPath ||
+      (process.env.APPIMAGE as string | undefined) ||
+      (app.isPackaged ? "/opt/Catrip Connect/catrip-connect" : undefined);
+    if (bin && fs.existsSync(desktopPath)) {
+      const desktop = [
+        "[Desktop Entry]",
+        "Version=1.0",
+        "Type=Application",
+        `Name=${APP_NAME}`,
+        "GenericName=Mensajer\u00eda",
+        "Comment=Cliente multi-cuenta de WhatsApp Web",
+        `Exec="${bin}" %u`,
+        "Terminal=false",
+        "Icon=catrip-connect",
+        "Categories=Network;Chat;InstantMessaging;",
+        "Keywords=whatsapp;chat;mensajer\u00eda;multi-cuenta;catrip;",
+        "MimeType=x-scheme-handler/whatsapp;",
+        "StartupWMClass=catrip-connect",
+        "StartupNotify=true",
+      ].join("\n");
+      fs.writeFileSync(desktopPath, desktop + "\n", "utf-8");
+    }
+    execSync(`update-desktop-database "${appsDir}" 2>/dev/null || true`, {
+      timeout: 8000,
+      stdio: "ignore",
+    });
+    execSync("xdg-mime default catrip-connect.desktop x-scheme-handler/whatsapp 2>/dev/null || true", {
+      timeout: 5000,
+      stdio: "ignore",
+    });
+    execSync("gio mime x-scheme-handler/whatsapp catrip-connect.desktop 2>/dev/null || true", {
+      timeout: 5000,
+      stdio: "ignore",
+    });
+    dbgEmbed("registerWhatsAppProtocolLinux ok", { desktopPath });
+  } catch (err) {
+    dbgEmbed("registerWhatsAppProtocolLinux failed", { err: String(err) });
+  }
 }
 
 function persistWindowStateSoon() {
@@ -2057,6 +2108,8 @@ app.whenReady().then(() => {
   flushPendingIncomingWhatsAppUrl();
 
   if (viewState.settings.general.checkForUpdates) setupAutoUpdater();
+
+  if (app.isPackaged) registerWhatsAppProtocolLinux();
 
   // Notificar Zen inicial al renderer (para que el rail se oculte si procede).
   void viewState.shellView.webContents.send("ui:zenChanged", viewState.chrome.zen);

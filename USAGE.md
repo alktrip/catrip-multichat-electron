@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.3.0**
+**Versión de esta guía:** **1.3.1**
 
 ---
 
@@ -113,9 +113,18 @@ Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o u
 
 **Configuración en Linux (una vez por usuario):**
 
-1. Instala el **`.deb`** (el postinst intenta registrar `whatsapp://` automáticamente) o integra el AppImage (`_scripts/install-appimage.sh`).
-2. Si hace falta, abre **Ajustes del sistema → Aplicaciones predeterminadas** y asigna **Catrip Connect** para enlaces **WhatsApp** / protocolo `whatsapp://`.
-3. En **Ajustes → General → Enlaces WhatsApp entrantes** elige:
+1. Instala el **`.deb`** (el postinst registra `whatsapp://`) o integra el AppImage:
+   ```bash
+   _scripts/install-appimage.sh /ruta/a/catrip-connect_*.AppImage
+   ```
+2. Si el navegador muestra *«No hay aplicaciones disponibles»*, ejecuta:
+   ```bash
+   npm run register:whatsapp
+   # o: bash _scripts/register-whatsapp-protocol.sh
+   ```
+   Cierra el navegador y vuelve a probar el enlace.
+3. Opcional: **Ajustes del sistema → Aplicaciones predeterminadas** → **WhatsApp** → **Catrip Connect**.
+4. En **Ajustes → General → Enlaces WhatsApp entrantes** elige:
    - **Preguntar si hay varias cuentas** (por defecto),
    - **Siempre la cuenta activa**, o
    - **Cuenta fija** (lista desplegable).
