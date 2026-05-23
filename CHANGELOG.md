@@ -6,6 +6,16 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-05-22
+
+### Corregido
+
+- **Autoinicio al iniciar sesión (Linux)**: la opción «Iniciar automáticamente con el sistema» no lanzaba la app porque el fichero `~/.config/autostart/` tenía un `Exec` sin comillas (falla con la ruta `/opt/Catrip Connect/…` del `.deb`) y faltaba `--disable-setuid-sandbox` en AppImage. Ahora se genera `catrip-connect.desktop` con formato XDG/GNOME válido y se elimina el autostart legacy.
+
+### Documentación
+
+- **README.md**, **USAGE.md**: instrucciones para regenerar el autostart (desactivar y volver a activar el toggle tras actualizar desde 1.4.0).
+
 ## [1.4.0] — 2026-05-21
 
 ### Añadido
@@ -172,6 +182,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.4.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.1
 [1.4.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.0
 [1.3.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.2
 [1.3.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.1

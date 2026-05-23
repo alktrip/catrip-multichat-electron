@@ -64,16 +64,87 @@ export async function openPathWithDefaultApp(filePath: string): Promise<boolean>
   }
 }
 
-function resolveExecPath(): string | null {
+/** Ruta del binario o AppImage que debe persistir en .desktop / autostart. */
+export function resolveLinuxLaunchExecutable(): string | null {
   if (process.env.APPIMAGE && fs.existsSync(process.env.APPIMAGE)) return process.env.APPIMAGE;
   if (app.isPackaged) {
     const deb = "/opt/Catrip Connect/catrip-connect";
     if (fs.existsSync(deb)) return deb;
   }
   try {
-    return process.execPath;
+    const exec = process.execPath;
+    if (exec && fs.existsSync(exec)) return exec;
   } catch {
-    return null;
+    // ignore
+  }
+  return null;
+}
+
+const LEGACY_AUTOSTART_NAME = "com.catrip.catrip-multichat-electron.desktop";
+
+/** `~/.config/autostart/catrip-connect.desktop` (especificación XDG). */
+export function linuxAutostartDesktopPath(): string {
+  const cfg = process.env.XDG_CONFIG_HOME?.trim() || path.join(os.homedir(), ".config");
+  return path.join(cfg, "autostart", DESKTOP_NAME);
+}
+
+function legacyAutostartDesktopPath(): string {
+  const cfg = process.env.XDG_CONFIG_HOME?.trim() || path.join(os.homedir(), ".config");
+  return path.join(cfg, "autostart", LEGACY_AUTOSTART_NAME);
+}
+
+/**
+ * Entrada de autostart para GNOME/KDE. Exec entrecomillado (rutas con espacios en .deb),
+ * `--disable-setuid-sandbox` para AppImage y binarios Electron recientes.
+ */
+export function buildAutostartDesktopContent(execPath: string): string {
+  const exec = quoteExec(execPath);
+  return [
+    "[Desktop Entry]",
+    "Version=1.0",
+    "Type=Application",
+    `Name=${APP_NAME}`,
+    `Exec=${exec} --disable-setuid-sandbox`,
+    "Hidden=false",
+    "NoDisplay=false",
+    "X-GNOME-Autostart-enabled=true",
+    "Terminal=false",
+    "StartupNotify=false",
+    "Icon=catrip-connect",
+    "Categories=Network;Chat;",
+  ].join("\n");
+}
+
+/** Crea o elimina el .desktop en ~/.config/autostart. */
+export function applyLinuxSessionAutostart(enabled: boolean): { ok: boolean; message: string } {
+  const target = linuxAutostartDesktopPath();
+  const legacy = legacyAutostartDesktopPath();
+  try {
+    if (!enabled) {
+      for (const p of [target, legacy]) {
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+      return { ok: true, message: "Autoinicio desactivado." };
+    }
+    const execPath = resolveLinuxLaunchExecutable();
+    if (!execPath) {
+      return { ok: false, message: "No se encontró el ejecutable de Catrip Connect." };
+    }
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, buildAutostartDesktopContent(execPath) + "\n", "utf-8");
+    if (fs.existsSync(legacy) && legacy !== target) {
+      try {
+        fs.unlinkSync(legacy);
+      } catch {
+        // ignore
+      }
+    }
+    return { ok: true, message: `Autoinicio activado (${target}).` };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
@@ -87,7 +158,7 @@ export function registerWhatsAppProtocolForUser(): { ok: boolean; message: strin
   if (process.platform !== "linux") {
     return { ok: false, message: "Solo disponible en Linux." };
   }
-  const execPath = resolveExecPath();
+  const execPath = resolveLinuxLaunchExecutable();
   if (!execPath) {
     return { ok: false, message: "No se encontró el ejecutable de Catrip Connect." };
   }
@@ -141,7 +212,7 @@ export async function runBundledRegisterScript(): Promise<{ ok: boolean; message
   try {
     const { stdout, stderr } = await execFileAsync("bash", [script], {
       timeout: 25_000,
-      env: { ...process.env, APPIMAGE: process.env.APPIMAGE || resolveExecPath() || "" },
+      env: { ...process.env, APPIMAGE: process.env.APPIMAGE || resolveLinuxLaunchExecutable() || "" },
     });
     const out = (stdout || stderr || "").trim();
     return { ok: true, message: out || "Protocolo registrado." };

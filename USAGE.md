@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.4.0**
+**Versión de esta guía:** **1.4.1**
 
 ---
 
@@ -140,7 +140,7 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 - **Mostrar barra lateral**
 - **Mostrar barra de menú**
 - **Al cerrar, minimizar a la bandeja**
-- **Iniciar automáticamente con el sistema**
+- **Iniciar automáticamente con el sistema** (Linux): al activar el toggle, la app crea o actualiza `~/.config/autostart/catrip-connect.desktop` con la ruta correcta al ejecutable (entrecomillada si hay espacios, p. ej. instalación `.deb` en `/opt/Catrip Connect/`). **Si actualizaste desde 1.4.0 y el autoinicio no funcionaba:** abre Ajustes → desactiva esta opción → vuelve a activarla → cierra sesión y prueba de nuevo. En AppImage debe quedar la ruta absoluta del fichero `.AppImage`, no un montaje temporal.
 - **Preguntar siempre “Guardar como…”** al descargar
 - **Carpeta de descargas** (ruta de texto o selección con el diálogo del sistema)
 - **Escala de interfaz** (100 % a 200 %)

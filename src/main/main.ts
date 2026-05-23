@@ -38,6 +38,7 @@ import {
 } from "./accountSessionStatus";
 import { initNotificationHub, maybeNotifyUnreadIncrease } from "./notificationHub";
 import {
+  applyLinuxSessionAutostart,
   buildDesktopEntryContent,
   openPathWithDefaultApp,
   registerWhatsAppProtocolForUser,
@@ -539,14 +540,6 @@ async function applySettingsToRuntime(s: Settings) {
   refreshUpdaterChannel(s.general.updateChannel === "beta" ? "beta" : "stable");
 }
 
-function linuxAutostartDesktopPath(): string {
-  const cfg =
-    process.env.XDG_CONFIG_HOME && process.env.XDG_CONFIG_HOME.trim()
-      ? process.env.XDG_CONFIG_HOME.trim()
-      : path.join(os.homedir(), ".config");
-  return path.join(cfg, "autostart", "com.catrip.catrip-multichat-electron.desktop");
-}
-
 function applyAutostartSettings(s: Settings) {
   const enabled = !!s.general.autoStart;
   // No forzar autostart durante dev para evitar confusión.
@@ -563,26 +556,11 @@ function applyAutostartSettings(s: Settings) {
 
   if (process.platform !== "linux") return;
 
-  const p = linuxAutostartDesktopPath();
-  try {
-    if (!enabled) {
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-      return;
-    }
-    fs.mkdirSync(path.dirname(p), { recursive: true });
-
-    const exec = process.env.APPIMAGE || process.execPath;
-    const desktop = [
-      "[Desktop Entry]",
-      "Type=Application",
-      `Name=${APP_NAME}`,
-      `Exec=${exec}`,
-      "X-GNOME-Autostart-enabled=true",
-      "Terminal=false",
-    ].join("\n");
-    fs.writeFileSync(p, desktop + "\n", "utf-8");
-  } catch {
-    // ignore
+  const result = applyLinuxSessionAutostart(enabled);
+  if (!result.ok) {
+    dbgEmbed("applyAutostartSettings failed", { message: result.message });
+  } else {
+    dbgEmbed("applyAutostartSettings", { enabled, message: result.message });
   }
 }
 
