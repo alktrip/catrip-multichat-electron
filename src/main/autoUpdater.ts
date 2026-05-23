@@ -1,9 +1,14 @@
 import { app, dialog } from "electron";
 import { autoUpdater } from "electron-updater";
-import crypto from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
+import crypto from "node:crypto";
 import type { Settings } from "./settings";
+import { formatReleaseNotesForDialog } from "./releaseNotesFormat";
+import {
+  buildChangelogForUpdate,
+  handleDebUpdateAvailable,
+  isLinuxDebPackagedInstall,
+} from "./debUpdateFlow";
 
 const E2E_MODE = process.env.CATRIP_E2E === "1";
 
@@ -88,39 +93,24 @@ async function verifyDownloadedArtifact(
   }
 }
 
-/** Comprueba actualizaciones en GitHub Releases (solo app empaquetada). */
-export function setupAutoUpdater(opts?: { getUpdateChannel?: () => UpdateChannel }) {
-  if (!app.isPackaged || E2E_MODE) return;
-
-  if (opts?.getUpdateChannel) getChannel = opts.getUpdateChannel;
-
+/** AppImage / Windows / macOS: descarga automática e instalación al reiniciar. */
+function setupAppImageStyleUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
-  applyChannel(getChannel());
 
-  autoUpdater.on("checking-for-update", () => log("checking"));
   autoUpdater.on("update-available", async (info) => {
     log("available", info?.version);
     const version = info?.version ?? "";
-    const changelog =
-      (typeof info?.releaseNotes === "string" ? info.releaseNotes : "") ||
-      (await fetchGithubReleaseNotes(version, getChannel()));
-    pendingUpdate = {
-      version,
-      changelog: changelog || "Sin notas de la versión en GitHub.",
-      filePath: null,
-    };
+    const changelog = await buildChangelogForUpdate(info, fetchGithubReleaseNotes, getChannel());
+    pendingUpdate = { version, changelog, filePath: null };
   });
-  autoUpdater.on("update-not-available", () => log("not available"));
-  autoUpdater.on("error", (err) => log("error", err?.message ?? err));
 
   autoUpdater.on("update-downloaded", async (info) => {
     const version = info?.version ?? pendingUpdate?.version ?? "";
     let changelog = pendingUpdate?.changelog ?? "";
-    if (!changelog && version) {
-      changelog = await fetchGithubReleaseNotes(version, getChannel());
+    if ((!changelog || changelog === "Sin notas de la versión.") && version) {
+      changelog = await buildChangelogForUpdate(info, fetchGithubReleaseNotes, getChannel());
     }
-    if (!changelog) changelog = "Sin notas de la versión.";
 
     const files = (info as { files?: Array<{ url?: string; sha512?: string }> })?.files ?? [];
     const deb =
@@ -164,10 +154,48 @@ export function setupAutoUpdater(opts?: { getUpdateChannel?: () => UpdateChannel
 
     pendingUpdate = { version, changelog, filePath };
   });
+}
+
+/** .deb instalado: sin descarga automática; el usuario elige carpeta o solo el enlace. */
+function setupDebManualUpdater() {
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+
+  autoUpdater.on("update-available", async (info) => {
+    log("available (deb manual)", info?.version);
+    const changelog = await buildChangelogForUpdate(info, fetchGithubReleaseNotes, getChannel());
+    await handleDebUpdateAvailable(info, changelog);
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    log("update-downloaded ignored (deb manual flow)");
+  });
+}
+
+/** Comprueba actualizaciones en GitHub Releases (solo app empaquetada). */
+export function setupAutoUpdater(opts?: { getUpdateChannel?: () => UpdateChannel }) {
+  if (!app.isPackaged || E2E_MODE) return;
+
+  if (opts?.getUpdateChannel) getChannel = opts.getUpdateChannel;
+
+  applyChannel(getChannel());
+
+  const debMode = isLinuxDebPackagedInstall();
+  log("mode", debMode ? "deb-manual" : "auto");
+
+  if (debMode) setupDebManualUpdater();
+  else setupAppImageStyleUpdater();
+
+  autoUpdater.on("checking-for-update", () => log("checking"));
+  autoUpdater.on("update-not-available", () => log("not available"));
+  autoUpdater.on("error", (err) => log("error", err?.message ?? err));
 
   setTimeout(() => {
     applyChannel(getChannel());
-    void autoUpdater.checkForUpdatesAndNotify().catch((err) => log("check failed", err));
+    const check = debMode
+      ? () => autoUpdater.checkForUpdates()
+      : () => autoUpdater.checkForUpdatesAndNotify();
+    void check().catch((err) => log("check failed", err));
   }, 12_000);
 }
 

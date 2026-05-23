@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.4.1**
+**Versión de esta guía:** **1.4.2**
 
 ---
 
@@ -148,6 +148,22 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 - **Enlaces WhatsApp entrantes** (cuenta destino), **registrar protocolo** en el escritorio y **buscar actualizaciones** al iniciar (canal **estable** o **beta**)
 - **Abrir descargas** con la aplicación predeterminada del sistema (`xdg-open` / portal)
 
+#### Actualizaciones desde GitHub (Ajustes → General)
+
+Activa **Buscar actualizaciones al iniciar** y elige canal **estable** (releases) o **beta** (pre-releases). El resumen del changelog en los diálogos se muestra en **texto plano** (sin HTML de GitHub).
+
+| Forma de instalación | Comportamiento al haber una versión nueva |
+|----------------------|-------------------------------------------|
+| **`.deb`** (instalado con apt en `/opt/Catrip Connect/`) | Diálogo con el changelog y tres opciones: **Descargar…** (eliges carpeta y se guarda el `.deb`; opcional verificación SHA-512), **Solo enlace de descarga** (URL de GitHub y abrir en el navegador) o **Más tarde**. La app **no** reinicia ni instala sola. |
+| **AppImage** | Descarga automática en segundo plano; al terminar, **Reiniciar ahora** o **Más tarde** para aplicar la actualización. |
+
+Tras descargar un `.deb` manualmente:
+
+```bash
+cd /ruta/donde/guardaste/el/paquete
+sudo apt install ./catrip-connect_1.4.2_amd64.deb
+```
+
 ### Cuentas
 
 - **Renombrar** cuenta
@@ -224,6 +240,7 @@ Para instalación, paquetes y detalles del proyecto, consulta el **[README](READ
 
 ## 14. Linux: AppImage, `.deb` y arranque
 
+- **Actualizaciones**: véase la tabla en **§9 General → Actualizaciones desde GitHub** (flujo distinto para `.deb` y AppImage).
 - **AppImage y FUSE**: muchos AppImage necesitan **libfuse2** en el sistema. Si ves `dlopen(): error loading libfuse.so.2`, instálala (p. ej. `sudo apt install libfuse2` o `libfuse2t64` en Ubuntu reciente). Como alternativa: `./MiApp.AppImage --appimage-extract-and-run`.
 - **Ejecutar desde terminal**: usa la ruta del binario o del fichero `.AppImage`. El sufijo **`%U`** solo pertenece al campo **`Exec=`** del fichero `.desktop`, no lo escribas al lanzar a mano.
 - **Enlaces WhatsApp (desde 1.2.0, cuenta destino y texto en 1.3.0)**: tras instalar el `.deb` o integrar el AppImage, configura **Catrip Connect** para `whatsapp://` (véase §8). Los `https://wa.me/…` en el navegador no delegan solos a la app.

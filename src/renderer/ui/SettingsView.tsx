@@ -852,8 +852,9 @@ export default function SettingsView({
                         <option value="beta">Beta (pre-releases)</option>
                       </select>
                       <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-                        El diálogo de actualización incluye un resumen del changelog de GitHub y
-                        verifica SHA-512 del .deb cuando está publicado.
+                        AppImage: descarga e instala al reiniciar. Instalación .deb: se te preguntará
+                        si quieres descargar el paquete a una carpeta o abrir solo el enlace de
+                        GitHub; el changelog y SHA-512 del .deb se muestran en el diálogo.
                       </div>
                     </div>
                   ) : null}

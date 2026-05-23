@@ -7,7 +7,7 @@ Cliente de escritorio (**Electron**) para WhatsApp Web con **varias cuentas** y 
 | **[USAGE.md](USAGE.md)** | Guía detallada de uso: interfaz, atajos, ajustes, bandeja, enlaces `whatsapp://` y consejos. |
 | **[CHANGELOG.md](CHANGELOG.md)** | Historial de versiones y cambios destacados. |
 
-**Versión actual:** **1.4.1** — corrección de autoinicio al iniciar sesión en Linux; incluye todo lo de 1.4.0 (notificaciones, Wayland, actualizaciones, rendimiento GPU).
+**Versión actual:** **1.4.2** — actualizaciones menos invasivas en `.deb`, changelog legible en diálogos; incluye 1.4.1 (autoinicio Linux) y 1.4.0 (notificaciones, Wayland, rendimiento GPU).
 
 > El identificador técnico del paquete npm sigue siendo `catrip_multichat_electron` para no romper la persistencia existente (`~/.config/catrip_multichat_electron/`). El nombre visible (**Catrip Connect**), el ejecutable **`catrip-connect`** y el lanzador del escritorio están alineados para integración en Linux.
 
@@ -50,12 +50,12 @@ sudo apt install dpkg fakeroot
 | `npm run dist:linux` | Ambos |
 | `npm run dist` | Todos los targets definidos en `package.json` → `build` |
 
-Artefactos en **`release/`** (versión actual en `package.json`, **1.4.1**):
+Artefactos en **`release/`** (versión actual en `package.json`, **1.4.2**):
 
 ```
 release/
-├── catrip-connect_1.4.1_amd64.deb
-└── catrip-connect_1.4.1_x86_64.AppImage
+├── catrip-connect_1.4.2_amd64.deb
+└── catrip-connect_1.4.2_x86_64.AppImage
 ```
 
 Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mjs`).
@@ -63,7 +63,7 @@ Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mj
 #### `.deb` — instalación
 
 ```bash
-sudo apt install ./release/catrip-connect_1.4.1_amd64.deb
+sudo apt install ./release/catrip-connect_1.4.2_amd64.deb
 ```
 
 Dependencias habituales las resuelve `apt` (`libgtk-3-0`, `libnotify4`, `libnss3`, …; recomendable `libappindicator3-1` para bandeja).
@@ -74,7 +74,9 @@ Tras instalar:
 - Entrada de menú **Catrip Connect** y tema de iconos en `/usr/share/icons/hicolor/.../catrip-connect.png`.
 - El **postinst** actualiza cachés de iconos/desktop y registra `whatsapp://` con `xdg-mime` (`_scripts/postinst-linux.sh`).
 
-**Actualizaciones:** con la app empaquetada y la opción activa en Ajustes, se comprueban releases en GitHub; al descargar una nueva versión se ofrece reiniciar e instalar (`.deb` / AppImage según el artefacto publicado con `latest-linux.yml`).
+**Actualizaciones (`.deb`):** con la opción activa en **Ajustes → General**, la app avisa si hay una versión nueva en GitHub. Puedes **descargar el `.deb` a la carpeta que elijas**, abrir **solo el enlace** de la release para bajarlo tú mismo, o posponer. Tras descargar, instala con `sudo apt install ./catrip-connect_*_amd64.deb`. El diálogo muestra un resumen del changelog (texto plano) y verifica **SHA-512** si está publicado.
+
+**Actualizaciones (AppImage):** descarga automática en segundo plano; cuando termina, se ofrece **Reiniciar ahora** para aplicar la actualización (comportamiento habitual de `electron-updater` con `latest-linux.yml`).
 
 Desinstalar (nombre del paquete Debian):
 
@@ -87,14 +89,14 @@ sudo apt remove catrip-multichat-electron
 Ejecutable autocontenido; permisos de ejecución:
 
 ```bash
-chmod +x release/catrip-connect_1.4.1_x86_64.AppImage
-./release/catrip-connect_1.4.1_x86_64.AppImage
+chmod +x release/catrip-connect_1.4.2_x86_64.AppImage
+./release/catrip-connect_1.4.2_x86_64.AppImage
 ```
 
 Para integrar menú e iconos en el escritorio del usuario (opcional pero recomendable si no usas AppImageLauncher):
 
 ```bash
-_scripts/install-appimage.sh release/catrip-connect_1.4.1_x86_64.AppImage
+_scripts/install-appimage.sh release/catrip-connect_1.4.2_x86_64.AppImage
 # revertir:
 _scripts/install-appimage.sh --uninstall
 ```

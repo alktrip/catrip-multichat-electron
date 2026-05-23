@@ -6,6 +6,21 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.4.2] — 2026-05-20
+
+### Corregido
+
+- **Notas de actualización legibles**: el changelog de GitHub ya no se muestra con etiquetas HTML crudas en los diálogos; se convierte a texto plano (`releaseNotesFormat.ts`).
+
+### Cambiado
+
+- **Actualizaciones en instalación `.deb` (menos invasivo)**: al detectar una nueva versión, la app **pregunta** si quieres descargar el `.deb` a una **carpeta que elijas**; si no, ofrece solo el **enlace** de GitHub para descarga manual. No se descarga ni instala en segundo plano ni se reinicia sola.
+- **Actualizaciones en AppImage**: sin cambios respecto a versiones anteriores (descarga automática, diálogo «Reiniciar ahora» e instalación al salir).
+
+### Documentación
+
+- **README.md**, **USAGE.md**: flujos de actualización diferenciados (`.deb` vs AppImage).
+
 ## [1.4.1] — 2026-05-22
 
 ### Corregido
@@ -182,6 +197,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.4.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.2
 [1.4.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.1
 [1.4.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.0
 [1.3.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.3.2
