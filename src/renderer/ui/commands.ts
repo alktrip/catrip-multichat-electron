@@ -50,6 +50,8 @@ export type CommandContext = {
   triggerNewChat: () => void;
   createAccount: () => void;
   applySettings: (next: CommandSettingsShape) => void;
+  openActivityCenter: () => void;
+  openPendingInbox: () => void;
 };
 
 const SETTINGS_PAGES: ReadonlyArray<{
@@ -149,6 +151,26 @@ export function buildCommands(ctx: CommandContext): Command[] {
     keywords: ["telefono", "phone", "número", "msisdn"],
     icon: { kind: "system", name: "new-chat-number" },
     perform: () => ctx.openPhoneDialog(),
+  });
+
+  cmds.push({
+    id: "action:activity-center",
+    label: "Centro de actividad",
+    description: "Resumen de todas las cuentas y mensajes sin leer",
+    group: "Acciones",
+    keywords: ["actividad", "activity", "resumen", "inbox", "sin leer", "unread", "cuentas"],
+    icon: { kind: "symbol", char: "▤" },
+    perform: () => ctx.openActivityCenter(),
+  });
+
+  cmds.push({
+    id: "action:pending-inbox",
+    label: "Acciones pendientes",
+    description: "Chats sin leer ordenados por urgencia en todas las cuentas",
+    group: "Acciones",
+    keywords: ["pendientes", "pending", "inbox", "sin leer", "unread", "chats", "urgente"],
+    icon: { kind: "symbol", char: "✉" },
+    perform: () => ctx.openPendingInbox(),
   });
 
   if (ctx.mode === "browser") {

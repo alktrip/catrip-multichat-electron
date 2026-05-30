@@ -6,6 +6,30 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-05-30
+
+### Añadido
+
+- **Centro de actividad**: panel con resumen por cuenta (no leídos, último remitente y vista previa del mensaje); acceso desde el rail (▤), paleta de comandos (`Ctrl+K`) y evento IPC `accounts:activityChanged`.
+- **Bandeja de acciones pendientes**: lista unificada de chats sin leer en **todas** las cuentas, ordenada por urgencia; botón ✉ en el rail, comando en la paleta y `chat:openByName` para abrir el chat en WhatsApp Web al pulsar una fila.
+- **Notificaciones enriquecidas**: al subir no leídos se incluye remitente y preview del último mensaje (cuando WhatsApp Web los expone).
+- **Modo preview en navegador** (`npm run dev` → `http://localhost:5173`): mock de `window.catrip` con cuentas demo, aviso visual y fondo oscuro para desarrollar la UI sin Electron.
+- **DevBanner** (solo desarrollo): contexto de runtime (versión, Electron/Chromium, rutas, modo preview) vía `dev:getContext`.
+- Tests unitarios: contador de no leídos, estado de ventana (tray), actividad WhatsApp, inbox pendiente, apertura de chat por nombre y contexto dev.
+
+### Corregido
+
+- **Contador de no leídos**: alineado con WhatsApp Web (prioridad al título de la pestaña; suma de badges sin duplicar filas).
+- **Ventana al minimizar a bandeja**: se conservan tamaño, posición y estado maximizado al restaurar desde el icono de bandeja o al cerrar la ventana (si «minimizar a bandeja» está activo).
+
+### Cambiado
+
+- Polling de actividad unificado (`whatsappActivity.ts`, `accountActivity.ts`) para tray, notificaciones, centro de actividad y bandeja pendiente.
+
+### Documentación
+
+- **README.md**, **USAGE.md**: versión 1.5.0, centro de actividad, acciones pendientes, preview en navegador y DevBanner.
+
 ## [1.4.2] — 2026-05-20
 
 ### Corregido
@@ -197,6 +221,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.5.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.0
 [1.4.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.2
 [1.4.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.1
 [1.4.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.0

@@ -1050,3 +1050,174 @@ body {
     animation: none;
   }
 }
+
+/* -----------------------------------------------------------------------
+ * DevBanner — solo visible con import.meta.env.DEV (Vite elimina el import en build).
+ * --------------------------------------------------------------------- */
+.catrip-dev-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100000;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  pointer-events: auto;
+}
+
+.catrip-dev-banner-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-top: 1px solid rgba(251, 191, 36, 0.45);
+  background: linear-gradient(180deg, rgba(69, 45, 8, 0.96), rgba(42, 28, 6, 0.98));
+  color: #fef3c7;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.catrip-dev-banner-toggle:hover {
+  background: linear-gradient(180deg, rgba(82, 54, 10, 0.98), rgba(50, 34, 8, 0.99));
+}
+
+.catrip-dev-banner-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f59e0b;
+  color: #1c1406;
+}
+
+.catrip-dev-banner-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fde68a;
+}
+
+.catrip-dev-banner-chevron {
+  flex-shrink: 0;
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.catrip-dev-banner-body {
+  max-height: min(42vh, 360px);
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  background: rgba(24, 18, 8, 0.97);
+  border-top: 1px solid rgba(251, 191, 36, 0.2);
+  color: #fef3c7;
+}
+
+.catrip-dev-banner-lead {
+  margin: 0 0 12px;
+  color: #fcd34d;
+  line-height: 1.55;
+}
+
+.catrip-dev-banner-grid {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.catrip-dev-banner-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 150px) 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.catrip-dev-banner-row dt {
+  margin: 0;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.catrip-dev-banner-row dd {
+  margin: 0;
+  color: #fef9c3;
+  word-break: break-word;
+}
+
+.catrip-dev-banner-row code {
+  font-family: inherit;
+  font-size: inherit;
+  color: #fde68a;
+}
+
+.catrip-dev-banner-env {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(251, 191, 36, 0.25);
+}
+
+.catrip-dev-banner-env-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fbbf24;
+  margin-bottom: 8px;
+}
+
+.catrip-dev-banner-hint {
+  margin: 12px 0 0;
+  color: #fcd34d;
+  line-height: 1.5;
+}
+
+/* -----------------------------------------------------------------------
+ * Modo preview del navegador (Vite sin preload de Electron).
+ * --------------------------------------------------------------------- */
+html.catrip-browser-preview,
+html.catrip-browser-preview body {
+  background: #1d1f1f !important;
+}
+
+html.catrip-browser-preview #root {
+  background: #1d1f1f !important;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding-top: 42px;
+}
+
+.catrip-browser-preview-notice {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100001;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #fef3c7;
+  background: linear-gradient(180deg, rgba(30, 58, 95, 0.98), rgba(17, 34, 58, 0.98));
+  border-bottom: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+
+.catrip-browser-preview-notice strong {
+  color: #bfdbfe;
+  font-weight: 700;
+}
+
+.catrip-browser-preview-notice code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #dbeafe;
+}

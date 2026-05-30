@@ -36,7 +36,7 @@ import {
   WHATSAPP_SESSION_STATUS_JS,
   type AccountSessionStatus,
 } from "./accountSessionStatus";
-import { initNotificationHub, maybeNotifyUnreadIncrease } from "./notificationHub";
+import { initNotificationHub, maybeNotifyActivityIncrease } from "./notificationHub";
 import {
   applyLinuxSessionAutostart,
   buildDesktopEntryContent,
@@ -46,6 +46,11 @@ import {
 } from "./desktopIntegration";
 import { parseLaunchAction, type CatripLaunchAction } from "./launchActions";
 import { raiseMainWindow } from "./windowFocus";
+import {
+  applySavedWindowBounds,
+  captureWindowBounds,
+  shouldPersistWindowBounds,
+} from "./windowState";
 import {
   startCallSessionGuard,
   stopCallSessionGuard,
@@ -59,7 +64,15 @@ import {
   normalizeE164Digits,
   type WhatsAppIncomingLink,
 } from "./whatsappLinks";
-import { WHATSAPP_UNREAD_COUNT_JS } from "./whatsappUnread";
+import { buildDevContext } from "./devContext";
+import { WHATSAPP_ACTIVITY_JS } from "./whatsappActivity";
+import { buildWhatsAppOpenChatByNameJs } from "./whatsappOpenChat";
+import {
+  buildActivitySnapshot,
+  activityMapsEqual,
+  type AccountActivityMap,
+  type AccountActivitySnapshot,
+} from "./accountActivity";
 
 // Linux (GNOME/Wayland): `Tray` de Electron puede registrar `chrome_status_icon_1` sin IconPixmap,
 // lo que acaba en placeholder (“...”). `systray2` usa un binario Go y evita ese camino.
@@ -666,27 +679,61 @@ function registerWhatsAppProtocolLinux(userDesktopPath?: string, execPath?: stri
   }
 }
 
+function writePersistedWindowState(
+  st: ViewState,
+  bounds: NonNullable<Settings["general"]["windowBounds"]>,
+  maximized: boolean,
+) {
+  const next = { ...st.settings };
+  next.general = { ...next.general, windowBounds: bounds, windowMaximized: maximized };
+  st.settings = next;
+  saveSettings(next);
+}
+
+function persistWindowStateNow() {
+  const st = viewState;
+  if (!st) return;
+  if (persistWindowTimer) {
+    clearTimeout(persistWindowTimer);
+    persistWindowTimer = null;
+  }
+  const win = st.win;
+  if (!shouldPersistWindowBounds(win)) return;
+  const captured = captureWindowBounds(win);
+  writePersistedWindowState(st, captured.bounds, captured.maximized);
+}
+
 function persistWindowStateSoon() {
   const st = viewState;
   if (!st) return;
-  const win = st.win;
-  // No persistir mientras está minimizada; usar último estado visible.
-  if (win.isMinimized()) return;
+  if (!shouldPersistWindowBounds(st.win)) return;
   if (persistWindowTimer) clearTimeout(persistWindowTimer);
   persistWindowTimer = setTimeout(() => {
     persistWindowTimer = null;
     const st2 = viewState;
-    if (!st2) return;
-    const w = st2.win;
-    const next = { ...st2.settings };
-    next.general = { ...next.general };
-    next.general.windowMaximized = w.isMaximized();
-    // Si está maximizada, guardar también el “normal bounds” para restaurar bien.
-    const b = w.isMaximized() ? w.getNormalBounds() : w.getBounds();
-    next.general.windowBounds = { x: b.x, y: b.y, width: b.width, height: b.height };
-    st2.settings = next;
-    saveSettings(next);
+    if (!st2 || !shouldPersistWindowBounds(st2.win)) return;
+    const captured = captureWindowBounds(st2.win);
+    writePersistedWindowState(st2, captured.bounds, captured.maximized);
   }, 350);
+}
+
+function showMainWindow() {
+  const st = ensureState();
+  const win = st.win;
+  if (!win.isVisible() || win.isMinimized()) {
+    applySavedWindowBounds(
+      win,
+      st.settings.general.windowBounds,
+      st.settings.general.windowMaximized,
+    );
+  }
+  raiseMainWindow(win);
+  layoutActiveView();
+}
+
+function hideMainWindow() {
+  persistWindowStateNow();
+  ensureState().win.hide();
 }
 
 let persistWindowTimer: NodeJS.Timeout | null = null;
@@ -779,6 +826,8 @@ type ViewState = {
   trayUnreadDetected: number;
   /** No leídos detectados por cuenta. Usado por el rail (punto verde de pulso). */
   unreadByAccount: Record<string, number>;
+  /** Actividad reciente por cuenta (preview, estado, chats sin leer). */
+  activityByAccount: AccountActivityMap;
   accountStatusById: Record<string, AccountSessionStatus>;
 };
 
@@ -901,6 +950,16 @@ function broadcastAccountStatusIfChanged(next: Record<string, AccountSessionStat
   }
   if (!changed) return;
   st.accountStatusById = next;
+  const nextActivity = { ...st.activityByAccount };
+  let activityChanged = false;
+  for (const k of Object.keys(next)) {
+    const snap = nextActivity[k];
+    if (snap && snap.status !== next[k]) {
+      nextActivity[k] = { ...snap, status: next[k]! };
+      activityChanged = true;
+    }
+  }
+  if (activityChanged) broadcastActivityIfChanged(nextActivity);
   refreshTrayIcon();
   try {
     void st.shellView.webContents.send("accounts:statusChanged", next);
@@ -960,7 +1019,7 @@ function trayAccountMenuLabel(a: Account): string {
   return `${a.label} (${statusLabel}${unreadBit})${activeBit}`;
 }
 
-async function evalUnreadForAccount(id: string): Promise<number | null> {
+async function evalActivityForAccount(id: string): Promise<AccountActivitySnapshot | null> {
   const st = ensureState();
   const view = st.viewsById.get(id);
   if (!view || view.webContents.isDestroyed()) return null;
@@ -972,10 +1031,49 @@ async function evalUnreadForAccount(id: string): Promise<number | null> {
   }
   if (!url.includes("web.whatsapp.com")) return null;
   try {
-    const n = await view.webContents.executeJavaScript(WHATSAPP_UNREAD_COUNT_JS, true);
-    return typeof n === "number" && Number.isFinite(n) ? clampTrayBadge(n) : 0;
+    const raw = await view.webContents.executeJavaScript(WHATSAPP_ACTIVITY_JS, true);
+    const status =
+      (await evalAccountSessionStatus(id)) ?? st.accountStatusById[id] ?? "loading";
+    const snapshot = buildActivitySnapshot(raw, status, st.activityByAccount[id]);
+    return { ...snapshot, unread: clampTrayBadge(snapshot.unread) };
   } catch {
     return null;
+  }
+}
+
+function emptyActivitySnapshot(status: AccountSessionStatus = "loading"): AccountActivitySnapshot {
+  return {
+    unread: 0,
+    status,
+    lastSender: null,
+    lastPreview: null,
+    lastActivityAt: null,
+    unreadChats: [],
+  };
+}
+
+function broadcastActivityIfChanged(next: AccountActivityMap) {
+  const st = ensureState();
+  if (activityMapsEqual(st.activityByAccount, next)) return;
+  st.activityByAccount = next;
+  try {
+    void st.shellView.webContents.send("accounts:activityChanged", next);
+  } catch {
+    /* shellView puede no estar lista todavía en arranque */
+  }
+}
+
+function applyAccountActivity(id: string, snapshot: AccountActivitySnapshot, notify: boolean) {
+  const st = ensureState();
+  const prevUnread = clampTrayBadge(st.unreadByAccount[id] ?? 0);
+  broadcastActivityIfChanged({ ...st.activityByAccount, [id]: snapshot });
+  broadcastUnreadIfChanged({ ...st.unreadByAccount, [id]: snapshot.unread });
+  if (notify && snapshot.unread > prevUnread) {
+    maybeNotifyActivityIncrease(id, prevUnread, {
+      unread: snapshot.unread,
+      lastSender: snapshot.lastSender,
+      lastPreview: snapshot.lastPreview,
+    });
   }
 }
 
@@ -1007,19 +1105,6 @@ function broadcastUnreadIfChanged(next: Record<string, number>) {
   }
 }
 
-/** Actualiza el contador de una cuenta dentro del mapa global (immutable). */
-function setUnreadFor(id: string, value: number | null) {
-  const st = ensureState();
-  const next: Record<string, number> = { ...st.unreadByAccount };
-  if (value == null) {
-    if (next[id] === 0 || next[id] === undefined) return;
-    next[id] = 0;
-  } else {
-    next[id] = value;
-  }
-  broadcastUnreadIfChanged(next);
-}
-
 async function pollTrayUnreadFromActiveView() {
   const st = ensureState();
   if (st.chrome.mode !== "browser") return;
@@ -1031,51 +1116,64 @@ async function pollTrayUnreadFromActiveView() {
   const acc = st.accounts.find((a) => a.id === id) || null;
   const perAccountNotifs = acc?.notificationsEnabled !== false;
   try {
-    const prevActive = clampTrayBadge(st.unreadByAccount[id] ?? 0);
-    const num = await evalUnreadForAccount(id);
-    if (num == null) return;
-    setUnreadFor(id, num);
-    if (perAccountNotifs) {
-      maybeNotifyUnreadIncrease(id, prevActive, num);
-    }
+    const snapshot = await evalActivityForAccount(id);
+    if (snapshot == null) return;
+    applyAccountActivity(id, snapshot, perAccountNotifs);
   } catch {
     // ignorar
   }
 }
 
-/** Muestrea no leídos en TODAS las cuentas no activas y emite un único
+/** Muestrea actividad en TODAS las cuentas no activas y emite un único
  * broadcast si el mapa cambia. La cuenta activa se cubre con el poll
  * principal (`pollTrayUnreadFromActiveView`). */
 async function pollUnreadInactiveAccounts() {
   const st = viewState;
   if (!st) return;
   const activeId = st.activeId;
-  const next: Record<string, number> = { ...st.unreadByAccount };
-  let any = false;
+  const nextActivity = { ...st.activityByAccount };
+  const nextUnread = { ...st.unreadByAccount };
+  let changedActivity = false;
+  let changedUnread = false;
+
   for (const a of st.accounts) {
     if (a.id === activeId) continue;
-    const prevN = clampTrayBadge(next[a.id] ?? 0);
-    const n = await evalUnreadForAccount(a.id);
-    if (n == null) {
-      // Sin medición: limpiar a 0 si había un valor previo (la vista pudo
-      // haberse destruido o la sesión cerró).
-      if ((next[a.id] ?? 0) !== 0) {
-        next[a.id] = 0;
-        any = true;
+    const prevN = clampTrayBadge(nextUnread[a.id] ?? 0);
+    const snapshot = await evalActivityForAccount(a.id);
+    if (snapshot == null) {
+      if ((nextUnread[a.id] ?? 0) !== 0) {
+        nextUnread[a.id] = 0;
+        changedUnread = true;
+      }
+      const empty = emptyActivitySnapshot(st.accountStatusById[a.id] ?? "loading");
+      const prevSnap = nextActivity[a.id];
+      if (!prevSnap || !activityMapsEqual({ [a.id]: prevSnap }, { [a.id]: empty })) {
+        nextActivity[a.id] = empty;
+        changedActivity = true;
       }
       continue;
     }
-    if ((next[a.id] ?? 0) !== n) {
-      if (a.notificationsEnabled !== false) {
-        maybeNotifyUnreadIncrease(a.id, prevN, n);
-      }
-      next[a.id] = n;
-      any = true;
+    if ((nextUnread[a.id] ?? 0) !== snapshot.unread) {
+      nextUnread[a.id] = snapshot.unread;
+      changedUnread = true;
+    }
+    const prevSnap = nextActivity[a.id];
+    if (!prevSnap || !activityMapsEqual({ [a.id]: prevSnap }, { [a.id]: snapshot })) {
+      nextActivity[a.id] = snapshot;
+      changedActivity = true;
+    }
+    if (a.notificationsEnabled !== false && snapshot.unread > prevN) {
+      maybeNotifyActivityIncrease(a.id, prevN, {
+        unread: snapshot.unread,
+        lastSender: snapshot.lastSender,
+        lastPreview: snapshot.lastPreview,
+      });
     }
   }
-  if (any) {
-    broadcastUnreadIfChanged(next);
-  } else {
+
+  if (changedActivity) broadcastActivityIfChanged(nextActivity);
+  if (changedUnread) broadcastUnreadIfChanged(nextUnread);
+  else if (!changedActivity) {
     recomputeTrayUnreadTotal();
     refreshTrayIcon();
     refreshDockBadge();
@@ -1396,22 +1494,16 @@ function buildTrayMenu() {
   return Menu.buildFromTemplate([
     {
       label: "Mostrar",
-      click: () => {
-        st.win.show();
-        st.win.focus();
-      },
+      click: () => showMainWindow(),
     },
     {
       label: "Ocultar",
-      click: () => {
-        st.win.hide();
-      },
+      click: () => hideMainWindow(),
     },
     {
       label: "Ajustes",
       click: () => {
-        st.win.show();
-        st.win.focus();
+        showMainWindow();
         void st.shellView.webContents.send("ui:openSettings");
       },
     },
@@ -1489,7 +1581,7 @@ function buildAppMenu() {
       submenu: [
         { label: "Ajustes", accelerator: "Ctrl+P", click: () => send("ui:openSettings") },
         { type: "separator" },
-        { label: "Ocultar", accelerator: "Ctrl+W", click: () => st.win.hide() },
+        { label: "Ocultar", accelerator: "Ctrl+W", click: () => hideMainWindow() },
         { label: "Salir", accelerator: "Ctrl+Q", click: () => requestAppQuit() },
       ],
     },
@@ -1731,9 +1823,7 @@ function resolveIncomingLinkAccountId(st: {
 }
 
 function focusMainWindow() {
-  const st = viewState;
-  if (!st) return;
-  raiseMainWindow(st.win);
+  showMainWindow();
 }
 
 function ensureBrowserModeFromMain(st: NonNullable<typeof viewState>) {
@@ -1827,6 +1917,20 @@ function openChatByPhone(phoneRaw: string) {
   void view.webContents.loadURL(buildWhatsAppSendUrl(digits));
 }
 
+function openChatByName(accountId: string, chatName: string) {
+  const st = ensureState();
+  const name = String(chatName || "").trim();
+  if (!name) return;
+  if (!st.accounts.some((a) => a.id === accountId)) return;
+  ensureBrowserModeFromMain(st);
+  if (st.activeId !== accountId) setActiveAccount(accountId);
+  attachBrowserViewForAccount(accountId);
+  focusMainWindow();
+  const view = ensureViewForAccount(accountId);
+  const js = buildWhatsAppOpenChatByNameJs(name);
+  void view.webContents.executeJavaScript(js, true).catch(() => {});
+}
+
 function triggerNewChatInActiveView() {
   const st = ensureState();
   if (st.chrome.mode !== "browser") return;
@@ -1864,8 +1968,7 @@ function createTray() {
       },
       onActivate: () => {
         try {
-          st.win.show();
-          st.win.focus();
+          showMainWindow();
         } catch {
           // ignore
         }
@@ -1880,23 +1983,21 @@ function createTray() {
       },
       onShow: () => {
         try {
-          st.win.show();
-          st.win.focus();
+          showMainWindow();
         } catch {
           // ignore
         }
       },
       onHide: () => {
         try {
-          st.win.hide();
+          hideMainWindow();
         } catch {
           // ignore
         }
       },
       onSettings: () => {
         try {
-          st.win.show();
-          st.win.focus();
+          showMainWindow();
           void st.shellView.webContents.send("ui:openSettings");
         } catch {
           // ignore
@@ -2057,14 +2158,10 @@ function buildSystray2Menu() {
     title: summary,
     tooltip: summary,
     items: [
-      mk("Mostrar", () => {
-        st.win.show();
-        st.win.focus();
-      }),
-      mk("Ocultar", () => st.win.hide()),
+      mk("Mostrar", () => showMainWindow()),
+      mk("Ocultar", () => hideMainWindow()),
       mk("Ajustes", () => {
-        st.win.show();
-        st.win.focus();
+        showMainWindow();
         void st.shellView.webContents.send("ui:openSettings");
       }),
       mk(
@@ -2233,6 +2330,7 @@ app.whenReady().then(() => {
     attachedViewId: null,
     trayUnreadDetected: 0,
     unreadByAccount: {},
+    activityByAccount: {},
     accountStatusById: {},
   };
 
@@ -2319,7 +2417,7 @@ app.whenReady().then(() => {
     }
     if (st.settings.general.closeToTray) {
       e.preventDefault();
-      st.win.hide();
+      hideMainWindow();
     }
   });
 
@@ -2344,6 +2442,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", (e) => {
   isQuitting = true;
+  persistWindowStateNow();
   if (trayDisposed) return;
   e.preventDefault();
   void disposeTrayBackend().finally(() => app.quit());
@@ -2433,6 +2532,11 @@ function getApplicationVersionForDisplay(): string {
 
 ipcMain.handle("app:getVersion", () => getApplicationVersionForDisplay());
 
+ipcMain.handle("dev:getContext", () => {
+  if (app.isPackaged) return null;
+  return buildDevContext(E2E_MODE);
+});
+
 ipcMain.handle("accounts:list", () => {
   const st = ensureState();
   return st.accounts;
@@ -2446,6 +2550,11 @@ ipcMain.handle("accounts:getActiveId", () => {
 ipcMain.handle("accounts:getUnread", () => {
   const st = ensureState();
   return { ...st.unreadByAccount };
+});
+
+ipcMain.handle("accounts:getActivity", () => {
+  const st = ensureState();
+  return { ...st.activityByAccount };
 });
 
 ipcMain.handle("accounts:create", (_evt, label?: string) => {
@@ -2600,7 +2709,7 @@ ipcMain.handle("accounts:delete", async (_evt, id: string) => {
     });
   }
 
-  // 4. Limpiar contador de no leídos.
+  // 4. Limpiar contador de no leídos y actividad.
   if (st.unreadByAccount[id] !== undefined) {
     const next = { ...st.unreadByAccount };
     delete next[id];
@@ -2609,6 +2718,16 @@ ipcMain.handle("accounts:delete", async (_evt, id: string) => {
       void st.shellView.webContents.send("accounts:unreadChanged", next);
     } catch {
       /* shellView puede no estar lista */
+    }
+  }
+  if (st.activityByAccount[id] !== undefined) {
+    const nextAct = { ...st.activityByAccount };
+    delete nextAct[id];
+    st.activityByAccount = nextAct;
+    try {
+      void st.shellView.webContents.send("accounts:activityChanged", nextAct);
+    } catch {
+      /* ignore */
     }
   }
 
@@ -2646,6 +2765,10 @@ ipcMain.handle("accounts:delete", async (_evt, id: string) => {
 
 ipcMain.handle("chat:openByPhone", (_evt, phoneRaw: string) => {
   openChatByPhone(phoneRaw);
+});
+
+ipcMain.handle("chat:openByName", (_evt, accountId: string, chatName: string) => {
+  openChatByName(accountId, chatName);
 });
 
 ipcMain.handle("chat:triggerNewChat", () => {

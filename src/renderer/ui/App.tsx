@@ -11,7 +11,9 @@ import {
   type Command,
   type CommandIcon,
 } from "./commands";
-import type { AccountSessionStatus, AppApi } from "../../preload/preload";
+import type { AccountSessionStatus, AppApi, AccountActivityMap } from "../../preload/preload";
+import ActivityCenter from "./ActivityCenter";
+import PendingInbox from "./PendingInbox";
 
 const SESSION_STATUS_LABEL: Record<AccountSessionStatus, string> = {
   loading: "Cargando…",
@@ -176,6 +178,7 @@ export default function App() {
   const [accountStatusById, setAccountStatusById] = React.useState<
     Record<string, AccountSessionStatus>
   >({});
+  const [activityByAccount, setActivityByAccount] = React.useState<AccountActivityMap>({});
   /**
    * Token por cuenta que se incrementa cada vez que su contador de no leídos
    * SUBE. Se usa como `key` del `<span>` del unread-dot para forzar remount
@@ -203,6 +206,8 @@ export default function App() {
   const [dragId, setDragId] = React.useState<string | null>(null);
   const [dropIndex, setDropIndex] = React.useState<number | null>(null);
   const [quickOpen, setQuickOpen] = React.useState(false);
+  const [activityOpen, setActivityOpen] = React.useState(false);
+  const [pendingInboxOpen, setPendingInboxOpen] = React.useState(false);
   const [quickQuery, setQuickQuery] = React.useState("");
   const quickInputRef = React.useRef<HTMLInputElement | null>(null);
   const [phoneOpen, setPhoneOpen] = React.useState(false);
@@ -251,16 +256,22 @@ export default function App() {
       .getAccountsStatus()
       .then((m) => mounted && setAccountStatusById(m ?? {}))
       .catch(() => {});
+    api
+      .getAccountsActivity()
+      .then((m) => mounted && setActivityByAccount(m ?? {}))
+      .catch(() => {});
 
     const offList = api.onAccountsListChanged((a) => setAccounts(a));
     const offActive = api.onActiveAccountChanged((id) => setActiveId(id));
     const offUnread = api.onAccountsUnreadChanged((m) => setUnreadByAccount(m ?? {}));
     const offStatus = api.onAccountsStatusChanged((m) => setAccountStatusById(m ?? {}));
+    const offActivity = api.onAccountsActivityChanged((m) => setActivityByAccount(m ?? {}));
     return () => {
       offList();
       offActive();
       offUnread();
       offStatus();
+      offActivity();
       mounted = false;
     };
   }, []);
@@ -291,6 +302,19 @@ export default function App() {
       setQuickQuery("");
       setQuickOpen(true);
       setPhoneOpen(false);
+      setActivityOpen(false);
+    });
+    const offActivity = window.catrip.onOpenActivityCenter(() => {
+      setActivityOpen(true);
+      setQuickOpen(false);
+      setPhoneOpen(false);
+      setPendingInboxOpen(false);
+    });
+    const offPending = window.catrip.onOpenPendingInbox(() => {
+      setPendingInboxOpen(true);
+      setQuickOpen(false);
+      setPhoneOpen(false);
+      setActivityOpen(false);
     });
     const offPhone = window.catrip.onOpenPhoneChat(() => {
       setPhoneValue("+");
@@ -311,6 +335,8 @@ export default function App() {
     });
     return () => {
       offQuick();
+      offActivity();
+      offPending();
       offPhone();
       offZen();
       offShortcuts();
@@ -383,6 +409,21 @@ export default function App() {
     setPhoneValue("+");
     setPhoneOpen(true);
     setQuickOpen(false);
+    setActivityOpen(false);
+  }, []);
+
+  const openActivityCenter = React.useCallback(() => {
+    setActivityOpen(true);
+    setQuickOpen(false);
+    setPhoneOpen(false);
+    setPendingInboxOpen(false);
+  }, []);
+
+  const openPendingInbox = React.useCallback(() => {
+    setPendingInboxOpen(true);
+    setQuickOpen(false);
+    setPhoneOpen(false);
+    setActivityOpen(false);
   }, []);
 
   const toggleZen = React.useCallback((next: boolean) => {
@@ -412,6 +453,8 @@ export default function App() {
           void window.catrip.createAccount();
         },
         applySettings: applySettingsRemote,
+        openActivityCenter,
+        openPendingInbox,
       }),
     [
       accounts,
@@ -422,6 +465,8 @@ export default function App() {
       enterSettings,
       toggleZen,
       openPhoneDialog,
+      openActivityCenter,
+      openPendingInbox,
       applySettingsRemote,
     ],
   );
@@ -472,7 +517,7 @@ export default function App() {
     }
     const modalBlocking =
       mode === "browser" &&
-      (quickOpen || phoneOpen || incomingLinkOpen || shortcutsOpen || aboutOpen);
+      (quickOpen || phoneOpen || incomingLinkOpen || shortcutsOpen || aboutOpen || activityOpen || pendingInboxOpen);
     if (import.meta.env.DEV) {
       console.log("[catrip-embed-renderer]", "setMode+modal", { mode, modalBlocking });
     }
@@ -480,7 +525,7 @@ export default function App() {
       await window.catrip.setMode(mode);
       await window.catrip.setRendererModalOpen(modalBlocking);
     })();
-  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, zen]);
+  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, activityOpen, pendingInboxOpen, zen]);
 
   const sidebarAllowed = settings?.general?.showSidebar !== false;
 
@@ -808,6 +853,44 @@ export default function App() {
               >
                 <SystemIconImg name="new-chat" size={22} />
               </button>
+              <button
+                type="button"
+                className="catrip-rail-action-btn"
+                title="Acciones pendientes"
+                onClick={() => openPendingInbox()}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 1,
+                    fontWeight: 700,
+                    color: "#dce4e4",
+                    userSelect: "none",
+                  }}
+                >
+                  ✉
+                </span>
+              </button>
+              <button
+                type="button"
+                className="catrip-rail-action-btn"
+                title="Centro de actividad"
+                onClick={() => openActivityCenter()}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    fontSize: 17,
+                    lineHeight: 1,
+                    fontWeight: 700,
+                    color: "#dce4e4",
+                    userSelect: "none",
+                  }}
+                >
+                  ▤
+                </span>
+              </button>
               <div style={{ height: 1, background: "rgba(255,255,255,0.10)" }} />
               <button
                 type="button"
@@ -1007,6 +1090,32 @@ export default function App() {
               ↑ ↓ para navegar • Intro para ejecutar • Esc para cerrar
             </div>
           </div>
+        </Overlay>
+
+        <Overlay open={activityOpen} onClose={() => setActivityOpen(false)}>
+          <ActivityCenter
+            accounts={accounts}
+            activeId={activeId}
+            activityByAccount={activityByAccount}
+            onSelectAccount={(id) => {
+              setActivityOpen(false);
+              setActiveId(id);
+              void window.catrip.setActiveAccount(id);
+            }}
+          />
+        </Overlay>
+
+        <Overlay open={pendingInboxOpen} onClose={() => setPendingInboxOpen(false)}>
+          <PendingInbox
+            accounts={accounts}
+            activityByAccount={activityByAccount}
+            onOpenChat={(accountId, chatName) => {
+              setPendingInboxOpen(false);
+              setActiveId(accountId);
+              void window.catrip.setActiveAccount(accountId);
+              void window.catrip.openChatByName(accountId, chatName);
+            }}
+          />
         </Overlay>
 
         <Overlay

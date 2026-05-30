@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.4.2**
+**Versión de esta guía:** **1.5.0**
 
 ---
 
@@ -35,6 +35,8 @@ Los datos de la aplicación en Linux se guardan bajo `~/.config/catrip_multichat
 - **Orden**: arrastra un avatar verticalmente para **reordenar** las cuentas (el orden define también `Ctrl+1` … `Ctrl+9`).
 - **Indicador de no leídos**: punto o número cuando hay mensajes pendientes en esa cuenta (según datos que expone WhatsApp Web).
 - **Botón Zen** (icono dedicado): alterna el **modo Zen** (equivalente a `Ctrl+Shift+Z`).
+- **Centro de actividad** (▤): resumen de todas las cuentas con no leídos, último remitente y vista previa.
+- **Acciones pendientes** (✉): bandeja unificada de chats sin leer ordenados por urgencia; al pulsar una fila se abre ese chat en la cuenta correspondiente.
 
 Si en **Ajustes → General** desactivas **Mostrar barra lateral**, el rail desaparece hasta que lo vuelvas a activar (también desde la paleta: “Ocultar/Mostrar barra lateral”).
 
@@ -57,7 +59,7 @@ Abre un buscador unificado de acciones:
 - **Enter** ejecuta el comando resaltado.
 - **Escape** cierra la paleta.
 
-Incluye (entre otras): cambiar de cuenta por nombre, **Nueva cuenta**, **Nuevo chat**, **Chat por número**, entrar en **Ajustes** por sección, activar/desactivar **modo Zen**, alternar **barra lateral**, **notificaciones del sistema** y **escala de interfaz** (100 % … 200 %).
+Incluye (entre otras): cambiar de cuenta por nombre, **Nueva cuenta**, **Nuevo chat**, **Chat por número**, **Centro de actividad**, **Acciones pendientes**, entrar en **Ajustes** por sección, activar/desactivar **modo Zen**, alternar **barra lateral**, **notificaciones del sistema** y **escala de interfaz** (100 % … 200 %).
 
 ---
 
@@ -161,7 +163,7 @@ Tras descargar un `.deb` manualmente:
 
 ```bash
 cd /ruta/donde/guardaste/el/paquete
-sudo apt install ./catrip-connect_1.4.2_amd64.deb
+sudo apt install ./catrip-connect_1.5.0_amd64.deb
 ```
 
 ### Cuentas
@@ -178,7 +180,7 @@ sudo apt install ./catrip-connect_1.4.2_amd64.deb
 - **Mostrar detalle (preview)**
 - **No molestar** (sin avisos nativos; el badge del tray/dock sigue activo)
 - **Sonido del sistema** en notificaciones
-- Aviso cuando suben no leídos en **cualquier cuenta**; al pulsar la notificación se activa esa cuenta
+- Aviso cuando suben no leídos en **cualquier cuenta** (con **remitente** y **vista previa** del mensaje cuando WhatsApp Web los expone); al pulsar la notificación se activa esa cuenta
 
 ### Red
 
@@ -198,7 +200,7 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 
 ## 10. Bandeja del sistema (tray)
 
-- Al **cerrar** la ventana, según configuración la app puede **quedar en la bandeja** en lugar de salir.
+- Al **cerrar** la ventana, según configuración la app puede **quedar en la bandeja** en lugar de salir. Al **restaurar** desde la bandeja, la ventana recupera el **tamaño, posición y estado maximizado** que tenía antes de ocultarse.
 - El icono puede mostrar **badge** con el número de conversaciones no leídas (según las cuentas y la configuración).
 - En **Linux**, el menú de bandeja lista **cuentas** con estado (conectada / QR / sin red) y no leídos; el tooltip del icono resume el mismo estado por cuenta.
 - El **rail** muestra en el tooltip de cada cuenta el estado de sesión y los no leídos.
@@ -212,6 +214,18 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 
 - **Ayuda → Atajos de teclado**: lista rápida dentro de la aplicación.
 - **Ayuda → Acerca de**: información de versión.
+
+---
+
+## 11b. Desarrollo: preview en navegador
+
+Con `npm run dev`, Vite sirve la interfaz en `http://localhost:5173/`. **No** es WhatsApp Web real: sin `window.catrip` de Electron se activa un **modo preview** con dos cuentas demo, actividad simulada y un aviso azul en la parte superior.
+
+- Útil para maquetar el shell React (rail, ajustes, bandejas) sin arrancar Electron.
+- **Acciones pendientes** en preview solo registran en consola; en la app empaquetada abren el chat en WhatsApp Web.
+- En desarrollo aparece además el **DevBanner** (versión, rutas, Electron/Chromium) en la esquina inferior.
+
+Para probar sesiones reales de WhatsApp, usa la ventana Electron que `npm run dev` abre en paralelo (puerto 5173 + proceso principal).
 
 ---
 

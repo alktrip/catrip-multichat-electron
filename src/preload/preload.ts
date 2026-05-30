@@ -12,15 +12,42 @@ export type AccountUnreadMap = Record<string, number>;
 export type AccountSessionStatus = "loading" | "qr" | "connected" | "offline";
 export type AccountStatusMap = Record<string, AccountSessionStatus>;
 
+export type AccountActivitySnapshot = {
+  unread: number;
+  status: AccountSessionStatus;
+  lastSender: string | null;
+  lastPreview: string | null;
+  lastActivityAt: number | null;
+  unreadChats: Array<{ name: string; preview: string; unreadCount: number }>;
+};
+
+export type AccountActivityMap = Record<string, AccountActivitySnapshot>;
+
 export type RegisterProtocolResult = { ok: boolean; message: string };
+
+export type DevContextDto = {
+  appVersion: string;
+  electronVersion: string;
+  chromeVersion: string;
+  nodeVersion: string;
+  platform: string;
+  arch: string;
+  isPackaged: boolean;
+  userData: string;
+  e2eMode: boolean;
+  catripEnv: Record<string, string>;
+};
 
 export type AppApi = {
   getVersion: () => Promise<string>;
+  getDevContext: () => Promise<DevContextDto | null>;
   listAccounts: () => Promise<AccountDto[]>;
   getAccountsUnread: () => Promise<AccountUnreadMap>;
   onAccountsUnreadChanged: (cb: (map: AccountUnreadMap) => void) => () => void;
   getAccountsStatus: () => Promise<AccountStatusMap>;
   onAccountsStatusChanged: (cb: (map: AccountStatusMap) => void) => () => void;
+  getAccountsActivity: () => Promise<AccountActivityMap>;
+  onAccountsActivityChanged: (cb: (map: AccountActivityMap) => void) => () => void;
   createAccount: (label?: string) => Promise<AccountDto>;
   createAccountV2: (payload?: { label?: string; icon?: unknown }) => Promise<AccountDto>;
   regenerateAccountIcon: (id: string) => Promise<AccountDto | null>;
@@ -35,6 +62,7 @@ export type AppApi = {
   onAccountsListChanged: (cb: (accounts: AccountDto[]) => void) => () => void;
   onActiveAccountChanged: (cb: (id: string | null) => void) => () => void;
   openChatByPhone: (phoneRaw: string) => Promise<void>;
+  openChatByName: (accountId: string, chatName: string) => Promise<void>;
   triggerNewChat: () => Promise<void>;
   confirmIncomingLinkAccount: (accountId: string) => Promise<boolean>;
   cancelIncomingLink: () => Promise<boolean>;
@@ -54,6 +82,8 @@ export type AppApi = {
   onModeChanged: (cb: (mode: "browser" | "settings") => void) => () => void;
   onOpenSettings: (cb: () => void) => () => void;
   onOpenQuickSwitcher: (cb: () => void) => () => void;
+  onOpenActivityCenter: (cb: () => void) => () => void;
+  onOpenPendingInbox: (cb: () => void) => () => void;
   onOpenPhoneChat: (cb: () => void) => () => void;
   onZenChanged: (cb: (enabled: boolean) => void) => () => void;
   onOpenShortcutsHelp: (cb: () => void) => () => void;
@@ -78,6 +108,7 @@ export type WhatsAppMediaDiagnosticsResult =
 
 const api: AppApi = {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
+  getDevContext: () => ipcRenderer.invoke("dev:getContext") as Promise<DevContextDto | null>,
   listAccounts: () => ipcRenderer.invoke("accounts:list"),
   getAccountsUnread: () => ipcRenderer.invoke("accounts:getUnread"),
   onAccountsUnreadChanged: (cb) => {
@@ -91,6 +122,13 @@ const api: AppApi = {
     const listener = (_evt: unknown, map: AccountStatusMap) => cb(map ?? {});
     ipcRenderer.on("accounts:statusChanged", listener);
     return () => ipcRenderer.removeListener("accounts:statusChanged", listener);
+  },
+  getAccountsActivity: () =>
+    ipcRenderer.invoke("accounts:getActivity") as Promise<AccountActivityMap>,
+  onAccountsActivityChanged: (cb) => {
+    const listener = (_evt: unknown, map: AccountActivityMap) => cb(map ?? {});
+    ipcRenderer.on("accounts:activityChanged", listener);
+    return () => ipcRenderer.removeListener("accounts:activityChanged", listener);
   },
   createAccount: (label?: string) => ipcRenderer.invoke("accounts:create", label),
   createAccountV2: (payload?: { label?: string; icon?: unknown }) =>
@@ -119,6 +157,8 @@ const api: AppApi = {
     return () => ipcRenderer.removeListener("accounts:activeChanged", listener);
   },
   openChatByPhone: (phoneRaw: string) => ipcRenderer.invoke("chat:openByPhone", phoneRaw),
+  openChatByName: (accountId: string, chatName: string) =>
+    ipcRenderer.invoke("chat:openByName", accountId, chatName),
   triggerNewChat: () => ipcRenderer.invoke("chat:triggerNewChat"),
   confirmIncomingLinkAccount: (accountId: string) =>
     ipcRenderer.invoke("incomingLink:confirmAccount", accountId),
@@ -160,6 +200,16 @@ const api: AppApi = {
     const listener = () => cb();
     ipcRenderer.on("ui:openQuickSwitcher", listener);
     return () => ipcRenderer.removeListener("ui:openQuickSwitcher", listener);
+  },
+  onOpenActivityCenter: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on("ui:openActivityCenter", listener);
+    return () => ipcRenderer.removeListener("ui:openActivityCenter", listener);
+  },
+  onOpenPendingInbox: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on("ui:openPendingInbox", listener);
+    return () => ipcRenderer.removeListener("ui:openPendingInbox", listener);
   },
   onOpenPhoneChat: (cb) => {
     const listener = () => cb();

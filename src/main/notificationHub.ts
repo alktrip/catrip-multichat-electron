@@ -7,6 +7,12 @@ export type NotificationAccount = {
   notificationsEnabled?: boolean;
 };
 
+export type ActivityNotifyPayload = {
+  unread: number;
+  lastSender: string | null;
+  lastPreview: string | null;
+};
+
 export type NotificationHubDeps = {
   getSettings: () => Settings;
   getAccounts: () => NotificationAccount[];
@@ -34,20 +40,37 @@ export function resetNotificationHub() {
   lastNotifiedCountByAccount.clear();
 }
 
+function buildNotificationBody(
+  settings: Settings,
+  payload: ActivityNotifyPayload,
+): string {
+  const showPreview = settings.notifications.showPreview !== false;
+  if (showPreview && payload.lastPreview) {
+    if (payload.lastSender) return `${payload.lastSender}: ${payload.lastPreview}`;
+    return payload.lastPreview;
+  }
+  if (showPreview) {
+    return payload.unread === 1
+      ? "Tienes 1 chat sin leer."
+      : `Tienes ${payload.unread} chats sin leer.`;
+  }
+  return "Tienes chats sin leer.";
+}
+
 /**
- * Aviso nativo si el contador de no leídos sube. Respeta DND, cuenta con notificaciones
- * desactivadas y throttle global / por cuenta.
+ * Aviso nativo si el contador de no leídos sube. Usa remitente/preview cuando
+ * están disponibles desde WhatsApp Web.
  */
-export function maybeNotifyUnreadIncrease(
+export function maybeNotifyActivityIncrease(
   accountId: string,
   prevCount: number,
-  nextCount: number,
+  payload: ActivityNotifyPayload,
 ): void {
   if (!deps) return;
   const settings = deps.getSettings();
   if (!settings.notifications.enabled) return;
   if (settings.notifications.doNotDisturb) return;
-  if (nextCount <= prevCount) return;
+  if (payload.unread <= prevCount) return;
 
   const acc = deps.getAccounts().find((a) => a.id === accountId);
   if (!acc || acc.notificationsEnabled === false) return;
@@ -58,20 +81,15 @@ export function maybeNotifyUnreadIncrease(
   if (now - lastAcc < PER_ACCOUNT_THROTTLE_MS) return;
 
   const lastNotified = lastNotifiedCountByAccount.get(accountId) ?? 0;
-  if (nextCount <= lastNotified && prevCount >= lastNotified) return;
+  if (payload.unread <= lastNotified && prevCount >= lastNotified) return;
 
   lastGlobalNotifyAt = now;
   lastNotifyAtByAccount.set(accountId, now);
-  lastNotifiedCountByAccount.set(accountId, nextCount);
+  lastNotifiedCountByAccount.set(accountId, payload.unread);
 
   const showAcc = !!settings.notifications.showAccountName;
-  const showPreview = settings.notifications.showPreview !== false;
   const title = showAcc ? `WhatsApp · ${acc.label}` : "WhatsApp";
-  const body = showPreview
-    ? nextCount === 1
-      ? "Tienes 1 chat sin leer."
-      : `Tienes ${nextCount} chats sin leer.`
-    : "Tienes chats sin leer.";
+  const body = buildNotificationBody(settings, payload);
 
   try {
     const notif = new Notification({
@@ -86,4 +104,17 @@ export function maybeNotifyUnreadIncrease(
   } catch {
     // ignore — entorno sin soporte de notificaciones
   }
+}
+
+/** @deprecated Usar maybeNotifyActivityIncrease; conservado como alias. */
+export function maybeNotifyUnreadIncrease(
+  accountId: string,
+  prevCount: number,
+  nextCount: number,
+): void {
+  maybeNotifyActivityIncrease(accountId, prevCount, {
+    unread: nextCount,
+    lastSender: null,
+    lastPreview: null,
+  });
 }
