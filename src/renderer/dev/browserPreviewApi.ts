@@ -262,10 +262,12 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
     onOpenQuickSwitcher: (cb) => bus.on("ui:openQuickSwitcher", cb as Listener),
     onOpenActivityCenter: (cb) => bus.on("ui:openActivityCenter", cb as Listener),
     onOpenPendingInbox: (cb) => bus.on("ui:openPendingInbox", cb as Listener),
+    onOpenUrgentNow: (cb) => bus.on("ui:openUrgentNow", cb as Listener),
     onOpenPhoneChat: (cb) => bus.on("ui:openPhoneChat", cb as Listener),
     onZenChanged: (cb) => bus.on("ui:zenChanged", cb as Listener),
     onOpenShortcutsHelp: (cb) => bus.on("ui:openShortcutsHelp", cb as Listener),
     onOpenAbout: (cb) => bus.on("ui:openAbout", cb as Listener),
+    onOpenUserManual: (cb) => bus.on("ui:openUserManual", cb as Listener),
     runWhatsAppMediaDiagnostics: async (): Promise<WhatsAppMediaDiagnosticsResult> => ({
       ok: false,
       code: "preview",

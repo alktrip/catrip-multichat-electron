@@ -1,6 +1,7 @@
 import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
+import { normalizeSuspendAfterMinutes } from "./accountSuspension";
 
 export type Settings = {
   version: 1;
@@ -10,6 +11,10 @@ export type Settings = {
     gpuBoost: boolean;
     /** Evita suspensión del sistema durante videollamada (powerSaveBlocker / portal). */
     inhibitSleepDuringCall: boolean;
+    /** Destruye WebContentsView de cuentas no usadas tras N minutos (sesión en disco). */
+    suspendInactiveAccounts: boolean;
+    /** Minutos sin seleccionar la cuenta antes de suspenderla. */
+    suspendAfterMinutes: number;
   };
   network: {
     proxyEnabled: boolean;
@@ -72,7 +77,7 @@ export type Settings = {
 
 const DEFAULTS: Settings = {
   version: 1,
-  performance: { rendererProcessLimit: 3, gpuBoost: false, inhibitSleepDuringCall: true },
+  performance: { rendererProcessLimit: 3, gpuBoost: false, inhibitSleepDuringCall: true, suspendInactiveAccounts: true, suspendAfterMinutes: 15 },
   network: { proxyEnabled: false, proxyRules: "" },
   general: {
     startMinimized: false,
@@ -131,6 +136,14 @@ export function loadSettings(): Settings {
             ?.inhibitSleepDuringCall === "boolean"
             ? (parsed.performance as { inhibitSleepDuringCall: boolean }).inhibitSleepDuringCall
             : DEFAULTS.performance.inhibitSleepDuringCall,
+        suspendInactiveAccounts:
+          typeof (parsed.performance as { suspendInactiveAccounts?: boolean })
+            ?.suspendInactiveAccounts === "boolean"
+            ? (parsed.performance as { suspendInactiveAccounts: boolean }).suspendInactiveAccounts
+            : DEFAULTS.performance.suspendInactiveAccounts,
+        suspendAfterMinutes: normalizeSuspendAfterMinutes(
+          (parsed.performance as { suspendAfterMinutes?: unknown })?.suspendAfterMinutes,
+        ),
       },
       network: {
         proxyEnabled:

@@ -12,6 +12,8 @@ type Settings = {
     rendererProcessLimit: number;
     gpuBoost: boolean;
     inhibitSleepDuringCall: boolean;
+    suspendInactiveAccounts: boolean;
+    suspendAfterMinutes: number;
   };
   network: { proxyEnabled: boolean; proxyRules: string };
   general: {
@@ -1150,6 +1152,47 @@ export default function SettingsView({
                   <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
                     Más procesos pueden ayudar con varias cuentas abiertas a la vez; consume más RAM.
                     Valor 0 = política por defecto de Electron.
+                  </div>
+                  <ToggleRow
+                    label="Suspender cuentas inactivas"
+                    checked={settings.performance.suspendInactiveAccounts !== false}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          suspendInactiveAccounts: v,
+                        },
+                      })
+                    }
+                  />
+                  <div style={{ opacity: 0.85, marginBottom: 8, marginTop: 4 }}>
+                    Suspender tras (minutos sin usar la cuenta)
+                  </div>
+                  <select
+                    className="catrip-select"
+                    value={String(settings.performance.suspendAfterMinutes ?? 15)}
+                    disabled={settings.performance.suspendInactiveAccounts === false}
+                    onChange={(e) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          suspendAfterMinutes: Number(e.target.value),
+                        },
+                      })
+                    }
+                  >
+                    <option value="5">5 minutos</option>
+                    <option value="10">10 minutos</option>
+                    <option value="15">15 minutos</option>
+                    <option value="30">30 minutos</option>
+                    <option value="60">60 minutos</option>
+                  </select>
+                  <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                    Libera RAM cerrando la vista de WhatsApp de las cuentas que no uses; la sesión
+                    (cookies) se conserva. Al volver a la cuenta se reactiva al instante. Mientras
+                    esté en reposo, los avisos de esa cuenta pueden no actualizarse.
                   </div>
                   <ToggleRow
                     label="Evitar suspensión durante videollamada"

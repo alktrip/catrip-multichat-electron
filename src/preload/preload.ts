@@ -63,6 +63,8 @@ export type AppApi = {
   onAccountsStatusChanged: (cb: (map: AccountStatusMap) => void) => () => void;
   getAccountsActivity: () => Promise<AccountActivityMap>;
   onAccountsActivityChanged: (cb: (map: AccountActivityMap) => void) => () => void;
+  getAccountsSuspended: () => Promise<Record<string, boolean>>;
+  onAccountsSuspendedChanged: (cb: (map: Record<string, boolean>) => void) => () => void;
   createAccount: (label?: string) => Promise<AccountDto>;
   createAccountV2: (payload?: { label?: string; icon?: unknown }) => Promise<AccountDto>;
   regenerateAccountIcon: (id: string) => Promise<AccountDto | null>;
@@ -99,10 +101,12 @@ export type AppApi = {
   onOpenQuickSwitcher: (cb: () => void) => () => void;
   onOpenActivityCenter: (cb: () => void) => () => void;
   onOpenPendingInbox: (cb: () => void) => () => void;
+  onOpenUrgentNow: (cb: () => void) => () => void;
   onOpenPhoneChat: (cb: () => void) => () => void;
   onZenChanged: (cb: (enabled: boolean) => void) => () => void;
   onOpenShortcutsHelp: (cb: () => void) => () => void;
   onOpenAbout: (cb: () => void) => () => void;
+  onOpenUserManual: (cb: () => void) => () => void;
   runWhatsAppMediaDiagnostics: () => Promise<WhatsAppMediaDiagnosticsResult>;
   selectDownloadsDirectory: () => Promise<string | null>;
   clearHttpCacheAllAccounts: () => Promise<boolean>;
@@ -147,6 +151,13 @@ const api: AppApi = {
     const listener = (_evt: unknown, map: AccountActivityMap) => cb(map ?? {});
     ipcRenderer.on("accounts:activityChanged", listener);
     return () => ipcRenderer.removeListener("accounts:activityChanged", listener);
+  },
+  getAccountsSuspended: () =>
+    ipcRenderer.invoke("accounts:getSuspended") as Promise<Record<string, boolean>>,
+  onAccountsSuspendedChanged: (cb) => {
+    const listener = (_evt: unknown, map: Record<string, boolean>) => cb(map ?? {});
+    ipcRenderer.on("accounts:suspendedChanged", listener);
+    return () => ipcRenderer.removeListener("accounts:suspendedChanged", listener);
   },
   createAccount: (label?: string) => ipcRenderer.invoke("accounts:create", label),
   createAccountV2: (payload?: { label?: string; icon?: unknown }) =>
@@ -229,6 +240,11 @@ const api: AppApi = {
     ipcRenderer.on("ui:openPendingInbox", listener);
     return () => ipcRenderer.removeListener("ui:openPendingInbox", listener);
   },
+  onOpenUrgentNow: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on("ui:openUrgentNow", listener);
+    return () => ipcRenderer.removeListener("ui:openUrgentNow", listener);
+  },
   onOpenPhoneChat: (cb) => {
     const listener = () => cb();
     ipcRenderer.on("ui:openPhoneChat", listener);
@@ -248,6 +264,11 @@ const api: AppApi = {
     const listener = () => cb();
     ipcRenderer.on("ui:openAbout", listener);
     return () => ipcRenderer.removeListener("ui:openAbout", listener);
+  },
+  onOpenUserManual: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on("ui:openUserManual", listener);
+    return () => ipcRenderer.removeListener("ui:openUserManual", listener);
   },
   runWhatsAppMediaDiagnostics: () =>
     ipcRenderer.invoke("diagnostics:whatsappMedia") as Promise<WhatsAppMediaDiagnosticsResult>,

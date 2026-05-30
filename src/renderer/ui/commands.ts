@@ -4,15 +4,22 @@
  */
 import type { SystemIconName } from "./SystemIconImg";
 import type { SettingsPage } from "./SettingsView";
+import type { PendingChatItem } from "../../main/pendingInboxModel";
 
 export type CommandIcon =
   | { kind: "system"; name: SystemIconName }
   | { kind: "avatar"; data: string; fallback: string }
   | { kind: "symbol"; char: string };
 
-export type CommandGroup = "Cuentas" | "Acciones" | "Navegación" | "Apariencia";
+export type CommandGroup = "Chats" | "Cuentas" | "Acciones" | "Navegación" | "Apariencia";
 
-export const COMMAND_GROUPS: CommandGroup[] = ["Cuentas", "Acciones", "Navegación", "Apariencia"];
+export const COMMAND_GROUPS: CommandGroup[] = [
+  "Chats",
+  "Cuentas",
+  "Acciones",
+  "Navegación",
+  "Apariencia",
+];
 
 export type Command = {
   id: string;
@@ -52,6 +59,7 @@ export type CommandContext = {
   applySettings: (next: CommandSettingsShape) => void;
   openActivityCenter: () => void;
   openPendingInbox: () => void;
+  openUrgentNow: () => void;
 };
 
 const SETTINGS_PAGES: ReadonlyArray<{
@@ -151,6 +159,17 @@ export function buildCommands(ctx: CommandContext): Command[] {
     keywords: ["telefono", "phone", "número", "msisdn"],
     icon: { kind: "system", name: "new-chat-number" },
     perform: () => ctx.openPhoneDialog(),
+  });
+
+  cmds.push({
+    id: "action:urgent-now",
+    label: "Ahora mismo",
+    description: "Top 3 chats urgentes sin abrir un panel grande",
+    group: "Acciones",
+    shortcut: "Ctrl+Shift+A",
+    keywords: ["urgente", "ahora", "now", "rapido", "inbox", "pendientes", "top"],
+    icon: { kind: "system", name: "urgent-now" },
+    perform: () => ctx.openUrgentNow(),
   });
 
   cmds.push({
@@ -260,6 +279,33 @@ export function buildCommands(ctx: CommandContext): Command[] {
   }
 
   return cmds;
+}
+
+export function buildChatSearchCommands(
+  items: PendingChatItem[],
+  openChat: (accountId: string, chatName: string) => void,
+): Command[] {
+  return items.map((item) => {
+    const unreadPart = item.unreadCount > 0 ? ` · ${item.unreadCount} sin leer` : "";
+    const previewPart = item.preview ? ` · ${item.preview}` : "";
+    return {
+      id: `chat:${item.accountId}:${encodeURIComponent(item.chatName)}`,
+      label: item.chatName,
+      description: `${item.accountLabel}${previewPart}${unreadPart}`,
+      group: "Chats",
+      keywords: [
+        item.chatName,
+        item.preview,
+        item.accountLabel,
+        "chat",
+        "conversacion",
+        "conversación",
+        "mensaje",
+      ],
+      icon: { kind: "avatar", data: item.accountIcon, fallback: item.accountLabel },
+      perform: () => openChat(item.accountId, item.chatName),
+    };
+  });
 }
 
 /* Filtrado por tokens AND: cada palabra de la consulta debe aparecer en

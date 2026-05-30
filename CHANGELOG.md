@@ -6,6 +6,26 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-05-30
+
+### Añadido
+
+- **«Ahora mismo»**: panel compacto junto al rail con los **3 chats más urgentes** de todas las cuentas (sin overlay a pantalla completa); botón del rail, `Ctrl+Shift+A`, menú **Ver → Ahora mismo** y comando en la paleta `Ctrl+K`.
+- **Búsqueda de chats en la paleta** (`Ctrl+K`): sección **Chats** con conversaciones sin leer; filtro por nombre, preview o cuenta; Enter abre el chat vía `openChatByName`.
+- **Suspensión inteligente de cuentas inactivas** (**Ajustes → Rendimiento**): tras N minutos sin seleccionar una cuenta (5, 10, 15, 30 o 60; por defecto 15), se destruye su `WebContentsView` para ahorrar RAM manteniendo la sesión en la partición Electron; avatar atenuado en el rail; reactivación al cambiar de cuenta o abrir un chat.
+- **Manual de usuario integrado** (**Ayuda → Manual de usuario**): visor con índice, ilustraciones SVG y secciones para cuentas, «Ahora mismo», reposo, paleta, bandeja, ajustes y problemas frecuentes.
+- Icono de sistema **`urgent-now.svg`** para el botón del rail y la paleta (estilo coherente con el resto de acciones).
+- Tests unitarios: `accountSuspension`, `chatSearchModel`, ampliación de `pending-inbox` (`pickTopUrgentChats`).
+
+### Cambiado
+
+- Overlay **Ayuda → Atajos de teclado** incluye `Ctrl+Shift+A` («Ahora mismo»).
+- Botones de acción del rail con ancho uniforme (`width: 100%`).
+
+### Documentación
+
+- **README.md**, **USAGE.md** y manual integrado actualizados a **1.6.0** (Ahora mismo, búsqueda Ctrl+K, cuentas en reposo, manual de usuario).
+
 ## [1.5.1] — 2026-05-31
 
 ### Corregido
@@ -237,6 +257,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.6.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.6.0
 [1.5.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.1
 [1.5.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.0
 [1.4.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.2

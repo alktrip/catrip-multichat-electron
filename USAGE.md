@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.5.1**
+**Versión de esta guía:** **1.6.0**
 
 ---
 
@@ -34,11 +34,35 @@ Los datos de la aplicación en Linux se guardan bajo `~/.config/catrip_multichat
 - **Clic en un avatar**: cambia a esa cuenta (la convierte en activa).
 - **Orden**: arrastra un avatar verticalmente para **reordenar** las cuentas (el orden define también `Ctrl+1` … `Ctrl+9`).
 - **Indicador de no leídos**: punto o número cuando hay mensajes pendientes en esa cuenta (según datos que expone WhatsApp Web).
-- **Botón Zen** (icono dedicado): alterna el **modo Zen** (equivalente a `Ctrl+Shift+Z`).
+- **Cuenta en reposo**: si no usas una cuenta durante un rato (configurable en Ajustes → Rendimiento), su avatar se ve **atenuado**; la sesión sigue guardada y un clic la reactiva.
+- **Botón «Ahora mismo»** (icono rayo): panel compacto con los **3 chats más urgentes**; atajo `Ctrl+Shift+A` o **Ver → Ahora mismo**.
 - **Centro de actividad** (▤): resumen de todas las cuentas con no leídos, último remitente y vista previa.
 - **Acciones pendientes** (✉): bandeja unificada de chats sin leer ordenados por urgencia; al pulsar una fila se abre ese chat en la cuenta correspondiente.
+- **Botón Zen** (icono dedicado): alterna el **modo Zen** (equivalente a `Ctrl+Shift+Z`).
 
 Si en **Ajustes → General** desactivas **Mostrar barra lateral**, el rail desaparece hasta que lo vuelvas a activar (también desde la paleta: “Ocultar/Mostrar barra lateral”).
+
+---
+
+## 3b. «Ahora mismo»
+
+Panel pequeño **junto al rail** (no tapa WhatsApp) con hasta **tres conversaciones urgentes** de todas las cuentas.
+
+- **Abrir**: botón del rail (rayo), `Ctrl+Shift+A`, **Ver → Ahora mismo** o escribe «Ahora mismo» en `Ctrl+K`.
+- **Usar**: clic en una fila abre ese chat en la cuenta correcta; **Ver todas las pendientes** abre la bandeja ✉.
+- **Cerrar**: `Escape`, la X del panel o clic fuera.
+- Un **punto verde** en el botón indica chats urgentes pendientes.
+
+---
+
+## 3c. Cuentas en reposo (ahorro de memoria)
+
+Con varias cuentas, cada sesión de WhatsApp Web consume RAM. **Ajustes → Rendimiento → Suspender cuentas inactivas** (activo por defecto) cierra la vista interna de las cuentas que no selecciones durante un tiempo (5–60 min; por defecto **15 min**).
+
+- El **avatar atenuado** y el tooltip «En reposo» indican el estado; **un clic** reactiva la cuenta (recarga WhatsApp Web con la misma sesión, sin QR).
+- También se reactiva al abrir un chat desde ✉ pendientes, `Ctrl+K` o un enlace `wa.me` dirigido a esa cuenta.
+- **No se suspende** la cuenta activa ni una cuenta con videollamada en curso.
+- Mientras está en reposo, los **avisos y contadores** de esa cuenta pueden no actualizarse hasta que la abras.
 
 ---
 
@@ -52,14 +76,15 @@ Si en **Ajustes → General** desactivas **Mostrar barra lateral**, el rail desa
 
 ## 5. Paleta de comandos (`Ctrl+K` o `Cmd+K` en macOS)
 
-Abre un buscador unificado de acciones:
+Abre un buscador unificado de acciones y **chats con mensajes sin leer**:
 
 - Escribe para **filtrar** (varias palabras; todas deben aparecer en etiqueta, descripción o palabras clave).
+- Si buscas un **contacto o conversación**, aparecen en la sección **Chats** (nombre, vista previa o cuenta); Enter abre ese chat en la cuenta correspondiente.
 - **Flechas arriba/abajo** para moverte por la lista.
 - **Enter** ejecuta el comando resaltado.
 - **Escape** cierra la paleta.
 
-Incluye (entre otras): cambiar de cuenta por nombre, **Nueva cuenta**, **Nuevo chat**, **Chat por número**, **Centro de actividad**, **Acciones pendientes**, entrar en **Ajustes** por sección, activar/desactivar **modo Zen**, alternar **barra lateral**, **notificaciones del sistema** y **escala de interfaz** (100 % … 200 %).
+Incluye (entre otras): cambiar de cuenta por nombre, **Nueva cuenta**, **Nuevo chat**, **Chat por número**, **Ahora mismo**, **Centro de actividad**, **Acciones pendientes**, entrar en **Ajustes** por sección, activar/desactivar **modo Zen**, alternar **barra lateral**, **notificaciones del sistema** y **escala de interfaz** (100 % … 200 %).
 
 ---
 
@@ -75,8 +100,9 @@ En Linux y Windows se usa **Ctrl**; en macOS suele usarse **Cmd** donde el siste
 | `Ctrl+N` | Nuevo chat (WhatsApp Web) |
 | `Ctrl+M` | Diálogo “Chat por número de teléfono” |
 | `Ctrl+U` | Nueva cuenta |
+| `Ctrl+Shift+A` | Panel «Ahora mismo» (top 3 chats urgentes) |
 | `Ctrl+Shift+Z` | Alternar modo Zen |
-| `Escape` | Salir del modo Zen (si está activo) |
+| `Escape` | Cerrar «Ahora mismo», salir del modo Zen o cerrar paleta |
 | `Ctrl+W` | Ocultar ventana |
 | `Ctrl+Q` | Salir de la aplicación |
 | `F5` | Recargar la vista de WhatsApp Web |
@@ -163,7 +189,7 @@ Tras descargar un `.deb` manualmente:
 
 ```bash
 cd /ruta/donde/guardaste/el/paquete
-sudo apt install ./catrip-connect_1.5.1_amd64.deb
+sudo apt install ./catrip-connect_1.6.0_amd64.deb
 ```
 
 ### Cuentas
@@ -189,9 +215,11 @@ sudo apt install ./catrip-connect_1.5.1_amd64.deb
 
 ### Rendimiento
 
+- **Suspender cuentas inactivas**: libera RAM cerrando la vista de WhatsApp de cuentas no usadas; la sesión permanece en disco (véase §3c).
+- **Suspender tras (minutos)**: 5, 10, 15, 30 o 60 minutos sin seleccionar la cuenta (por defecto 15).
 - **Refuerzo GPU al arrancar** (experimental): VA-API para vídeo en Linux, rasterización y zero-copy. Requiere **reiniciar** la app.
 - **Límite de procesos del renderer** (0 = predeterminado de Electron; 3–6 útil con varias cuentas). También requiere reinicio.
-- **Evitar suspensión durante videollamada** (bloqueo de energía mientras WhatsApp Web detecta una llamada).
+- **Evitar suspensión durante videollamada** (bloqueo de energía del **sistema** mientras WhatsApp Web detecta una llamada; distinto del reposo de cuentas).
 - Limpieza de caché HTTP y diagnósticos de medios (códecs WhatsApp Web).
 
 Los cambios se guardan en el almacenamiento local de la aplicación.
@@ -212,7 +240,8 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 
 ## 11. Ayuda integrada
 
-- **Ayuda → Atajos de teclado**: lista rápida dentro de la aplicación.
+- **Ayuda → Manual de usuario**: guía completa en lenguaje sencillo, con **ilustraciones**, **índice navegable** y secciones para cuentas, «Ahora mismo», cuentas en reposo, paleta, bandeja, ajustes y problemas frecuentes.
+- **Ayuda → Atajos de teclado**: lista rápida dentro de la aplicación (incluye `Ctrl+Shift+A`).
 - **Ayuda → Acerca de**: información de versión.
 
 ---

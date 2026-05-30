@@ -6,15 +6,20 @@ import AccountAvatar from "./AccountAvatar";
 import { extractAccountAccentRgb } from "./accountColors";
 import {
   buildCommands,
+  buildChatSearchCommands,
   filterCommands,
   COMMAND_GROUPS,
   type Command,
   type CommandIcon,
 } from "./commands";
+import { filterChatSearchItems } from "../../main/chatSearchModel";
 import type { AccountSessionStatus, AppApi, AccountActivityMap, UpdateDialogPayload } from "../../preload/preload";
 import ActivityCenter from "./ActivityCenter";
 import PendingInbox from "./PendingInbox";
+import UrgentNowPanel from "./UrgentNowPanel";
 import UpdateDialog from "./UpdateDialog";
+import UserManual from "./UserManual";
+import { pickTopUrgentChats } from "../../main/pendingInboxModel";
 
 const SESSION_STATUS_LABEL: Record<AccountSessionStatus, string> = {
   loading: "Cargando…",
@@ -179,6 +184,7 @@ export default function App() {
   const [accountStatusById, setAccountStatusById] = React.useState<
     Record<string, AccountSessionStatus>
   >({});
+  const [suspendedByAccount, setSuspendedByAccount] = React.useState<Record<string, boolean>>({});
   const [activityByAccount, setActivityByAccount] = React.useState<AccountActivityMap>({});
   /**
    * Token por cuenta que se incrementa cada vez que su contador de no leídos
@@ -209,6 +215,8 @@ export default function App() {
   const [quickOpen, setQuickOpen] = React.useState(false);
   const [activityOpen, setActivityOpen] = React.useState(false);
   const [pendingInboxOpen, setPendingInboxOpen] = React.useState(false);
+  const [urgentPanelOpen, setUrgentPanelOpen] = React.useState(false);
+  const urgentAnchorRef = React.useRef<HTMLDivElement>(null);
   const [quickQuery, setQuickQuery] = React.useState("");
   const quickInputRef = React.useRef<HTMLInputElement | null>(null);
   const [phoneOpen, setPhoneOpen] = React.useState(false);
@@ -224,6 +232,7 @@ export default function App() {
   const [settings, setSettings] = React.useState<any>(null);
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
+  const [manualOpen, setManualOpen] = React.useState(false);
   const [updateDialog, setUpdateDialog] = React.useState<UpdateDialogPayload | null>(null);
   const [paletteIndex, setPaletteIndex] = React.useState(0);
   const paletteListRef = React.useRef<HTMLDivElement | null>(null);
@@ -262,18 +271,24 @@ export default function App() {
       .getAccountsActivity()
       .then((m) => mounted && setActivityByAccount(m ?? {}))
       .catch(() => {});
+    api
+      .getAccountsSuspended()
+      .then((m) => mounted && setSuspendedByAccount(m ?? {}))
+      .catch(() => {});
 
     const offList = api.onAccountsListChanged((a) => setAccounts(a));
     const offActive = api.onActiveAccountChanged((id) => setActiveId(id));
     const offUnread = api.onAccountsUnreadChanged((m) => setUnreadByAccount(m ?? {}));
     const offStatus = api.onAccountsStatusChanged((m) => setAccountStatusById(m ?? {}));
     const offActivity = api.onAccountsActivityChanged((m) => setActivityByAccount(m ?? {}));
+    const offSuspended = api.onAccountsSuspendedChanged((m) => setSuspendedByAccount(m ?? {}));
     return () => {
       offList();
       offActive();
       offUnread();
       offStatus();
       offActivity();
+      offSuspended();
       mounted = false;
     };
   }, []);
@@ -317,6 +332,14 @@ export default function App() {
       setQuickOpen(false);
       setPhoneOpen(false);
       setActivityOpen(false);
+      setUrgentPanelOpen(false);
+    });
+    const offUrgent = window.catrip.onOpenUrgentNow(() => {
+      setUrgentPanelOpen((open) => !open);
+      setQuickOpen(false);
+      setPhoneOpen(false);
+      setActivityOpen(false);
+      setPendingInboxOpen(false);
     });
     const offPhone = window.catrip.onOpenPhoneChat(() => {
       setPhoneValue("+");
@@ -328,6 +351,11 @@ export default function App() {
     });
     const offShortcuts = window.catrip.onOpenShortcutsHelp(() => setShortcutsOpen(true));
     const offAbout = window.catrip.onOpenAbout(() => setAboutOpen(true));
+    const offManual = window.catrip.onOpenUserManual(() => {
+      setManualOpen(true);
+      setQuickOpen(false);
+      setPhoneOpen(false);
+    });
     const offIncoming = window.catrip.onPickAccountForIncomingLink((payload) => {
       setIncomingLinkPreview(payload.preview || "");
       setIncomingLinkHasText(!!payload.hasText);
@@ -346,10 +374,12 @@ export default function App() {
       offQuick();
       offActivity();
       offPending();
+      offUrgent();
       offPhone();
       offZen();
       offShortcuts();
       offAbout();
+      offManual();
       offIncoming();
       offUpdate();
     };
@@ -418,6 +448,14 @@ export default function App() {
         setQuickQuery("");
         setQuickOpen(true);
         setPhoneOpen(false);
+        setUrgentPanelOpen(false);
+        return;
+      }
+      if (mode === "browser" && k === "a" && e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setUrgentPanelOpen((open) => !open);
+        setQuickOpen(false);
+        setPhoneOpen(false);
         return;
       }
       if (k === "m") {
@@ -455,6 +493,7 @@ export default function App() {
     setQuickOpen(false);
     setPhoneOpen(false);
     setPendingInboxOpen(false);
+    setUrgentPanelOpen(false);
   }, []);
 
   const openPendingInbox = React.useCallback(() => {
@@ -462,6 +501,47 @@ export default function App() {
     setQuickOpen(false);
     setPhoneOpen(false);
     setActivityOpen(false);
+    setUrgentPanelOpen(false);
+  }, []);
+
+  const openUrgentNow = React.useCallback(() => {
+    setUrgentPanelOpen((open) => !open);
+    setQuickOpen(false);
+    setPhoneOpen(false);
+    setActivityOpen(false);
+    setPendingInboxOpen(false);
+  }, []);
+
+  const urgentTopItems = React.useMemo(
+    () => pickTopUrgentChats(accounts, activityByAccount, 3),
+    [accounts, activityByAccount],
+  );
+
+  const hasUrgentChats = urgentTopItems.length > 0;
+
+  React.useEffect(() => {
+    if (!urgentPanelOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const root = urgentAnchorRef.current;
+      if (root && !root.contains(e.target as Node)) {
+        setUrgentPanelOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setUrgentPanelOpen(false);
+    };
+    window.addEventListener("mousedown", onPointerDown, { capture: true });
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown, { capture: true });
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+    };
+  }, [urgentPanelOpen]);
+
+  const openChatFromUrgent = React.useCallback((accountId: string, chatName: string) => {
+    setActiveId(accountId);
+    void window.catrip.setActiveAccount(accountId);
+    void window.catrip.openChatByName(accountId, chatName);
   }, []);
 
   const toggleZen = React.useCallback((next: boolean) => {
@@ -493,6 +573,7 @@ export default function App() {
         applySettings: applySettingsRemote,
         openActivityCenter,
         openPendingInbox,
+        openUrgentNow,
       }),
     [
       accounts,
@@ -505,14 +586,28 @@ export default function App() {
       openPhoneDialog,
       openActivityCenter,
       openPendingInbox,
+      openUrgentNow,
       applySettingsRemote,
     ],
   );
 
-  const filteredCommands = React.useMemo(
-    () => filterCommands(commands, quickQuery),
-    [commands, quickQuery],
-  );
+  const openChatFromPalette = React.useCallback((accountId: string, chatName: string) => {
+    setActiveId(accountId);
+    void window.catrip.setActiveAccount(accountId);
+    void window.catrip.openChatByName(accountId, chatName);
+  }, []);
+
+  const chatSearchCommands = React.useMemo(() => {
+    if (!quickQuery.trim()) return [];
+    const matches = filterChatSearchItems(accounts, activityByAccount, quickQuery);
+    return buildChatSearchCommands(matches, openChatFromPalette);
+  }, [accounts, activityByAccount, quickQuery, openChatFromPalette]);
+
+  const filteredCommands = React.useMemo(() => {
+    const actionMatches = filterCommands(commands, quickQuery);
+    if (chatSearchCommands.length === 0) return actionMatches;
+    return [...chatSearchCommands, ...actionMatches];
+  }, [commands, quickQuery, chatSearchCommands]);
 
   React.useEffect(() => {
     setPaletteIndex(0);
@@ -555,6 +650,7 @@ export default function App() {
     }
     const modalBlocking =
       updateDialog != null ||
+      manualOpen ||
       (mode === "browser" &&
         (quickOpen ||
           phoneOpen ||
@@ -570,7 +666,9 @@ export default function App() {
       await window.catrip.setMode(mode);
       await window.catrip.setRendererModalOpen(modalBlocking);
     })();
-  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, activityOpen, pendingInboxOpen, updateDialog, zen]);
+  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, activityOpen, pendingInboxOpen, updateDialog, manualOpen, zen]);
+
+  const manualOverlay = manualOpen ? <UserManual onClose={() => setManualOpen(false)} /> : null;
 
   const sidebarAllowed = settings?.general?.showSidebar !== false;
 
@@ -599,6 +697,7 @@ export default function App() {
             <ShortcutRow keys="Ctrl+Q">Salir</ShortcutRow>
             <dt style={modalSectionTitle}>Ver</dt>
             <ShortcutRow keys="Ctrl+K">Cambio rápido de cuenta</ShortcutRow>
+            <ShortcutRow keys="Ctrl+Shift+A">Ahora mismo (top 3 urgentes)</ShortcutRow>
             <ShortcutRow keys="F11">Pantalla completa</ShortcutRow>
             <ShortcutRow keys="Ctrl+Shift+Z">Modo Zen</ShortcutRow>
             <ShortcutRow keys="Esc">Salir del modo Zen</ShortcutRow>
@@ -698,6 +797,7 @@ export default function App() {
           }}
         />
         {updateDialogOverlay}
+        {manualOverlay}
         {helpOverlays}
       </>
     );
@@ -726,10 +826,12 @@ export default function App() {
                 const unread = unreadByAccount[a.id] ?? 0;
                 const showUnreadDot = unread > 0 && a.notificationsEnabled !== false;
                 const status = accountStatusById[a.id] ?? "loading";
+                const isSuspended = suspendedByAccount[a.id] === true;
                 const statusLabel = SESSION_STATUS_LABEL[status];
                 const unreadPart =
                   showUnreadDot ? ` · ${unread} sin leer` : "";
-                const tooltip = `${a.label} · ${statusLabel}${unreadPart} · Arrastrar para reordenar · Clic derecho: variante`;
+                const suspendPart = isSuspended ? " · En reposo (ahorra memoria)" : "";
+                const tooltip = `${a.label} · ${statusLabel}${unreadPart}${suspendPart} · Arrastrar para reordenar · Clic derecho: variante`;
                 const isDragging = dragId === a.id;
                 const showSlotBefore = dropIndex === idx;
                 const accentRgb = extractAccountAccentRgb(a.icon);
@@ -820,7 +922,7 @@ export default function App() {
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: dragId ? "grabbing" : "grab",
-                        opacity: isDragging ? 0.35 : 1,
+                        opacity: isDragging ? 0.35 : isSuspended && !selected ? 0.55 : 1,
                         transition: "opacity 120ms ease-out",
                         ...(accentRgb
                           ? ({ "--catrip-accent-rgb": accentRgb } as React.CSSProperties)
@@ -899,6 +1001,30 @@ export default function App() {
               >
                 <SystemIconImg name="new-chat" size={22} />
               </button>
+              <div ref={urgentAnchorRef} className="catrip-rail-urgent-anchor">
+                <button
+                  type="button"
+                  className={`catrip-rail-action-btn${urgentPanelOpen ? " is-active" : ""}`}
+                  title="Ahora mismo — chats más urgentes (Ctrl+Shift+A)"
+                  aria-expanded={urgentPanelOpen}
+                  onClick={() => openUrgentNow()}
+                >
+                  <SystemIconImg name="urgent-now" size={22} />
+                  {hasUrgentChats ? <span className="catrip-rail-urgent-dot" aria-hidden /> : null}
+                </button>
+                {urgentPanelOpen ? (
+                  <UrgentNowPanel
+                    accounts={accounts}
+                    activityByAccount={activityByAccount}
+                    onOpenChat={openChatFromUrgent}
+                    onOpenAllPending={() => {
+                      setUrgentPanelOpen(false);
+                      openPendingInbox();
+                    }}
+                    onClose={() => setUrgentPanelOpen(false)}
+                  />
+                ) : null}
+              </div>
               <button
                 type="button"
                 className="catrip-rail-action-btn"
@@ -1019,7 +1145,7 @@ export default function App() {
               ref={quickInputRef}
               value={quickQuery}
               onChange={(e) => setQuickQuery(e.target.value)}
-              placeholder="Buscar cuentas, acciones, ajustes…"
+              placeholder="Buscar chats, cuentas o acciones…"
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
                   e.preventDefault();
@@ -1165,6 +1291,8 @@ export default function App() {
         </Overlay>
 
         {updateDialogOverlay}
+
+        {manualOverlay}
 
         <Overlay
           open={incomingLinkOpen}

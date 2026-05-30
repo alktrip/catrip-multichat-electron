@@ -51,6 +51,16 @@ export function buildPendingChatItems(
   });
 }
 
+/** Top N chats más urgentes (misma fuente que la bandeja pendiente). */
+export function pickTopUrgentChats(
+  accounts: PendingAccountRef[],
+  activityByAccount: Record<string, PendingInboxActivitySnapshot>,
+  limit = 3,
+): PendingChatItem[] {
+  if (limit <= 0) return [];
+  return buildPendingChatItems(accounts, activityByAccount).slice(0, limit);
+}
+
 export function formatRelativeTime(ts: number | null): string {
   if (!ts) return "—";
   const diff = Date.now() - ts;

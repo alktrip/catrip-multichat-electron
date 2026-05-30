@@ -6,6 +6,7 @@ export type SystemIconName =
   | "open-settings"
   | "new-chat"
   | "new-chat-number"
+  | "urgent-now"
   | "zen-mode";
 
 export default function SystemIconImg({

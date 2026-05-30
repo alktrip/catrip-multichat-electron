@@ -49,6 +49,10 @@ import {
 import { parseLaunchAction, type CatripLaunchAction } from "./launchActions";
 import { raiseMainWindow } from "./windowFocus";
 import {
+  buildSuspendedMap,
+  shouldSuspendAccount,
+} from "./accountSuspension";
+import {
   applySavedWindowBounds,
   captureWindowBounds,
   shouldPersistWindowBounds,
@@ -550,6 +554,7 @@ async function applySettingsToRuntime(s: Settings) {
 
   restartUnreadPolling();
   restartAccountStatusPolling();
+  restartAccountSuspensionTimer();
   refreshTrayIcon();
   applyAutostartSettings(s);
   refreshUpdaterChannel(s.general.updateChannel === "beta" ? "beta" : "stable");
@@ -786,6 +791,134 @@ function applyLaunchAction(action: CatripLaunchAction | null) {
   }
 }
 
+async function evalCallActiveForAccount(id: string): Promise<boolean> {
+  const st = viewState;
+  if (!st || E2E_MODE) return false;
+  const view = st.viewsById.get(id);
+  if (!view || view.webContents.isDestroyed()) return false;
+  try {
+    const url = view.webContents.getURL();
+    if (!url.includes("web.whatsapp.com")) return false;
+    const active = await view.webContents.executeJavaScript(WHATSAPP_CALL_ACTIVE_JS, true);
+    return active === true;
+  } catch {
+    return false;
+  }
+}
+
+function getSuspendedMapForState(st: ViewState): Record<string, boolean> {
+  return buildSuspendedMap(
+    st.accounts.map((a) => a.id),
+    st.suspendedAccountIds,
+  );
+}
+
+function broadcastSuspensionIfChanged() {
+  const st = viewState;
+  if (!st) return;
+  try {
+    void st.shellView.webContents.send("accounts:suspendedChanged", getSuspendedMapForState(st));
+  } catch {
+    // ignore
+  }
+}
+
+function touchAccountActive(id: string) {
+  const st = viewState;
+  if (!st) return;
+  st.accountLastActiveAt[id] = Date.now();
+  if (st.suspendedAccountIds.delete(id)) {
+    broadcastSuspensionIfChanged();
+  }
+}
+
+function wakeAllSuspendedAccounts() {
+  const st = viewState;
+  if (!st || st.suspendedAccountIds.size === 0) return;
+  for (const id of st.suspendedAccountIds) {
+    try {
+      ensureViewForAccount(id);
+    } catch {
+      // ignore per account
+    }
+  }
+  st.suspendedAccountIds.clear();
+  broadcastSuspensionIfChanged();
+  dbgEmbed("wakeAllSuspendedAccounts");
+}
+
+async function suspendAccount(id: string) {
+  const st = viewState;
+  if (!st || E2E_MODE) return;
+  if (id === st.activeId) return;
+  if (!st.settings.performance.suspendInactiveAccounts) return;
+  if (st.suspendedAccountIds.has(id)) return;
+  const view = st.viewsById.get(id);
+  if (!view) return;
+  if (await evalCallActiveForAccount(id)) return;
+
+  if (st.attachedViewId === id) {
+    try {
+      detachBrowserView();
+    } catch {
+      // ignore
+    }
+  }
+  safeRemoveChildView(st.win, view);
+  try {
+    view.webContents.close();
+  } catch {
+    // ignore
+  }
+  st.viewsById.delete(id);
+  st.suspendedAccountIds.add(id);
+  broadcastSuspensionIfChanged();
+  dbgEmbed("suspendAccount", { accountId: id });
+}
+
+async function tickAccountSuspension() {
+  const st = viewState;
+  if (!st || E2E_MODE) return;
+  const perf = st.settings.performance;
+  if (!perf.suspendInactiveAccounts) return;
+  const now = Date.now();
+  for (const a of st.accounts) {
+    const callActive = st.viewsById.has(a.id) ? await evalCallActiveForAccount(a.id) : false;
+    if (
+      shouldSuspendAccount({
+        enabled: perf.suspendInactiveAccounts,
+        accountId: a.id,
+        activeAccountId: st.activeId,
+        hasLiveView: st.viewsById.has(a.id),
+        alreadySuspended: st.suspendedAccountIds.has(a.id),
+        lastActiveAtMs: st.accountLastActiveAt[a.id],
+        nowMs: now,
+        suspendAfterMinutes: perf.suspendAfterMinutes,
+        callActive,
+      })
+    ) {
+      await suspendAccount(a.id);
+    }
+  }
+}
+
+function restartAccountSuspensionTimer() {
+  if (accountSuspensionTimer != null) {
+    clearInterval(accountSuspensionTimer);
+    accountSuspensionTimer = null;
+  }
+  const st = viewState;
+  if (!st || E2E_MODE) return;
+  if (!st.settings.performance.suspendInactiveAccounts) {
+    wakeAllSuspendedAccounts();
+    return;
+  }
+  accountSuspensionTimer = setInterval(() => {
+    void tickAccountSuspension();
+  }, ACCOUNT_SUSPENSION_TICK_MS);
+  void tickAccountSuspension();
+}
+
 async function evalAnyWhatsAppCallActive(): Promise<boolean> {
   const st = viewState;
   if (!st || E2E_MODE) return false;
@@ -831,6 +964,10 @@ type ViewState = {
   /** Actividad reciente por cuenta (preview, estado, chats sin leer). */
   activityByAccount: AccountActivityMap;
   accountStatusById: Record<string, AccountSessionStatus>;
+  /** Última vez que el usuario seleccionó cada cuenta (ms). */
+  accountLastActiveAt: Record<string, number>;
+  /** Cuentas cuya WebContentsView fue destruida para ahorrar RAM. */
+  suspendedAccountIds: Set<string>;
 };
 
 type TrayBackend =
@@ -856,6 +993,8 @@ let unreadTitleDebounce: NodeJS.Timeout | null = null;
 const downloadSessionsHooked = new WeakSet<Electron.Session>();
 const permissionSessionsHooked = new WeakSet<Electron.Session>();
 let accountStatusPollTimer: ReturnType<typeof setInterval> | null = null;
+let accountSuspensionTimer: ReturnType<typeof setInterval> | null = null;
+const ACCOUNT_SUSPENSION_TICK_MS = 30_000;
 
 const STATUS_SHORT: Record<AccountSessionStatus, string> = {
   loading: "…",
@@ -1406,6 +1545,7 @@ function createAccountAndNotify(label?: string) {
 
 function ensureViewForAccount(id: string): WebContentsView {
   const st = ensureState();
+  st.suspendedAccountIds.delete(id);
   const existing = st.viewsById.get(id);
   if (existing) return existing;
 
@@ -1604,6 +1744,11 @@ function buildAppMenu() {
           checked: st.chrome.zen,
           click: () => toggleZen(),
         },
+        {
+          label: "Ahora mismo",
+          accelerator: "Ctrl+Shift+A",
+          click: () => inBrowser() && send("ui:openUrgentNow"),
+        },
       ],
     },
     {
@@ -1638,6 +1783,7 @@ function buildAppMenu() {
     {
       label: "Ayuda",
       submenu: [
+        { label: "Manual de usuario", click: () => send("ui:openUserManual") },
         { label: "Atajos de teclado", click: () => send("ui:openShortcutsHelp") },
         { label: "Acerca de", click: () => send("ui:openAbout") },
       ],
@@ -1783,6 +1929,7 @@ function setActiveAccount(id: string) {
   const st = ensureState();
   if (!st.accounts.find((a) => a.id === id)) return;
   st.activeId = id;
+  touchAccountActive(id);
   saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
 
   if (st.chrome.mode === "browser" && !rendererModalOpen) {
@@ -2345,6 +2492,8 @@ app.whenReady().then(() => {
     unreadByAccount: {},
     activityByAccount: {},
     accountStatusById: {},
+    accountLastActiveAt: {},
+    suspendedAccountIds: new Set(),
   };
 
   const { win, shellView } = createMainWindow();
@@ -2745,6 +2894,8 @@ ipcMain.handle("accounts:delete", async (_evt, id: string) => {
     }
     st.viewsById.delete(id);
   }
+  delete st.accountLastActiveAt[id];
+  st.suspendedAccountIds.delete(id);
 
   // 3. Limpiar datos de sesión (cookies, storage, cache). Las llamadas son
   //    asíncronas pero las dejamos correr aunque tarden; lo importante para
@@ -2799,6 +2950,7 @@ ipcMain.handle("accounts:delete", async (_evt, id: string) => {
   } catch {
     /* ignore */
   }
+  broadcastSuspensionIfChanged();
 
   // 7. Si quedó otra cuenta activa, atacharla en el área principal.
   if (st.activeId && st.chrome.mode === "browser" && !rendererModalOpen) {
@@ -2872,6 +3024,11 @@ ipcMain.handle("desktop:registerWhatsAppProtocol", async () => {
 ipcMain.handle("accounts:getStatus", () => {
   const st = ensureState();
   return st.accountStatusById;
+});
+
+ipcMain.handle("accounts:getSuspended", () => {
+  const st = ensureState();
+  return getSuspendedMapForState(st);
 });
 
 ipcMain.handle("dialog:selectDownloadsDirectory", async () => {
