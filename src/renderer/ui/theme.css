@@ -597,6 +597,85 @@ body {
   }
 }
 
+/* Diálogo de actualización: cabecera y acciones fijas, notas con scroll interno. */
+.catrip-update-dialog-veil {
+  z-index: 100001;
+}
+
+.catrip-update-dialog-panel {
+  width: min(560px, calc(100vw - 28px));
+  max-height: min(82vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: #353a3a;
+  color: #eef2f2;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.22),
+    0 20px 56px rgba(0, 0, 0, 0.65),
+    0 0 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.catrip-update-dialog-header {
+  flex: 0 0 auto;
+  padding: 20px 22px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.catrip-update-dialog-notes {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 22px;
+  overscroll-behavior: contain;
+}
+
+.catrip-update-dialog-hint {
+  flex: 0 0 auto;
+  padding: 10px 22px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--catrip-text-hint, #b8c4c4);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.catrip-update-dialog-footer {
+  flex: 0 0 auto;
+  padding: 14px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.catrip-update-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.catrip-update-dialog-link {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #7dd3a8;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.catrip-update-dialog-link:hover {
+  color: #a8e6c4;
+}
+
 /* -----------------------------------------------------------------------
  * Punto de no leídos en el rail (esquina superior-derecha del avatar).
  *

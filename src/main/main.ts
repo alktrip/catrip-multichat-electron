@@ -31,6 +31,8 @@ import { loadSettings, saveSettings, type Settings } from "./settings";
 import { applyTrayGreenTint, trayModeForPlatform, trayNativeImage } from "./trayIcon";
 import { createLinuxSniTray, type LinuxSniTrayHandle } from "./linuxSniTray";
 import { setupAutoUpdater, refreshUpdaterChannel } from "./autoUpdater";
+import { initUpdateDialogBridge, setUpdateDialogShellTarget, setUpdateDialogWindowFocus, showUpdateDialogRequest } from "./updateDialogBridge";
+import { formatReleaseNotesForUpdateDialog, releaseNotesGithubUrl } from "./releaseNotesFormat";
 import {
   ACCOUNT_SESSION_STATUS_LABEL,
   WHATSAPP_SESSION_STATUS_JS,
@@ -2297,6 +2299,17 @@ function purgeOrphanPartitions(liveAccountIds: string[]): {
   return result;
 }
 
+initUpdateDialogBridge();
+
+function bindUpdateDialogShellTarget() {
+  setUpdateDialogShellTarget(() => {
+    const st = viewState;
+    if (!st?.shellView?.webContents || st.shellView.webContents.isDestroyed()) return undefined;
+    return st.shellView.webContents;
+  });
+  setUpdateDialogWindowFocus(() => focusMainWindow());
+}
+
 app.whenReady().then(() => {
   const s = loadAccountsState();
   const settings = loadSettings();
@@ -2337,6 +2350,7 @@ app.whenReady().then(() => {
   const { win, shellView } = createMainWindow();
   viewState.win = win;
   viewState.shellView = shellView;
+  bindUpdateDialogShellTarget();
 
   layoutActiveView();
 
@@ -2535,6 +2549,43 @@ ipcMain.handle("app:getVersion", () => getApplicationVersionForDisplay());
 ipcMain.handle("dev:getContext", () => {
   if (app.isPackaged) return null;
   return buildDevContext(E2E_MODE);
+});
+
+ipcMain.handle("updater:previewUpdateDialog", async () => {
+  if (app.isPackaged) return false;
+  const candidates = [
+    path.join(app.getAppPath(), "_scripts", "release-notes-v1.5.0.md"),
+    path.join(process.cwd(), "_scripts", "release-notes-v1.5.0.md"),
+  ];
+  let raw = "";
+  for (const notesPath of candidates) {
+    try {
+      raw = fs.readFileSync(notesPath, "utf8");
+      if (raw.trim()) break;
+    } catch {
+      // try next path
+    }
+  }
+  if (!raw.trim()) return false;
+  const releaseNotes = formatReleaseNotesForUpdateDialog(raw);
+  try {
+    await showUpdateDialogRequest({
+      title: "Nueva versión disponible",
+      message: "Hay una actualización: Catrip Connect 1.5.0",
+      releaseNotes,
+      footerHint:
+        "Vista previa del diálogo de actualización (desarrollo). Desplázate para leer todas las notas.",
+      releaseUrl: releaseNotesGithubUrl("1.5.0"),
+      buttons: [
+        { id: "download", label: "Descargar…", primary: true },
+        { id: "link", label: "Solo enlace de descarga" },
+        { id: "later", label: "Más tarde" },
+      ],
+    });
+    return true;
+  } catch {
+    return false;
+  }
 });
 
 ipcMain.handle("accounts:list", () => {

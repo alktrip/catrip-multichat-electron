@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.5.0**
+**Versión de esta guía:** **1.5.1**
 
 ---
 
@@ -152,7 +152,7 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 
 #### Actualizaciones desde GitHub (Ajustes → General)
 
-Activa **Buscar actualizaciones al iniciar** y elige canal **estable** (releases) o **beta** (pre-releases). El resumen del changelog en los diálogos se muestra en **texto plano** (sin HTML de GitHub).
+Activa **Buscar actualizaciones al iniciar** y elige canal **estable** (releases) o **beta** (pre-releases). El changelog se muestra en **texto plano** dentro de un panel con **desplazamiento vertical** (sin agrandar la ventana); cabecera y botones permanecen visibles. Enlace opcional **Ver release completa en GitHub** al pie del panel.
 
 | Forma de instalación | Comportamiento al haber una versión nueva |
 |----------------------|-------------------------------------------|
@@ -163,7 +163,7 @@ Tras descargar un `.deb` manualmente:
 
 ```bash
 cd /ruta/donde/guardaste/el/paquete
-sudo apt install ./catrip-connect_1.5.0_amd64.deb
+sudo apt install ./catrip-connect_1.5.1_amd64.deb
 ```
 
 ### Cuentas

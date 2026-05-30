@@ -24,3 +24,22 @@ test("releaseNotesToPlainText limpia markdown básico", () => {
   assert.match(plain, /negrita/);
   assert.doesNotMatch(plain, /\*\*/);
 });
+
+test("formatReleaseNotesForUpdateDialog no trunca notas largas por defecto", async () => {
+  const { formatReleaseNotesForUpdateDialog, formatReleaseNotesBrief } = await import(
+    "../../dist/main/releaseNotesFormat.js"
+  );
+  const long = "• ".repeat(400) + "punto final";
+  const full = formatReleaseNotesForUpdateDialog(long);
+  const brief = formatReleaseNotesBrief(long);
+  assert.ok(full.length > brief.length);
+  assert.ok(full.includes("punto final"));
+});
+
+test("releaseNotesGithubUrl construye enlace de tag", async () => {
+  const { releaseNotesGithubUrl } = await import("../../dist/main/releaseNotesFormat.js");
+  assert.equal(
+    releaseNotesGithubUrl("1.5.0"),
+    "https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.0",
+  );
+});

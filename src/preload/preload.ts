@@ -38,6 +38,21 @@ export type DevContextDto = {
   catripEnv: Record<string, string>;
 };
 
+export type UpdateDialogButton = {
+  id: string;
+  label: string;
+  primary?: boolean;
+};
+
+export type UpdateDialogPayload = {
+  title: string;
+  message: string;
+  releaseNotes: string;
+  footerHint?: string;
+  releaseUrl?: string;
+  buttons: UpdateDialogButton[];
+};
+
 export type AppApi = {
   getVersion: () => Promise<string>;
   getDevContext: () => Promise<DevContextDto | null>;
@@ -92,6 +107,9 @@ export type AppApi = {
   selectDownloadsDirectory: () => Promise<string | null>;
   clearHttpCacheAllAccounts: () => Promise<boolean>;
   registerWhatsAppProtocol: () => Promise<RegisterProtocolResult>;
+  onShowUpdateDialog: (cb: (payload: UpdateDialogPayload) => void) => () => void;
+  respondUpdateDialog: (buttonId: string, releaseUrl?: string) => Promise<void>;
+  previewUpdateDialog: () => Promise<boolean>;
 };
 
 export type WhatsAppMediaDiagnosticsResult =
@@ -239,6 +257,15 @@ const api: AppApi = {
     ipcRenderer.invoke("storage:clearHttpCacheAll") as Promise<boolean>,
   registerWhatsAppProtocol: () =>
     ipcRenderer.invoke("desktop:registerWhatsAppProtocol") as Promise<RegisterProtocolResult>,
+  onShowUpdateDialog: (cb) => {
+    const listener = (_evt: unknown, payload: UpdateDialogPayload) => cb(payload);
+    ipcRenderer.on("ui:showUpdateDialog", listener);
+    return () => ipcRenderer.removeListener("ui:showUpdateDialog", listener);
+  },
+  respondUpdateDialog: (buttonId, releaseUrl) =>
+    ipcRenderer.invoke("updater:dialogResponse", { buttonId, releaseUrl }),
+  previewUpdateDialog: () =>
+    ipcRenderer.invoke("updater:previewUpdateDialog") as Promise<boolean>,
 };
 
 contextBridge.exposeInMainWorld("catrip", api);

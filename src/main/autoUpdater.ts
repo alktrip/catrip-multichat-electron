@@ -3,12 +3,13 @@ import { autoUpdater } from "electron-updater";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import type { Settings } from "./settings";
-import { formatReleaseNotesForDialog } from "./releaseNotesFormat";
+import { formatReleaseNotesBrief, releaseNotesGithubUrl } from "./releaseNotesFormat";
 import {
   buildChangelogForUpdate,
   handleDebUpdateAvailable,
   isLinuxDebPackagedInstall,
 } from "./debUpdateFlow";
+import { showUpdateDialogRequest } from "./updateDialogBridge";
 
 const E2E_MODE = process.env.CATRIP_E2E === "1";
 
@@ -93,7 +94,7 @@ async function verifyDownloadedArtifact(
   }
 }
 
-/** AppImage / Windows / macOS: descarga automática e instalación al reiniciar. */
+/** AppImage / Windows / macOS: descarga autom?tica e instalaci?n al reiniciar. */
 function setupAppImageStyleUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -108,7 +109,7 @@ function setupAppImageStyleUpdater() {
   autoUpdater.on("update-downloaded", async (info) => {
     const version = info?.version ?? pendingUpdate?.version ?? "";
     let changelog = pendingUpdate?.changelog ?? "";
-    if ((!changelog || changelog === "Sin notas de la versión.") && version) {
+    if ((!changelog || changelog === "Sin notas de la versi?n.") && version) {
       changelog = await buildChangelogForUpdate(info, fetchGithubReleaseNotes, getChannel());
     }
 
@@ -124,11 +125,11 @@ function setupAppImageStyleUpdater() {
     let integrityLine = "";
     if (filePath && deb?.sha512 && filePath.endsWith(".deb")) {
       const v = await verifyDownloadedArtifact(filePath, deb.sha512);
-      integrityLine = v.ok ? `\n\n${v.message}` : `\n\n⚠ ${v.message}`;
+      integrityLine = v.ok ? `\n\n${v.message}` : `\n\n? ${v.message}`;
       if (!v.ok) {
         await dialog.showMessageBox({
           type: "warning",
-          title: "Verificación de descarga",
+          title: "Verificaci?n de descarga",
           message: "No se pudo verificar el paquete .deb",
           detail: v.message,
           buttons: ["Entendido"],
@@ -136,27 +137,42 @@ function setupAppImageStyleUpdater() {
       }
     }
 
-    const detail = `${changelog}${integrityLine}\n\nLa aplicación se reiniciará para aplicar la actualización.`;
-
-    void dialog
-      .showMessageBox({
-        type: "info",
-        title: "Actualización disponible",
-        message: `Catrip Connect ${version} está listo para instalar.`,
-        detail,
-        buttons: ["Reiniciar ahora", "Más tarde"],
-        defaultId: 0,
-        cancelId: 1,
-      })
-      .then((r) => {
+    const askRestart = async () => {
+      try {
+        const action = await showUpdateDialogRequest({
+          title: "Actualizaci?n disponible",
+          message: `Catrip Connect ${version} est? listo para instalar.`,
+          releaseNotes: changelog,
+          footerHint: `La aplicaci?n se reiniciar? para aplicar la actualizaci?n.${integrityLine}`,
+          releaseUrl: releaseNotesGithubUrl(version),
+          buttons: [
+            { id: "restart", label: "Reiniciar ahora", primary: true },
+            { id: "later", label: "M?s tarde" },
+          ],
+        });
+        if (action === "restart") autoUpdater.quitAndInstall(false, true);
+      } catch {
+        const brief = formatReleaseNotesBrief(changelog);
+        const r = await dialog.showMessageBox({
+          type: "info",
+          title: "Actualizaci?n disponible",
+          message: `Catrip Connect ${version} est? listo para instalar.`,
+          detail: `${brief}${integrityLine}\n\nLa aplicaci?n se reiniciar? para aplicar la actualizaci?n.`,
+          buttons: ["Reiniciar ahora", "M?s tarde"],
+          defaultId: 0,
+          cancelId: 1,
+        });
         if (r.response === 0) autoUpdater.quitAndInstall(false, true);
-      });
+      }
+    };
+
+    void askRestart();
 
     pendingUpdate = { version, changelog, filePath };
   });
 }
 
-/** .deb instalado: sin descarga automática; el usuario elige carpeta o solo el enlace. */
+/** .deb instalado: sin descarga autom?tica; el usuario elige carpeta o solo el enlace. */
 function setupDebManualUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;

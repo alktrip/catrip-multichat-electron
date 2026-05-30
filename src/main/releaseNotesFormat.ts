@@ -77,3 +77,22 @@ export function formatReleaseNotesForDialog(raw: unknown, maxLen = 2000): string
   const plain = releaseNotesToPlainText(normalized, maxLen);
   return plain || "Sin notas de la versión.";
 }
+
+/** Texto completo para el diálogo con scroll (sin truncar). */
+export function formatReleaseNotesForUpdateDialog(raw: unknown, maxLen = 12000): string {
+  const normalized = normalizeReleaseNotesInput(raw);
+  const plain = releaseNotesToPlainText(normalized, maxLen);
+  return plain || "Sin notas de la versión.";
+}
+
+/** Resumen corto para diálogos nativos de respaldo cuando el renderer no está disponible. */
+export function formatReleaseNotesBrief(raw: unknown, maxLen = 700): string {
+  const normalized = normalizeReleaseNotesInput(raw);
+  const plain = releaseNotesToPlainText(normalized, maxLen);
+  return plain || "Sin notas de la versión.";
+}
+
+export function releaseNotesGithubUrl(version: string): string {
+  const tag = version.startsWith("v") ? version : `v${version}`;
+  return `https://github.com/alktrip/catrip-multichat-electron/releases/tag/${tag}`;
+}

@@ -6,6 +6,22 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-05-31
+
+### Corregido
+
+- **Diálogo de actualización**: las notas de la release ya no se recortan en un `MessageBox` nativo demasiado pequeño; ahora se muestran en un panel con **scroll interno** (cabecera y botones fijos, ventana sin agrandar).
+- **Entrega del diálogo al renderer**: el evento IPC se envía al `WebContentsView` del shell React (no al `webContents` vacío de la ventana principal), de modo que el aviso aparece correctamente.
+- **Visibilidad en Ajustes**: el diálogo de actualización también se muestra cuando la interfaz está en la pantalla de preferencias.
+
+### Cambiado
+
+- Flujos **`.deb`** y **AppImage**: notas completas en el panel con enlace «Ver release completa en GitHub»; resumen corto solo como respaldo si el renderer no está disponible.
+
+### Documentación
+
+- **README.md**, **USAGE.md**: versión 1.5.1 y descripción del nuevo diálogo de actualización.
+
 ## [1.5.0] — 2026-05-30
 
 ### Añadido
@@ -221,6 +237,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.5.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.1
 [1.5.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.0
 [1.4.2]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.2
 [1.4.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.4.1

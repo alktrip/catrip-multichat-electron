@@ -277,6 +277,9 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
       ok: false,
       message: "Registro de protocolo solo disponible en Electron.",
     }),
+    onShowUpdateDialog: (cb) => bus.on("ui:showUpdateDialog", cb as Listener),
+    respondUpdateDialog: async () => {},
+    previewUpdateDialog: async () => false,
   };
 
   void zen;

@@ -11,9 +11,10 @@ import {
   type Command,
   type CommandIcon,
 } from "./commands";
-import type { AccountSessionStatus, AppApi, AccountActivityMap } from "../../preload/preload";
+import type { AccountSessionStatus, AppApi, AccountActivityMap, UpdateDialogPayload } from "../../preload/preload";
 import ActivityCenter from "./ActivityCenter";
 import PendingInbox from "./PendingInbox";
+import UpdateDialog from "./UpdateDialog";
 
 const SESSION_STATUS_LABEL: Record<AccountSessionStatus, string> = {
   loading: "Cargando…",
@@ -223,6 +224,7 @@ export default function App() {
   const [settings, setSettings] = React.useState<any>(null);
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
+  const [updateDialog, setUpdateDialog] = React.useState<UpdateDialogPayload | null>(null);
   const [paletteIndex, setPaletteIndex] = React.useState(0);
   const paletteListRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -333,6 +335,13 @@ export default function App() {
       setQuickOpen(false);
       setPhoneOpen(false);
     });
+    const offUpdate = window.catrip.onShowUpdateDialog((payload) => {
+      setUpdateDialog(payload);
+      setQuickOpen(false);
+      setPhoneOpen(false);
+      setActivityOpen(false);
+      setPendingInboxOpen(false);
+    });
     return () => {
       offQuick();
       offActivity();
@@ -342,8 +351,37 @@ export default function App() {
       offShortcuts();
       offAbout();
       offIncoming();
+      offUpdate();
     };
   }, []);
+
+  const dismissUpdateDialog = React.useCallback(() => {
+    setUpdateDialog((current) => {
+      if (current) void window.catrip.respondUpdateDialog("later", current.releaseUrl);
+      return null;
+    });
+  }, []);
+
+  const handleUpdateDialogAction = React.useCallback((buttonId: string) => {
+    setUpdateDialog((current) => {
+      if (!current) return null;
+      if (buttonId === "open-release-url") {
+        void window.catrip.respondUpdateDialog(buttonId, current.releaseUrl);
+        return current;
+      }
+      void window.catrip.respondUpdateDialog(buttonId, current.releaseUrl);
+      return null;
+    });
+  }, []);
+
+  const updateDialogOverlay =
+    updateDialog != null ? (
+      <UpdateDialog
+        payload={updateDialog}
+        onAction={handleUpdateDialogAction}
+        onDismiss={dismissUpdateDialog}
+      />
+    ) : null;
 
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -516,8 +554,15 @@ export default function App() {
       void window.catrip.setZenMode(false);
     }
     const modalBlocking =
-      mode === "browser" &&
-      (quickOpen || phoneOpen || incomingLinkOpen || shortcutsOpen || aboutOpen || activityOpen || pendingInboxOpen);
+      updateDialog != null ||
+      (mode === "browser" &&
+        (quickOpen ||
+          phoneOpen ||
+          incomingLinkOpen ||
+          shortcutsOpen ||
+          aboutOpen ||
+          activityOpen ||
+          pendingInboxOpen));
     if (import.meta.env.DEV) {
       console.log("[catrip-embed-renderer]", "setMode+modal", { mode, modalBlocking });
     }
@@ -525,7 +570,7 @@ export default function App() {
       await window.catrip.setMode(mode);
       await window.catrip.setRendererModalOpen(modalBlocking);
     })();
-  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, activityOpen, pendingInboxOpen, zen]);
+  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, activityOpen, pendingInboxOpen, updateDialog, zen]);
 
   const sidebarAllowed = settings?.general?.showSidebar !== false;
 
@@ -652,6 +697,7 @@ export default function App() {
             void window.catrip.getSettings().then((s) => setSettings(s));
           }}
         />
+        {updateDialogOverlay}
         {helpOverlays}
       </>
     );
@@ -1117,6 +1163,8 @@ export default function App() {
             }}
           />
         </Overlay>
+
+        {updateDialogOverlay}
 
         <Overlay
           open={incomingLinkOpen}

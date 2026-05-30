@@ -9,6 +9,7 @@ declare global {
       getActiveAccountId?: () => Promise<string | null>;
       onActiveAccountChanged?: (cb: (id: string | null) => void) => () => void;
       onAccountsListChanged?: (cb: (accounts: Array<{ id: string; label: string }>) => void) => () => void;
+      previewUpdateDialog?: () => Promise<boolean>;
     };
   }
 }
@@ -177,6 +178,18 @@ export default function DevBanner() {
               Para el contexto completo, ejecuta <code>npm run dev</code> y usa la ventana Electron
               (no abras solo el navegador en el puerto 5173).
             </p>
+          ) : null}
+
+          {bridgeReady && typeof window.catrip?.previewUpdateDialog === "function" ? (
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="catrip-btn catrip-btn-primary"
+                onClick={() => void window.catrip!.previewUpdateDialog!()}
+              >
+                Probar diálogo de actualización (v1.5.0)
+              </button>
+            </div>
           ) : null}
         </div>
       ) : null}

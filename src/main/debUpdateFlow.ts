@@ -5,7 +5,12 @@ import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import type { UpdateInfo } from "electron-updater";
-import { formatReleaseNotesForDialog } from "./releaseNotesFormat";
+import {
+  formatReleaseNotesBrief,
+  formatReleaseNotesForUpdateDialog,
+  releaseNotesGithubUrl,
+} from "./releaseNotesFormat";
+import { showUpdateDialogRequest, type UpdateDialogRequest } from "./updateDialogBridge";
 type UpdateChannel = "stable" | "beta";
 
 const GITHUB_REPO = "alktrip/catrip-multichat-electron";
@@ -35,6 +40,30 @@ function showMessageBox(
 ): Promise<Electron.MessageBoxReturnValue> {
   const parent = dialogParent();
   return parent ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
+}
+
+async function askUpdateDialog(req: UpdateDialogRequest): Promise<string> {
+  try {
+    return await showUpdateDialogRequest(req);
+  } catch {
+    const brief = formatReleaseNotesBrief(req.releaseNotes);
+    const detail = [brief, req.footerHint].filter(Boolean).join("\n\n");
+    const labels = req.buttons.map((b) => b.label);
+    const r = await showMessageBox({
+      type: "info",
+      title: req.title,
+      message: req.message,
+      detail,
+      buttons: labels,
+      defaultId: Math.max(0, req.buttons.findIndex((b) => b.primary)),
+      cancelId: Math.max(0, req.buttons.findIndex((b) => b.id === "later")),
+    });
+    const picked = req.buttons[r.response]?.id ?? req.buttons[req.buttons.length - 1]?.id ?? "later";
+    if (picked === "open-release-url" && req.releaseUrl) {
+      void shell.openExternal(req.releaseUrl);
+    }
+    return picked;
+  }
 }
 
 /** URL del .deb en GitHub Releases a partir de metadatos de electron-updater. */
@@ -126,16 +155,20 @@ async function promptDownloadToFolder(
 }
 
 async function showManualDownloadUrl(version: string, debUrl: string, changelog: string): Promise<void> {
-  const r = await showMessageBox({
-    type: "info",
+  const action = await askUpdateDialog({
     title: "Descarga manual",
     message: `Catrip Connect ${version}`,
-    detail: `${changelog}\n\nDescarga el instalador .deb desde:\n\n${debUrl}\n\nLuego instálalo con apt o tu gestor de paquetes.`,
-    buttons: ["Abrir enlace en el navegador", "Entendido"],
-    defaultId: 0,
-    cancelId: 1,
+    releaseNotes: changelog,
+    footerHint: `Descarga el instalador .deb desde:\n${debUrl}\n\nLuego instálalo con apt o tu gestor de paquetes.`,
+    releaseUrl: releaseNotesGithubUrl(version),
+    buttons: [
+      { id: "open-browser", label: "Abrir enlace en el navegador", primary: true },
+      { id: "ack", label: "Entendido" },
+    ],
   });
-  if (r.response === 0) void shell.openExternal(debUrl);
+  if (action === "open-browser" || action === "open-release-url") {
+    void shell.openExternal(debUrl);
+  }
 }
 
 let debPromptShownForVersion: string | null = null;
@@ -154,19 +187,23 @@ export async function handleDebUpdateAvailable(
 
   const debUrl = resolveDebDownloadUrl(info);
   const sha512 = resolveDebSha512(info);
-  const r = await showMessageBox({
-    type: "info",
+  const action = await askUpdateDialog({
     title: "Nueva versión disponible",
     message: `Hay una actualización: Catrip Connect ${version}`,
-    detail: `${changelogPlain}\n\n¿Quieres descargar el paquete .deb a una carpeta de tu elección?\n\n(Si prefieres no descargar desde la app, podrás abrir el enlace de GitHub.)`,
-    buttons: ["Descargar…", "Solo enlace de descarga", "Más tarde"],
-    defaultId: 0,
-    cancelId: 2,
+    releaseNotes: changelogPlain,
+    footerHint:
+      "¿Quieres descargar el paquete .deb a una carpeta de tu elección?\n(Si prefieres no descargar desde la app, podrás abrir el enlace de GitHub.)",
+    releaseUrl: releaseNotesGithubUrl(version),
+    buttons: [
+      { id: "download", label: "Descargar…", primary: true },
+      { id: "link", label: "Solo enlace de descarga" },
+      { id: "later", label: "Más tarde" },
+    ],
   });
 
-  if (r.response === 0) {
+  if (action === "download") {
     await promptDownloadToFolder(version, debUrl, sha512);
-  } else if (r.response === 1) {
+  } else if (action === "link" || action === "open-release-url") {
     await showManualDownloadUrl(version, debUrl, changelogPlain);
   }
 }
@@ -178,5 +215,5 @@ export async function buildChangelogForUpdate(
 ): Promise<string> {
   const version = info.version ?? "";
   const raw = info.releaseNotes ?? (version ? await fetchNotes(version, channel) : "");
-  return formatReleaseNotesForDialog(raw);
+  return formatReleaseNotesForUpdateDialog(raw);
 }
