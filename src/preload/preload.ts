@@ -293,10 +293,8 @@ const api: AppApi = {
   onOpenAbout: (cb) => subscribeShellMenuChannel("ui:openAbout", cb),
   onOpenUserManual: (cb) => subscribeShellMenuChannel("ui:openUserManual", cb),
   onWhatsAppLoadState: (cb) => {
-    const listener = (
-      _evt: unknown,
-      payload: { accountId: string; label: string } | null,
-    ) => cb(payload ?? null);
+    const listener = (_evt: unknown, payload: { accountId: string; label: string } | null) =>
+      cb(payload ?? null);
     ipcRenderer.on("ui:whatsappLoadState", listener);
     return () => ipcRenderer.removeListener("ui:whatsappLoadState", listener);
   },

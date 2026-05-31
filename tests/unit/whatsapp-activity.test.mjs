@@ -107,7 +107,12 @@ test("WHATSAPP_HEARTBEAT_FULL_JS devuelve preview desde fila con badge", () => {
       return null;
     },
   };
-  const fn = new Function("document", "navigator", "location", `return ${WHATSAPP_HEARTBEAT_FULL_JS}`);
+  const fn = new Function(
+    "document",
+    "navigator",
+    "location",
+    `return ${WHATSAPP_HEARTBEAT_FULL_JS}`,
+  );
   const raw = fn(doc, { onLine: true }, doc.location);
   assert.equal(raw.unread, 2);
   assert.equal(raw.unreadChats.length, 1);

@@ -1155,7 +1155,11 @@ async function applyHeartbeatResult(
   const acc = st.accounts.find((a) => a.id === id) || null;
   const perAccountNotifs = acc?.notificationsEnabled !== false;
   const snapshot = buildActivitySnapshot(hb, hb.status, st.activityByAccount[id]);
-  applyAccountActivity(id, { ...snapshot, unread: clampTrayBadge(snapshot.unread) }, notify && perAccountNotifs);
+  applyAccountActivity(
+    id,
+    { ...snapshot, unread: clampTrayBadge(snapshot.unread) },
+    notify && perAccountNotifs,
+  );
 }
 
 async function tickActiveAccountHeartbeat() {

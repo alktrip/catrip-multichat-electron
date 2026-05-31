@@ -36,12 +36,12 @@
 
 No sustituye a WhatsApp: embebe **WhatsApp Web oficial** con las garantías de sesión que ya conoces (código QR, cifrado de extremo a extremo del servicio de Meta). Catrip añade la capa de **productividad en el escritorio** que el navegador no ofrece.
 
-| Para quién                   | Qué obtienes                                                                 |
-| ---------------------------- | ---------------------------------------------------------------------------- |
+| Para quién                   | Qué obtienes                                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | **Profesional multi-cuenta** | Rail de avatares, `Ctrl+1`–`9`, reposo de cuentas inactivas, límite de vistas vivas y precalentado al hover |
-| **Equipos en Linux**         | `.deb` e **AppImage**, protocolo `whatsapp://`, bandeja del sistema          |
-| **Usuarios internacionales** | Interfaz en **9 idiomas** + idioma del sistema; manual integrado traducido   |
-| **Flujo intensivo**          | Paleta `Ctrl+K`, «Ahora mismo», acciones pendientes, modo Zen                |
+| **Equipos en Linux**         | `.deb` e **AppImage**, protocolo `whatsapp://`, bandeja del sistema                                         |
+| **Usuarios internacionales** | Interfaz en **9 idiomas** + idioma del sistema; manual integrado traducido                                  |
+| **Flujo intensivo**          | Paleta `Ctrl+K`, «Ahora mismo», acciones pendientes, modo Zen                                               |
 
 > **Versión actual: [1.7.0](https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.7.0)** — internacionalización completa, manual multilingüe, atajos con foco en WhatsApp Web y bandeja «Ahora mismo» unificada.
 

@@ -1178,12 +1178,17 @@ export default function SettingsView({
                         ...settings,
                         performance: {
                           ...settings.performance,
-                          chromiumProfile: e.target.value as "default" | "conservative" | "aggressive",
+                          chromiumProfile: e.target.value as
+                            | "default"
+                            | "conservative"
+                            | "aggressive",
                         },
                       })
                     }
                   >
-                    <option value="default">{t("settings.performance.chromiumProfileDefault")}</option>
+                    <option value="default">
+                      {t("settings.performance.chromiumProfileDefault")}
+                    </option>
                     <option value="conservative">
                       {t("settings.performance.chromiumProfileConservative")}
                     </option>
@@ -1211,7 +1216,9 @@ export default function SettingsView({
                     }
                   >
                     <option value="auto">{t("settings.performance.ozonePlatformAuto")}</option>
-                    <option value="wayland">{t("settings.performance.ozonePlatformWayland")}</option>
+                    <option value="wayland">
+                      {t("settings.performance.ozonePlatformWayland")}
+                    </option>
                     <option value="x11">{t("settings.performance.ozonePlatformX11")}</option>
                   </select>
                   <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 12 }}>

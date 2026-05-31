@@ -51,14 +51,14 @@ Comprueba que existan en `release/`:
 
 Sustituye `<versión>` por la nueva (SemVer, p. ej. `1.8.0`).
 
-| Archivo / lugar                          | Acción                                                                                                                                   |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `package.json`                           | Campo `"version"` (y `npm install` actualizará `package-lock.json` si aplica)                                                            |
+| Archivo / lugar                          | Acción                                                                                                                                                                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                           | Campo `"version"` (y `npm install` actualizará `package-lock.json` si aplica)                                                                                                                               |
 | `CHANGELOG.md`                           | Entradas en `[Unreleased]` durante el desarrollo; al publicar, mover a `## [<versión>] — YYYY-MM-DD` y vaciar `[Unreleased]`; enlace al final `[<versión>]: https://github.com/.../releases/tag/v<versión>` |
-| `USAGE.md`                               | Línea **Versión de esta guía** y ejemplos `catrip-connect_<versión>_…` si cambian; nuevas opciones de Ajustes (p. ej. Rendimiento)       |
-| `README.md`                              | Badge/enlaces de versión actual, ejemplos de instalación; funciones destacadas si el release lo amerita                                    |
-| `_scripts/build-manual-locale-files.mjs` | Constante `MANUAL_VERSION`                                                                                                               |
-| `_scripts/release-notes-v<versión>.md`   | **Nuevo** archivo con notas para GitHub (plantilla: copiar el de la versión anterior)                                                    |
+| `USAGE.md`                               | Línea **Versión de esta guía** y ejemplos `catrip-connect_<versión>_…` si cambian; nuevas opciones de Ajustes (p. ej. Rendimiento)                                                                          |
+| `README.md`                              | Badge/enlaces de versión actual, ejemplos de instalación; funciones destacadas si el release lo amerita                                                                                                     |
+| `_scripts/build-manual-locale-files.mjs` | Constante `MANUAL_VERSION`                                                                                                                                                                                  |
+| `_scripts/release-notes-v<versión>.md`   | **Nuevo** archivo con notas para GitHub (plantilla: copiar el de la versión anterior)                                                                                                                       |
 
 Si tocaste traducciones o manual:
 

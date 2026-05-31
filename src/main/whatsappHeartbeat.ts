@@ -1,8 +1,5 @@
 import type { AccountSessionStatus } from "./accountSessionStatus";
-import {
-  normalizeWhatsAppActivityRaw,
-  type WhatsAppActivityRaw,
-} from "./whatsappActivity";
+import { normalizeWhatsAppActivityRaw, type WhatsAppActivityRaw } from "./whatsappActivity";
 
 export type WhatsAppHeartbeatMode = "full" | "light";
 
@@ -302,12 +299,7 @@ export const WHATSAPP_HEARTBEAT_FULL_JS = buildHeartbeatScript("full");
 /** Solo título + estado + llamada; para cuentas inactivas con vista viva. */
 export const WHATSAPP_HEARTBEAT_LIGHT_JS = buildHeartbeatScript("light");
 
-const SESSION_STATUSES = new Set<AccountSessionStatus>([
-  "loading",
-  "qr",
-  "connected",
-  "offline",
-]);
+const SESSION_STATUSES = new Set<AccountSessionStatus>(["loading", "qr", "connected", "offline"]);
 
 export function normalizeWhatsAppHeartbeatRaw(raw: unknown): WhatsAppHeartbeatRaw | null {
   if (!raw || typeof raw !== "object") return null;

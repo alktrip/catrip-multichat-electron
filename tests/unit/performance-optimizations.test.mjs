@@ -6,7 +6,10 @@ import {
   WHATSAPP_HEARTBEAT_FULL_JS,
   WHATSAPP_HEARTBEAT_LIGHT_JS,
 } from "../../dist/main/whatsappHeartbeat.js";
-import { resolveEffectiveChromiumProfile, resolveOzonePlatform } from "../../dist/main/chromiumLaunch.js";
+import {
+  resolveEffectiveChromiumProfile,
+  resolveOzonePlatform,
+} from "../../dist/main/chromiumLaunch.js";
 import { resolveBackgroundThrottleTier } from "../../dist/main/whatsappViewRuntime.js";
 
 test("buildWhatsAppWebUserAgent usa la versión de Chrome indicada", () => {
@@ -37,7 +40,12 @@ test("WHATSAPP_HEARTBEAT_LIGHT_JS devuelve unread desde el título", () => {
     querySelector: () => null,
     querySelectorAll: () => [],
   };
-  const fn = new Function("document", "navigator", "location", `return ${WHATSAPP_HEARTBEAT_LIGHT_JS}`);
+  const fn = new Function(
+    "document",
+    "navigator",
+    "location",
+    `return ${WHATSAPP_HEARTBEAT_LIGHT_JS}`,
+  );
   const raw = fn(doc, { onLine: true }, doc.location);
   assert.equal(raw.unread, 3);
   assert.equal(raw.status, "loading");
@@ -54,7 +62,12 @@ test("WHATSAPP_HEARTBEAT_FULL_JS detecta lista de chats conectada", () => {
       String(sel).includes("chat-list") || sel === "#pane-side" ? chatList : null,
     querySelectorAll: () => [],
   };
-  const fn = new Function("document", "navigator", "location", `return ${WHATSAPP_HEARTBEAT_FULL_JS}`);
+  const fn = new Function(
+    "document",
+    "navigator",
+    "location",
+    `return ${WHATSAPP_HEARTBEAT_FULL_JS}`,
+  );
   const raw = fn(doc, { onLine: true }, doc.location);
   assert.equal(raw.status, "connected");
 });
