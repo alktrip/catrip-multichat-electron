@@ -39,6 +39,7 @@ function writeE2ESettings(userDataDir: string, patch?: Record<string, unknown>) 
       incomingLinkMode: "active",
       incomingLinkFixedAccountId: null,
       checkForUpdates: false,
+      language: "es",
     },
     notifications: { enabled: false, showAccountName: false, showPreview: false },
   };
