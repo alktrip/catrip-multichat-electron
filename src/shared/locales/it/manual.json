@@ -151,7 +151,11 @@
       "steps": null,
       "note": null,
       "table": {
-        "headers": ["Strumento", "Quando usarlo", "Come aprirlo"],
+        "headers": [
+          "Strumento",
+          "Quando usarlo",
+          "Come aprirlo"
+        ],
         "rows": [
           [
             "⚡ Adesso",
@@ -168,7 +172,11 @@
             "Elenco completo di tutte le chat non lette",
             "Pulsante ✉ o Ctrl+K → «in sospeso»"
           ],
-          ["Ctrl+K → Chat", "Trovare un contatto per nome o testo", "Ctrl+K e digita il nome"]
+          [
+            "Ctrl+K → Chat",
+            "Trovare un contatto per nome o testo",
+            "Ctrl+K e digita il nome"
+          ]
         ]
       }
     },
@@ -395,21 +403,63 @@
       "steps": null,
       "note": "Puoi vedere un elenco rapido in Aiuto → Scorciatoie da tastiera e il manuale completo in Aiuto → Manuale utente.",
       "table": {
-        "headers": ["Scorciatoia", "Cosa fa"],
+        "headers": [
+          "Scorciatoia",
+          "Cosa fa"
+        ],
         "rows": [
-          ["Ctrl+K", "Apri ricerca (chat non lette, account e azioni)"],
-          ["Ctrl+P", "Apri Impostazioni"],
-          ["Ctrl+1 … Ctrl+9", "Vai all'account 1, 2, 3… (fino a 9)"],
-          ["Ctrl+N", "Nuova chat in WhatsApp Web"],
-          ["Ctrl+M", "Chat per numero di telefono"],
-          ["Ctrl+U", "Nuovo account"],
-          ["Ctrl+Shift+A", "Apri o chiudi Adesso (top 3 urgenti)"],
-          ["Ctrl+Shift+Z", "Attiva o disattiva modalità Zen"],
-          ["Escape", "Chiudi Adesso, esci da Zen o chiudi palette"],
-          ["Ctrl+W", "Nascondi finestra"],
-          ["Ctrl+Q", "Esci dall'applicazione"],
-          ["F5", "Ricarica WhatsApp Web"],
-          ["F11", "Schermo intero"]
+          [
+            "Ctrl+K",
+            "Apri ricerca (chat non lette, account e azioni)"
+          ],
+          [
+            "Ctrl+P",
+            "Apri Impostazioni"
+          ],
+          [
+            "Ctrl+1 … Ctrl+9",
+            "Vai all'account 1, 2, 3… (fino a 9)"
+          ],
+          [
+            "Ctrl+N",
+            "Nuova chat in WhatsApp Web"
+          ],
+          [
+            "Ctrl+M",
+            "Chat per numero di telefono"
+          ],
+          [
+            "Ctrl+U",
+            "Nuovo account"
+          ],
+          [
+            "Ctrl+Shift+A",
+            "Apri o chiudi Adesso (top 3 urgenti)"
+          ],
+          [
+            "Ctrl+Shift+Z",
+            "Attiva o disattiva modalità Zen"
+          ],
+          [
+            "Escape",
+            "Chiudi Adesso, esci da Zen o chiudi palette"
+          ],
+          [
+            "Ctrl+W",
+            "Nascondi finestra"
+          ],
+          [
+            "Ctrl+Q",
+            "Esci dall'applicazione"
+          ],
+          [
+            "F5",
+            "Ricarica WhatsApp Web"
+          ],
+          [
+            "F11",
+            "Schermo intero"
+          ]
         ]
       }
     },

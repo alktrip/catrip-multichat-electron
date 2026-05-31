@@ -39,3 +39,6 @@ src/shared/**/*.js.map
 playwright-report/
 test-results/
 playwright/.cache/
+
+# Artefactos temporales de generación i18n (prefijo _ en _scripts/)
+_scripts/_*

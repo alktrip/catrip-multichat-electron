@@ -151,7 +151,11 @@
       "steps": null,
       "note": null,
       "table": {
-        "headers": ["Ferramenta", "Quando usar", "Como abrir"],
+        "headers": [
+          "Ferramenta",
+          "Quando usar",
+          "Como abrir"
+        ],
         "rows": [
           [
             "⚡ Agora",
@@ -398,21 +402,63 @@
       "steps": null,
       "note": "Também pode ver uma lista rápida em Ajuda → Atalhos de teclado e o manual completo em Ajuda → Manual do utilizador.",
       "table": {
-        "headers": ["Atalho", "O que faz"],
+        "headers": [
+          "Atalho",
+          "O que faz"
+        ],
         "rows": [
-          ["Ctrl+K", "Abrir pesquisa (conversas por ler, contas e ações)"],
-          ["Ctrl+P", "Abrir Definições"],
-          ["Ctrl+1 … Ctrl+9", "Ir para a conta 1, 2, 3… (até 9)"],
-          ["Ctrl+N", "Nova conversa no WhatsApp Web"],
-          ["Ctrl+M", "Conversa por número de telefone"],
-          ["Ctrl+U", "Nova conta"],
-          ["Ctrl+Shift+A", "Abrir ou fechar Agora (top 3 urgentes)"],
-          ["Ctrl+Shift+Z", "Ativar ou desativar modo Zen"],
-          ["Escape", "Fechar Agora, sair do modo Zen ou fechar paleta"],
-          ["Ctrl+W", "Ocultar janela"],
-          ["Ctrl+Q", "Sair da aplicação"],
-          ["F5", "Recarregar WhatsApp Web"],
-          ["F11", "Ecrã inteiro"]
+          [
+            "Ctrl+K",
+            "Abrir pesquisa (conversas por ler, contas e ações)"
+          ],
+          [
+            "Ctrl+P",
+            "Abrir Definições"
+          ],
+          [
+            "Ctrl+1 … Ctrl+9",
+            "Ir para a conta 1, 2, 3… (até 9)"
+          ],
+          [
+            "Ctrl+N",
+            "Nova conversa no WhatsApp Web"
+          ],
+          [
+            "Ctrl+M",
+            "Conversa por número de telefone"
+          ],
+          [
+            "Ctrl+U",
+            "Nova conta"
+          ],
+          [
+            "Ctrl+Shift+A",
+            "Abrir ou fechar Agora (top 3 urgentes)"
+          ],
+          [
+            "Ctrl+Shift+Z",
+            "Ativar ou desativar modo Zen"
+          ],
+          [
+            "Escape",
+            "Fechar Agora, sair do modo Zen ou fechar paleta"
+          ],
+          [
+            "Ctrl+W",
+            "Ocultar janela"
+          ],
+          [
+            "Ctrl+Q",
+            "Sair da aplicação"
+          ],
+          [
+            "F5",
+            "Recarregar WhatsApp Web"
+          ],
+          [
+            "F11",
+            "Ecrã inteiro"
+          ]
         ]
       }
     },
