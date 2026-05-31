@@ -10,6 +10,8 @@ import {
   nativeImage,
   nativeTheme,
   shell,
+  type Event,
+  type Input,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs";
@@ -34,10 +36,10 @@ import { setupAutoUpdater, refreshUpdaterChannel } from "./autoUpdater";
 import { initUpdateDialogBridge, setUpdateDialogShellTarget, setUpdateDialogWindowFocus, showUpdateDialogRequest } from "./updateDialogBridge";
 import { formatReleaseNotesForUpdateDialog, releaseNotesGithubUrl } from "./releaseNotesFormat";
 import {
-  ACCOUNT_SESSION_STATUS_LABEL,
   WHATSAPP_SESSION_STATUS_JS,
   type AccountSessionStatus,
 } from "./accountSessionStatus";
+import { initMainI18n, changeMainLanguage, tMain } from "./i18n";
 import { initNotificationHub, maybeNotifyActivityIncrease } from "./notificationHub";
 import {
   applyLinuxSessionAutostart,
@@ -73,6 +75,7 @@ import {
 import { buildDevContext } from "./devContext";
 import { WHATSAPP_ACTIVITY_JS } from "./whatsappActivity";
 import { buildWhatsAppOpenChatByNameJs } from "./whatsappOpenChat";
+import { matchCatripShortcut, type CatripShortcutAction } from "./catripShortcuts";
 import {
   buildActivitySnapshot,
   activityMapsEqual,
@@ -142,6 +145,12 @@ function dbgEmbed(...parts: unknown[]) {
   if (process.env.CATRIP_DEBUG_EMBED === "0") return;
   if (app.isPackaged && process.env.CATRIP_DEBUG_EMBED !== "1") return;
   console.log("[catrip-embed]", new Date().toISOString(), ...parts);
+}
+
+/** Diagnóstico de menú / shell (activo en dev; en prod solo con CATRIP_DEBUG_MENU=1). */
+function dbgMenu(...parts: unknown[]) {
+  if (app.isPackaged && process.env.CATRIP_DEBUG_MENU !== "1") return;
+  console.log("[catrip-menu]", new Date().toISOString(), ...parts);
 }
 
 /** Aceleración GPU y flags Chromium: `bootstrap.ts` → `chromiumLaunch.ts` (antes de cargar este módulo). */
@@ -429,11 +438,6 @@ function getAppIconNativeImage(): Electron.NativeImage {
  * Crea un alias minimalista de `WebContentsView` para usar en modo E2E. Sólo
  * delega `webContents` al `BrowserWindow.webContents` real (donde se carga el
  * shell) y deja en noop los métodos visuales (`setBounds`, `setVisible`, …).
- *
- * Motivo: Playwright sólo expone `BrowserWindow` como `Page` y no detecta
- * `WebContentsView`. Cargando el shell directamente en la `BrowserWindow`
- * podemos automatizar la UI desde Playwright sin tocar el resto del código,
- * que sigue referenciando `shellView` con normalidad.
  */
 function createE2EShellAlias(win: BrowserWindow): WebContentsView {
   const noop = () => undefined;
@@ -510,6 +514,14 @@ function createMainWindow(): { win: BrowserWindow; shellView: WebContentsView } 
     if (!startMin) win.show();
   });
 
+  if (!app.isPackaged) {
+    shellView.webContents.on("console-message", (_e, level, message, line, sourceId) => {
+      if (level >= 2) {
+        dbgEmbed("shell console", { level, message, line, sourceId });
+      }
+    });
+  }
+
   if (E2E_MODE) {
     void win.loadURL(rendererUrl());
   } else {
@@ -520,6 +532,8 @@ function createMainWindow(): { win: BrowserWindow; shellView: WebContentsView } 
 }
 
 async function applySettingsToRuntime(s: Settings) {
+  await changeMainLanguage(s.general.language, app.getLocale());
+  refreshMenus();
   const st = ensureState();
   st.win.setMenuBarVisibility(!!s.general.showMenuBar);
 
@@ -650,23 +664,7 @@ function registerWhatsAppProtocolLinux(userDesktopPath?: string, execPath?: stri
       (process.env.APPIMAGE as string | undefined) ||
       (app.isPackaged ? "/opt/Catrip Connect/catrip-connect" : undefined);
     if (bin && fs.existsSync(desktopPath)) {
-      const desktop = [
-        "[Desktop Entry]",
-        "Version=1.0",
-        "Type=Application",
-        `Name=${APP_NAME}`,
-        "GenericName=Mensajer\u00eda",
-        "Comment=Cliente multi-cuenta de WhatsApp Web",
-        `Exec="${bin}" %u`,
-        "Terminal=false",
-        "Icon=catrip-connect",
-        "Categories=Network;Chat;InstantMessaging;",
-        "Keywords=whatsapp;chat;mensajer\u00eda;multi-cuenta;catrip;",
-        "MimeType=x-scheme-handler/whatsapp;",
-        "StartupWMClass=catrip-connect",
-        "StartupNotify=true",
-      ].join("\n");
-      fs.writeFileSync(desktopPath, desktop + "\n", "utf-8");
+      fs.writeFileSync(desktopPath, buildDesktopEntryContent(bin) + "\n", "utf-8");
     }
     execSync(`update-desktop-database "${appsDir}" 2>/dev/null || true`, {
       timeout: 8000,
@@ -1154,9 +1152,9 @@ function trayAccountMenuLabel(a: Account): string {
   const st = ensureState();
   const unread = clampTrayBadge(st.unreadByAccount[a.id] ?? 0);
   const status = st.accountStatusById[a.id] ?? "loading";
-  const statusLabel = ACCOUNT_SESSION_STATUS_LABEL[status];
-  const unreadBit = unread > 0 ? ` · ${unread} sin leer` : "";
-  const activeBit = a.id === st.activeId ? " ✓" : "";
+  const statusLabel = tMain(`sessionStatus.${status}`);
+  const unreadBit = unread > 0 ? tMain("main.accountMenu.unread", { count: unread }) : "";
+  const activeBit = a.id === st.activeId ? tMain("main.accountMenu.active") : "";
   return `${a.label} (${statusLabel}${unreadBit})${activeBit}`;
 }
 
@@ -1387,7 +1385,7 @@ function attachDownloadHandlersOnce(ses: Electron.Session) {
       const ask = !!st.settings.general.downloadsAskSaveAs;
       if (ask) {
         const res = await dialog.showSaveDialog(st.win, {
-          title: "Guardar archivo",
+          title: tMain("main.dialogs.saveFile"),
           defaultPath: path.join(baseDir, filename),
         });
         if (res.canceled || !res.filePath) {
@@ -1559,7 +1557,6 @@ function ensureViewForAccount(id: string): WebContentsView {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      backgroundThrottling: false,
     },
   });
   view.setBackgroundColor("#ffffffff");
@@ -1600,14 +1597,7 @@ function ensureViewForAccount(id: string): WebContentsView {
   });
 
   view.webContents.on("before-input-event", (event, input) => {
-    if (input.type !== "keyDown" || input.key !== "Escape") return;
-    const st = viewState;
-    if (!st || st.chrome.mode !== "browser" || !st.chrome.zen) return;
-    event.preventDefault();
-    st.chrome.zen = false;
-    void st.shellView.webContents.send("ui:zenChanged", false);
-    layoutActiveView();
-    refreshMenus();
+    handleCatripShortcutBeforeInput(event, input);
   });
   view.webContents.on(
     "did-fail-load",
@@ -1631,26 +1621,196 @@ function ensureViewForAccount(id: string): WebContentsView {
   return view;
 }
 
+/** Oculta WhatsApp y muestra el shell a pantalla completa (p. ej. modo Zen tapando la UI). */
+function prepareShellForMenuUi() {
+  const st = ensureState();
+  dbgMenu("prepareShellForMenuUi", {
+    mode: st.chrome.mode,
+    zen: st.chrome.zen,
+    rendererModalOpen,
+    attachedViewId: st.attachedViewId,
+  });
+  detachBrowserView();
+  layoutActiveView();
+  raiseChildView(st.win, st.shellView);
+}
+
+const SHELL_MENU_IPC_CHANNELS = new Set([
+  "ui:openSettings",
+  "ui:openQuickSwitcher",
+  "ui:openActivityCenter",
+  "ui:openPendingInbox",
+  "ui:openUrgentNow",
+  "ui:openPhoneChat",
+  "ui:openShortcutsHelp",
+  "ui:openAbout",
+  "ui:openUserManual",
+]);
+
+/** Entrega IPC al shell y, como respaldo, dispara CustomEvent en el DOM del renderer. */
+function sendToShell(channel: string, ...args: unknown[]) {
+  const st = ensureState();
+  const wc = st.shellView.webContents;
+  if (wc.isDestroyed()) return;
+
+  const deliver = () => {
+    dbgMenu("sendToShell", { channel, url: wc.getURL(), loading: wc.isLoading() });
+    try {
+      wc.focus();
+    } catch {
+      /* ignore */
+    }
+    wc.send(channel, ...args);
+    if (SHELL_MENU_IPC_CHANNELS.has(channel)) {
+      void wc
+        .executeJavaScript(
+          `(function(){try{window.dispatchEvent(new CustomEvent("catrip:shell-menu",{detail:{channel:${JSON.stringify(channel)}}}))}catch(e){console.error("[catrip-shell-menu]",e)}})()`,
+          true,
+        )
+        .catch((err) => dbgMenu("sendToShell dom fallback failed", { channel, err: String(err) }));
+    }
+  };
+
+  if (wc.isLoading()) {
+    wc.once("did-finish-load", deliver);
+    return;
+  }
+  deliver();
+}
+
+function openSettingsFromMenu() {
+  const st = ensureState();
+  dbgMenu("openSettingsFromMenu");
+  showMainWindow();
+  st.chrome.mode = "settings";
+  if (st.chrome.zen) {
+    st.chrome.zen = false;
+    sendToShell("ui:zenChanged", false);
+  }
+  detachBrowserView();
+  refreshMenus();
+  layoutActiveView();
+  raiseChildView(st.win, st.shellView);
+  sendToShell("ui:openSettings");
+}
+
+function openShellPanelFromMenu(channel: string, ...args: unknown[]) {
+  const st = ensureState();
+  if (st.chrome.mode !== "browser") return;
+  dbgMenu("openShellPanelFromMenu", { channel, args });
+  showMainWindow();
+  rendererModalOpen = true;
+  prepareShellForMenuUi();
+  sendToShell(channel, ...args);
+}
+
+function reloadAllWhatsAppViews() {
+  for (const view of ensureState().viewsById.values()) {
+    try {
+      view.webContents.reload();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function toggleZenFromMain() {
+  const st = ensureState();
+  if (st.chrome.mode !== "browser") return;
+  st.chrome.zen = !st.chrome.zen;
+  void st.shellView.webContents.send("ui:zenChanged", st.chrome.zen);
+  layoutActiveView();
+  refreshMenus();
+}
+
+/** Ejecuta un atajo de Catrip. Devuelve true si la acción se aplicó (y conviene preventDefault). */
+function dispatchCatripShortcut(action: CatripShortcutAction): boolean {
+  const st = ensureState();
+  const inBrowser = st.chrome.mode === "browser";
+
+  switch (action.type) {
+    case "exitZen":
+      if (!inBrowser || !st.chrome.zen) return false;
+      st.chrome.zen = false;
+      void st.shellView.webContents.send("ui:zenChanged", false);
+      layoutActiveView();
+      refreshMenus();
+      return true;
+    case "settings":
+      openSettingsFromMenu();
+      return true;
+    case "hide":
+      hideMainWindow();
+      return true;
+    case "quit":
+      requestAppQuit();
+      return true;
+    case "quickSwitcher":
+      if (!inBrowser) return false;
+      openShellPanelFromMenu("ui:openQuickSwitcher");
+      return true;
+    case "fullscreen":
+      st.win.setFullScreen(!st.win.isFullScreen());
+      return true;
+    case "toggleZen":
+      if (!inBrowser) return false;
+      toggleZenFromMain();
+      return true;
+    case "urgentNow":
+      if (!inBrowser) return false;
+      openShellPanelFromMenu("ui:openUrgentNow");
+      return true;
+    case "reload":
+      reloadAllWhatsAppViews();
+      return true;
+    case "newChat":
+      if (!inBrowser) return false;
+      triggerNewChatInActiveView();
+      return true;
+    case "phoneChat":
+      if (!inBrowser) return false;
+      openShellPanelFromMenu("ui:openPhoneChat");
+      return true;
+    case "newAccount":
+      void createAccountAndNotify();
+      return true;
+    case "switchAccount": {
+      const acc = st.accounts[action.index];
+      if (!acc) return false;
+      setActiveAccount(acc.id);
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+function handleCatripShortcutBeforeInput(event: Event, input: Input) {
+  const action = matchCatripShortcut(input);
+  if (!action) return;
+  if (!dispatchCatripShortcut(action)) return;
+  event.preventDefault();
+}
+
 function buildTrayMenu() {
   const st = ensureState();
   return Menu.buildFromTemplate([
     {
-      label: "Mostrar",
+      label: tMain("main.tray.show"),
       click: () => showMainWindow(),
     },
     {
-      label: "Ocultar",
+      label: tMain("main.tray.hide"),
       click: () => hideMainWindow(),
     },
     {
-      label: "Ajustes",
+      label: tMain("main.tray.settings"),
       click: () => {
-        showMainWindow();
-        void st.shellView.webContents.send("ui:openSettings");
+        openSettingsFromMenu();
       },
     },
     {
-      label: "Cerrar a bandeja (toggle)",
+      label: tMain("main.tray.closeToTray"),
       type: "checkbox" as const,
       checked: !!st.settings.general.closeToTray,
       click: () => {
@@ -1665,7 +1825,7 @@ function buildTrayMenu() {
     },
     { type: "separator" },
     {
-      label: "Cuentas",
+      label: tMain("main.tray.accounts"),
       submenu: st.accounts.map((a) => ({
         label: trayAccountMenuLabel(a),
         type: "radio" as const,
@@ -1674,40 +1834,22 @@ function buildTrayMenu() {
       })),
     },
     { type: "separator" },
-    { label: "Salir", click: () => requestAppQuit() },
+    { label: tMain("main.tray.quit"), click: () => requestAppQuit() },
   ]);
 }
 
 function buildAppMenu() {
   const st = ensureState();
 
-  const send = (channel: string, ...args: any[]) => {
-    void st.shellView.webContents.send(channel, ...args);
-  };
-
   const inBrowser = () => st.chrome.mode === "browser";
 
-  const reloadPages = () => {
-    for (const view of st.viewsById.values()) {
-      try {
-        view.webContents.reload();
-      } catch {
-        // ignore
-      }
-    }
-  };
+  const reloadPages = () => reloadAllWhatsAppViews();
 
   const toggleFullscreen = () => {
-    st.win.setFullScreen(!st.win.isFullScreen());
+    ensureState().win.setFullScreen(!ensureState().win.isFullScreen());
   };
 
-  const toggleZen = () => {
-    if (!inBrowser()) return;
-    st.chrome.zen = !st.chrome.zen;
-    send("ui:zenChanged", st.chrome.zen);
-    layoutActiveView();
-    refreshMenus();
-  };
+  const toggleZen = () => toggleZenFromMain();
 
   const accountsMenu = st.accounts.map((a, idx) => ({
     label: a.label,
@@ -1719,60 +1861,64 @@ function buildAppMenu() {
 
   return Menu.buildFromTemplate([
     {
-      label: "Archivo",
+      label: tMain("main.menus.file"),
       submenu: [
-        { label: "Ajustes", accelerator: "Ctrl+P", click: () => send("ui:openSettings") },
+        {
+          label: tMain("main.menus.settings"),
+          accelerator: "Ctrl+P",
+          click: () => openSettingsFromMenu(),
+        },
         { type: "separator" },
-        { label: "Ocultar", accelerator: "Ctrl+W", click: () => hideMainWindow() },
-        { label: "Salir", accelerator: "Ctrl+Q", click: () => requestAppQuit() },
+        { label: tMain("main.menus.hide"), accelerator: "Ctrl+W", click: () => hideMainWindow() },
+        { label: tMain("main.menus.quit"), accelerator: "Ctrl+Q", click: () => requestAppQuit() },
       ],
     },
     {
-      label: "Ver",
+      label: tMain("main.menus.view"),
       submenu: [
         {
-          label: "Cambio rápido de cuenta…",
+          label: tMain("main.menus.quickSwitch"),
           accelerator: "Ctrl+K",
-          click: () => inBrowser() && send("ui:openQuickSwitcher"),
+          click: () => inBrowser() && openShellPanelFromMenu("ui:openQuickSwitcher"),
         },
         { type: "separator" },
-        { label: "Pantalla completa", accelerator: "F11", click: () => toggleFullscreen() },
+        { label: tMain("main.menus.fullscreen"), accelerator: "F11", click: () => toggleFullscreen() },
         {
-          label: "Modo Zen",
+          label: tMain("main.menus.zenMode"),
           accelerator: "Ctrl+Shift+Z",
           type: "checkbox" as const,
           checked: st.chrome.zen,
           click: () => toggleZen(),
         },
         {
-          label: "Ahora mismo",
+          label: tMain("main.menus.urgentNow"),
           accelerator: "Ctrl+Shift+A",
-          click: () => inBrowser() && send("ui:openUrgentNow"),
+          click: () => inBrowser() && openShellPanelFromMenu("ui:openUrgentNow"),
         },
       ],
     },
     {
-      label: "Chat",
+      label: tMain("main.menus.chat"),
       submenu: [
-        { label: "Recargar", accelerator: "F5", click: () => reloadPages() },
+        { label: tMain("main.menus.reload"), accelerator: "F5", click: () => reloadPages() },
         { type: "separator" },
         {
-          label: "Nuevo chat",
+          label: tMain("main.menus.newChat"),
           accelerator: "Ctrl+N",
           click: () => inBrowser() && void triggerNewChatInActiveView(),
         },
         {
-          label: "Por número de teléfono",
+          label: tMain("main.menus.phoneChat"),
           accelerator: "Ctrl+M",
-          click: () => inBrowser() && send("ui:openPhoneChat"),
+          click: () => inBrowser() && openShellPanelFromMenu("ui:openPhoneChat"),
         },
       ],
     },
     {
-      label: "Cuentas",
+      label: tMain("main.menus.accounts"),
       submenu: [
         {
-          label: "Nueva cuenta",
+          label: tMain("main.menus.newAccount"),
           accelerator: "Ctrl+U",
           click: () => void createAccountAndNotify(),
         },
@@ -1781,11 +1927,17 @@ function buildAppMenu() {
       ],
     },
     {
-      label: "Ayuda",
+      label: tMain("main.menus.help"),
       submenu: [
-        { label: "Manual de usuario", click: () => send("ui:openUserManual") },
-        { label: "Atajos de teclado", click: () => send("ui:openShortcutsHelp") },
-        { label: "Acerca de", click: () => send("ui:openAbout") },
+        {
+          label: tMain("main.menus.userManual"),
+          click: () => openShellPanelFromMenu("ui:openUserManual"),
+        },
+        {
+          label: tMain("main.menus.shortcuts"),
+          click: () => openShellPanelFromMenu("ui:openShortcutsHelp"),
+        },
+        { label: tMain("main.menus.about"), click: () => openShellPanelFromMenu("ui:openAbout") },
       ],
     },
   ]);
@@ -1827,6 +1979,7 @@ function layoutActiveView() {
   if (st.chrome.mode === "settings" || rendererModalOpen) {
     st.shellView.setVisible(true);
     st.shellView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
+    raiseChildView(win, st.shellView);
     return;
   }
 
@@ -1834,6 +1987,7 @@ function layoutActiveView() {
   if (!aid) {
     st.shellView.setVisible(true);
     st.shellView.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
+    raiseChildView(win, st.shellView);
     return;
   }
 
@@ -2146,8 +2300,7 @@ function createTray() {
       },
       onSettings: () => {
         try {
-          showMainWindow();
-          void st.shellView.webContents.send("ui:openSettings");
+          openSettingsFromMenu();
         } catch {
           // ignore
         }
@@ -2307,14 +2460,13 @@ function buildSystray2Menu() {
     title: summary,
     tooltip: summary,
     items: [
-      mk("Mostrar", () => showMainWindow()),
-      mk("Ocultar", () => hideMainWindow()),
-      mk("Ajustes", () => {
-        showMainWindow();
-        void st.shellView.webContents.send("ui:openSettings");
+      mk(tMain("main.tray.show"), () => showMainWindow()),
+      mk(tMain("main.tray.hide"), () => hideMainWindow()),
+      mk(tMain("main.tray.settings"), () => {
+        openSettingsFromMenu();
       }),
       mk(
-        "Cerrar a bandeja",
+        tMain("main.tray.closeToTray"),
         () => {
           const next = {
             ...st.settings,
@@ -2328,13 +2480,13 @@ function buildSystray2Menu() {
       ),
       SysTrayCtor.separator,
       {
-        title: "Cuentas",
-        tooltip: "Cuentas",
+        title: tMain("main.tray.accounts"),
+        tooltip: tMain("main.tray.accounts"),
         enabled: true,
         items: accountsItems,
       },
       SysTrayCtor.separator,
-      mk("Salir", () => requestAppQuit()),
+      mk(tMain("main.tray.quit"), () => requestAppQuit()),
     ],
   };
 }
@@ -2457,11 +2609,12 @@ function bindUpdateDialogShellTarget() {
   setUpdateDialogWindowFocus(() => focusMainWindow());
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const s = loadAccountsState();
   const settings = loadSettings();
+  await initMainI18n(settings.general.language, app.getLocale());
   if (s.accounts.length === 0) {
-    createAccount(s, "Cuenta 1");
+    createAccount(s, tMain("common.accountDefault", { n: 1 }));
     saveAccountsState(s);
   }
 
@@ -2501,8 +2654,6 @@ app.whenReady().then(() => {
   viewState.shellView = shellView;
   bindUpdateDialogShellTarget();
 
-  layoutActiveView();
-
   if (!E2E_MODE) createTray();
   refreshMenus();
   void applySettingsToRuntime(settings);
@@ -2511,8 +2662,9 @@ app.whenReady().then(() => {
     refreshTrayIcon();
   });
 
-  // Activar cuenta al arrancar.
+  // Activar cuenta al arrancar (antes del layout para no fullscreen el shell sin WhatsApp).
   if (viewState.activeId) setActiveAccount(viewState.activeId);
+  else layoutActiveView();
 
   flushPendingIncomingWhatsAppUrl();
 
@@ -2544,7 +2696,7 @@ app.whenReady().then(() => {
 
   if (app.isPackaged) registerWhatsAppProtocolLinux();
 
-  // Notificar Zen inicial al renderer (para que el rail se oculte si procede).
+  // Sincronizar Zen persistido con el renderer (p. ej. rail oculto al arrancar).
   void viewState.shellView.webContents.send("ui:zenChanged", viewState.chrome.zen);
 
   dbgEmbed("startup snapshot", {
@@ -2619,7 +2771,7 @@ ipcMain.handle("diagnostics:whatsappMedia", async () => {
       return {
         ok: false as const,
         code: "no_account",
-        message: "No hay cuenta activa.",
+        message: tMain("main.diagnostics.noActiveAccount"),
       };
     }
     const view = ensureViewForAccount(id);
@@ -2628,7 +2780,7 @@ ipcMain.handle("diagnostics:whatsappMedia", async () => {
       return {
         ok: false as const,
         code: "destroyed",
-        message: "La vista web no está disponible.",
+        message: tMain("main.diagnostics.viewUnavailable"),
       };
     }
     const url = wc.getURL();
@@ -2636,8 +2788,7 @@ ipcMain.handle("diagnostics:whatsappMedia", async () => {
       return {
         ok: false as const,
         code: "not_whatsapp",
-        message:
-          "La cuenta activa no muestra web.whatsapp.com todavía. Abre WhatsApp Web en el navegador integrado y vuelve a intentar.",
+        message: tMain("main.diagnostics.whatsappNotLoaded"),
         url,
       };
     }
@@ -2719,16 +2870,15 @@ ipcMain.handle("updater:previewUpdateDialog", async () => {
   const releaseNotes = formatReleaseNotesForUpdateDialog(raw);
   try {
     await showUpdateDialogRequest({
-      title: "Nueva versión disponible",
-      message: "Hay una actualización: Catrip Connect 1.5.0",
+      title: tMain("main.updates.newVersion"),
+      message: tMain("main.updates.newVersionMessage", { version: "1.5.0" }),
       releaseNotes,
-      footerHint:
-        "Vista previa del diálogo de actualización (desarrollo). Desplázate para leer todas las notas.",
+      footerHint: tMain("main.updates.previewFooterHint"),
       releaseUrl: releaseNotesGithubUrl("1.5.0"),
       buttons: [
-        { id: "download", label: "Descargar…", primary: true },
-        { id: "link", label: "Solo enlace de descarga" },
-        { id: "later", label: "Más tarde" },
+        { id: "download", label: tMain("main.updates.download"), primary: true },
+        { id: "link", label: tMain("main.updates.downloadLinkOnly") },
+        { id: "later", label: tMain("main.updates.later") },
       ],
     });
     return true;
@@ -3034,7 +3184,7 @@ ipcMain.handle("accounts:getSuspended", () => {
 ipcMain.handle("dialog:selectDownloadsDirectory", async () => {
   const st = ensureState();
   const res = await dialog.showOpenDialog(st.win, {
-    title: "Elegir carpeta de descargas",
+    title: tMain("main.dialogs.chooseDownloads"),
     properties: ["openDirectory", "createDirectory"],
   });
   if (res.canceled) return null;

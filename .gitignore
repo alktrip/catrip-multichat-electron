@@ -28,8 +28,10 @@ Thumbs.db
 *.swp
 *.swo
 
-# Caché
-.cache/
+# Artefactos tsc accidentales en fuentes (Vite prioriza .js sobre .ts)
+src/shared/**/*.js
+src/shared/**/*.js.map
+
 .parcel-cache/
 .eslintcache
 

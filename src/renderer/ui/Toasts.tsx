@@ -23,6 +23,7 @@
  */
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export type ToastKind = "success" | "info" | "error";
 
@@ -171,6 +172,7 @@ function ToastViewport({
 }
 
 function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
+  const { t } = useTranslation();
   return (
     <div role="status" className={`catrip-toast catrip-toast--${item.kind}`}>
       <span className="catrip-toast-icon">
@@ -181,8 +183,8 @@ function ToastView({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
         type="button"
         className="catrip-toast-close"
         onClick={() => onDismiss(item.id)}
-        aria-label="Cerrar notificación"
-        title="Cerrar"
+        aria-label={t("toasts.closeNotification")}
+        title={t("toasts.close")}
       >
         ×
       </button>

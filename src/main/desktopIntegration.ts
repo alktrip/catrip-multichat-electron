@@ -4,6 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { execFile, execSync } from "node:child_process";
 import { promisify } from "node:util";
+import { tMain } from "./i18n";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,8 +24,8 @@ export function buildDesktopEntryContent(execPath: string): string {
     "Version=1.0",
     "Type=Application",
     `Name=${APP_NAME}`,
-    "GenericName=Mensajería",
-    "Comment=Cliente multi-cuenta de WhatsApp Web",
+    `GenericName=${tMain("main.desktop.genericName")}`,
+    `Comment=${tMain("main.desktop.comment")}`,
     `Exec=${exec} %U`,
     "Terminal=false",
     "Icon=catrip-connect",
@@ -36,17 +37,17 @@ export function buildDesktopEntryContent(execPath: string): string {
     "Actions=Open;Focus;NewAccount;",
     "",
     "[Desktop Action Open]",
-    "Name=Abrir Catrip Connect",
+    `Name=${tMain("main.desktop.actionOpen")}`,
     `Exec=${exec} --catrip-action=open`,
     "Terminal=false",
     "",
     "[Desktop Action Focus]",
-    "Name=Enfocar ventana",
+    `Name=${tMain("main.desktop.actionFocus")}`,
     `Exec=${exec} --catrip-action=focus`,
     "Terminal=false",
     "",
     "[Desktop Action NewAccount]",
-    "Name=Nueva cuenta",
+    `Name=${tMain("main.desktop.actionNewAccount")}`,
     `Exec=${exec} --catrip-action=new-account`,
     "Terminal=false",
   ].join("\n");
@@ -124,11 +125,11 @@ export function applyLinuxSessionAutostart(enabled: boolean): { ok: boolean; mes
       for (const p of [target, legacy]) {
         if (fs.existsSync(p)) fs.unlinkSync(p);
       }
-      return { ok: true, message: "Autoinicio desactivado." };
+      return { ok: true, message: tMain("main.integrations.autostartOff") };
     }
     const execPath = resolveLinuxLaunchExecutable();
     if (!execPath) {
-      return { ok: false, message: "No se encontró el ejecutable de Catrip Connect." };
+      return { ok: false, message: tMain("main.integrations.exeNotFound") };
     }
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, buildAutostartDesktopContent(execPath) + "\n", "utf-8");
@@ -139,7 +140,7 @@ export function applyLinuxSessionAutostart(enabled: boolean): { ok: boolean; mes
         // ignore
       }
     }
-    return { ok: true, message: `Autoinicio activado (${target}).` };
+    return { ok: true, message: tMain("main.integrations.autostartOn", { path: target }) };
   } catch (err) {
     return {
       ok: false,
@@ -156,11 +157,11 @@ function writeDesktopFile(desktopPath: string, execPath: string) {
 /** Registra whatsapp:// y refresca bases XDG del usuario. */
 export function registerWhatsAppProtocolForUser(): { ok: boolean; message: string } {
   if (process.platform !== "linux") {
-    return { ok: false, message: "Solo disponible en Linux." };
+    return { ok: false, message: tMain("main.integrations.linuxOnly") };
   }
   const execPath = resolveLinuxLaunchExecutable();
   if (!execPath) {
-    return { ok: false, message: "No se encontró el ejecutable de Catrip Connect." };
+    return { ok: false, message: tMain("main.integrations.exeNotFound") };
   }
 
   try {
@@ -192,8 +193,7 @@ export function registerWhatsAppProtocolForUser(): { ok: boolean; message: strin
 
     return {
       ok: true,
-      message:
-        "Registrado whatsapp:// y acciones del lanzador. Los https://wa.me abiertos en el navegador no pasan solos a Catrip: usa whatsapp://, el botón «Abrir con…» del navegador o una extensión.",
+      message: tMain("main.integrations.protocolRegistered"),
     };
   } catch (err) {
     return {
@@ -215,7 +215,7 @@ export async function runBundledRegisterScript(): Promise<{ ok: boolean; message
       env: { ...process.env, APPIMAGE: process.env.APPIMAGE || resolveLinuxLaunchExecutable() || "" },
     });
     const out = (stdout || stderr || "").trim();
-    return { ok: true, message: out || "Protocolo registrado." };
+    return { ok: true, message: out || tMain("main.integrations.protocolRegisteredShort") };
   } catch (err) {
     const fallback = registerWhatsAppProtocolForUser();
     if (fallback.ok) return fallback;

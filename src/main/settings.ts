@@ -2,6 +2,8 @@ import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { normalizeSuspendAfterMinutes } from "./accountSuspension";
+import type { LanguageSetting } from "../shared/i18n/types";
+import { isAppLocale } from "../shared/i18n/localeMeta";
 
 export type Settings = {
   version: 1;
@@ -59,8 +61,10 @@ export type Settings = {
     checkForUpdates: boolean;
     /** Canal de actualización: `stable` (releases) o `beta` (pre-releases). */
     updateChannel: "stable" | "beta";
-    /** Tras descargar en WhatsApp Web, abrir con la app predeterminada (xdg-open / portal). */
+    /** Abrir archivos descargados con la app predeterminada (xdg-open / portal). */
     openDownloadsWithDefaultApp: boolean;
+    /** Idioma de la interfaz de Catrip Connect (`system` = idioma del SO). */
+    language: LanguageSetting;
   };
   notifications: {
     enabled: boolean;
@@ -99,6 +103,7 @@ const DEFAULTS: Settings = {
     checkForUpdates: true,
     updateChannel: "stable",
     openDownloadsWithDefaultApp: true,
+    language: "system",
   },
   notifications: {
     enabled: true,
@@ -241,6 +246,12 @@ export function loadSettings(): Settings {
           typeof (parsed.general as any)?.openDownloadsWithDefaultApp === "boolean"
             ? (parsed.general as any).openDownloadsWithDefaultApp
             : DEFAULTS.general.openDownloadsWithDefaultApp,
+        language: (() => {
+          const raw = (parsed.general as { language?: unknown })?.language;
+          if (raw === "system") return "system";
+          if (isAppLocale(raw)) return raw;
+          return DEFAULTS.general.language;
+        })(),
       },
       notifications: {
         enabled:

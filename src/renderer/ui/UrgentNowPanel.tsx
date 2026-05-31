@@ -1,6 +1,7 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import AccountAvatar from "./AccountAvatar";
-import { pickTopUrgentChats, formatRelativeTime } from "../../main/pendingInboxModel";
+import { pickTopUrgentChats, formatRelativeTimeI18n } from "../../shared/i18n/pendingInboxI18n";
 import type { PendingAccountRef } from "../../main/pendingInboxModel";
 import type { AccountActivityMap } from "../../preload/preload";
 
@@ -19,37 +20,33 @@ export default function UrgentNowPanel({
   onOpenAllPending,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const items = React.useMemo(
     () => pickTopUrgentChats(accounts, activityByAccount, 3),
     [accounts, activityByAccount],
   );
 
-  const totalPending = React.useMemo(() => {
-    let n = 0;
-    for (const a of accounts) {
-      n += activityByAccount[a.id]?.unread ?? 0;
-    }
-    return n;
-  }, [accounts, activityByAccount]);
-
   return (
-    <div className="catrip-urgent-panel" role="dialog" aria-label="Urgente ahora">
+    <div className="catrip-urgent-panel" role="dialog" aria-label={t("urgent.aria")}>
       <div className="catrip-urgent-panel-header">
         <div>
-          <div className="catrip-urgent-panel-title">Ahora mismo</div>
+          <div className="catrip-urgent-panel-title">{t("urgent.title")}</div>
           <div className="catrip-urgent-panel-sub">
-            {items.length > 0
-              ? "Lo más urgente en todas tus cuentas"
-              : "Sin conversaciones pendientes"}
+            {items.length > 0 ? t("urgent.subtitle") : t("urgent.subtitleEmpty")}
           </div>
         </div>
-        <button type="button" className="catrip-urgent-panel-close" onClick={onClose} aria-label="Cerrar">
+        <button
+          type="button"
+          className="catrip-urgent-panel-close"
+          onClick={onClose}
+          aria-label={t("common.close")}
+        >
           ×
         </button>
       </div>
 
       {items.length === 0 ? (
-        <p className="catrip-urgent-panel-empty">Estás al día. No hay chats sin leer.</p>
+        <p className="catrip-urgent-panel-empty">{t("urgent.empty")}</p>
       ) : (
         <ul className="catrip-urgent-panel-list">
           {items.map((item) => (
@@ -62,24 +59,24 @@ export default function UrgentNowPanel({
                   onClose();
                 }}
               >
-                <AccountAvatar icon={item.accountIcon} labelFallback={item.accountLabel} size={34} />
+                <AccountAvatar icon={item.accountIcon} labelFallback={item.accountLabel} size={36} />
                 <div className="catrip-urgent-panel-row-body">
                   <div className="catrip-urgent-panel-row-top">
-                    <span className="catrip-urgent-panel-name">{item.chatName}</span>
-                    <span className="catrip-urgent-panel-time">
-                      {formatRelativeTime(item.lastActivityAt)}
-                    </span>
+                    <div className="catrip-urgent-panel-row-title">{item.chatName}</div>
+                    <div className="catrip-urgent-panel-row-time">
+                      {formatRelativeTimeI18n(t, item.lastActivityAt)}
+                    </div>
                   </div>
-                  <div className="catrip-urgent-panel-meta">
+                  <div className="catrip-urgent-panel-row-meta">
                     <span>{item.accountLabel}</span>
                     {item.unreadCount > 0 ? (
                       <span className="catrip-urgent-panel-unread">
-                        {item.unreadCount > 99 ? "99+" : item.unreadCount} sin leer
+                        {item.unreadCount > 99 ? "99+" : item.unreadCount}
                       </span>
                     ) : null}
                   </div>
                   {item.preview ? (
-                    <div className="catrip-urgent-panel-preview">{item.preview}</div>
+                    <div className="catrip-urgent-panel-row-preview">{item.preview}</div>
                   ) : null}
                 </div>
               </button>
@@ -88,17 +85,11 @@ export default function UrgentNowPanel({
         </ul>
       )}
 
-      <div className="catrip-urgent-panel-footer">
-        {totalPending > 0 ? (
-          <button type="button" className="catrip-urgent-panel-link" onClick={onOpenAllPending}>
-            Ver todas las pendientes ({totalPending > 99 ? "99+" : totalPending})
-          </button>
-        ) : (
-          <span className="catrip-text-hint" style={{ fontSize: 12 }}>
-            Esc o clic fuera para cerrar
-          </span>
-        )}
-      </div>
+      {items.length > 0 ? (
+        <button type="button" className="catrip-urgent-panel-all" onClick={onOpenAllPending}>
+          {t("urgent.viewAll")}
+        </button>
+      ) : null}
     </div>
   );
 }

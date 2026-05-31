@@ -2,7 +2,7 @@
 
 Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. Cada cuenta tiene su propia sesión aislada (cookies y datos locales independientes).
 
-**Versión de esta guía:** **1.6.0**
+**Versión de esta guía:** **1.7.0**
 
 ---
 
@@ -35,7 +35,7 @@ Los datos de la aplicación en Linux se guardan bajo `~/.config/catrip_multichat
 - **Orden**: arrastra un avatar verticalmente para **reordenar** las cuentas (el orden define también `Ctrl+1` … `Ctrl+9`).
 - **Indicador de no leídos**: punto o número cuando hay mensajes pendientes en esa cuenta (según datos que expone WhatsApp Web).
 - **Cuenta en reposo**: si no usas una cuenta durante un rato (configurable en Ajustes → Rendimiento), su avatar se ve **atenuado**; la sesión sigue guardada y un clic la reactiva.
-- **Botón «Ahora mismo»** (icono rayo): panel compacto con los **3 chats más urgentes**; atajo `Ctrl+Shift+A` o **Ver → Ahora mismo**.
+- **Botón «Ahora mismo»** (icono rayo): abre la **bandeja de acciones pendientes** con los chats más urgentes; atajo `Ctrl+Shift+A` o **Ver → Ahora mismo**.
 - **Centro de actividad** (▤): resumen de todas las cuentas con no leídos, último remitente y vista previa.
 - **Acciones pendientes** (✉): bandeja unificada de chats sin leer ordenados por urgencia; al pulsar una fila se abre ese chat en la cuenta correspondiente.
 - **Botón Zen** (icono dedicado): alterna el **modo Zen** (equivalente a `Ctrl+Shift+Z`).
@@ -46,12 +46,12 @@ Si en **Ajustes → General** desactivas **Mostrar barra lateral**, el rail desa
 
 ## 3b. «Ahora mismo»
 
-Panel pequeño **junto al rail** (no tapa WhatsApp) con hasta **tres conversaciones urgentes** de todas las cuentas.
+Abre la **bandeja de acciones pendientes** (✉) con los chats sin leer más urgentes de todas las cuentas.
 
 - **Abrir**: botón del rail (rayo), `Ctrl+Shift+A`, **Ver → Ahora mismo** o escribe «Ahora mismo» en `Ctrl+K`.
-- **Usar**: clic en una fila abre ese chat en la cuenta correcta; **Ver todas las pendientes** abre la bandeja ✉.
-- **Cerrar**: `Escape`, la X del panel o clic fuera.
-- Un **punto verde** en el botón indica chats urgentes pendientes.
+- **Usar**: clic en una fila abre ese chat en la cuenta correcta.
+- **Cerrar**: `Escape` o clic fuera del panel.
+- Un **punto verde** en el botón ⚡ indica chats urgentes pendientes.
 
 ---
 
@@ -110,6 +110,8 @@ En Linux y Windows se usa **Ctrl**; en macOS suele usarse **Cmd** donde el siste
 
 Los mismos atajos aparecen reflejados en el **menú nativo** de la ventana (Archivo, Ver, Chat, Cuentas, Ayuda).
 
+**Con foco en WhatsApp Web** (escribiendo en un chat, lista de conversaciones, etc.), los atajos de Catrip **siguen funcionando**: la aplicación los intercepta antes de que WhatsApp los consuma (`Ctrl+K`, `Ctrl+P`, `Ctrl+N`, `Ctrl+M`, `Ctrl+U`, `Ctrl+1`–`9`, `Ctrl+Shift+Z`, `Ctrl+Shift+A`, `Ctrl+W`, `Ctrl+Q`, `F5`, `F11`). Solo **Escape** en modo Zen sale del modo Zen; en otros casos Escape lo gestiona WhatsApp (cerrar diálogos, etc.).
+
 ---
 
 ## 7. Modo Zen
@@ -164,6 +166,7 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 
 ### General
 
+- **Idioma de la interfaz**: español, inglés, portugués, francés, alemán, coreano, japonés, italiano, chino simplificado o **Idioma del sistema** (por defecto). Si el idioma del SO no está soportado, la app usa **inglés**. Al cambiar idioma se muestra un aviso sobre cómo configurar el idioma de **WhatsApp Web** por separado (Meta no permite cambiarlo desde apps de terceros).
 - **Iniciar minimizada**
 - **Mostrar barra lateral**
 - **Mostrar barra de menú**
@@ -189,7 +192,7 @@ Tras descargar un `.deb` manualmente:
 
 ```bash
 cd /ruta/donde/guardaste/el/paquete
-sudo apt install ./catrip-connect_1.6.0_amd64.deb
+sudo apt install ./catrip-connect_1.7.0_amd64.deb
 ```
 
 ### Cuentas
@@ -240,7 +243,7 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 
 ## 11. Ayuda integrada
 
-- **Ayuda → Manual de usuario**: guía completa en lenguaje sencillo, con **ilustraciones**, **índice navegable** y secciones para cuentas, «Ahora mismo», cuentas en reposo, paleta, bandeja, ajustes y problemas frecuentes.
+- **Ayuda → Manual de usuario**: guía completa en **tu idioma elegido** (9 idiomas), con **ilustraciones**, **índice navegable** y secciones para cuentas, «Ahora mismo», cuentas en reposo, paleta, bandeja, ajustes, **llamadas/videollamadas en WhatsApp Web** y problemas frecuentes.
 - **Ayuda → Atajos de teclado**: lista rápida dentro de la aplicación (incluye `Ctrl+Shift+A`).
 - **Ayuda → Acerca de**: información de versión.
 

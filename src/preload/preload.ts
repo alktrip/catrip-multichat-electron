@@ -1,5 +1,40 @@
 import { contextBridge, ipcRenderer } from "electron";
 
+/** Canales de menú nativo → shell React. */
+const SHELL_MENU_CHANNELS = [
+  "ui:openSettings",
+  "ui:openQuickSwitcher",
+  "ui:openActivityCenter",
+  "ui:openPendingInbox",
+  "ui:openUrgentNow",
+  "ui:openPhoneChat",
+  "ui:openShortcutsHelp",
+  "ui:openAbout",
+  "ui:openUserManual",
+] as const;
+
+type ShellMenuChannel = (typeof SHELL_MENU_CHANNELS)[number];
+
+function dispatchShellMenuEvent(channel: ShellMenuChannel) {
+  window.dispatchEvent(new CustomEvent("catrip:shell-menu", { detail: { channel } }));
+}
+
+function subscribeShellMenuChannel(channel: ShellMenuChannel, cb: () => void) {
+  const listener = (ev: Event) => {
+    const detail = (ev as CustomEvent<{ channel?: string }>).detail;
+    if (detail?.channel === channel) cb();
+  };
+  window.addEventListener("catrip:shell-menu", listener);
+  return () => window.removeEventListener("catrip:shell-menu", listener);
+}
+
+/** IPC de menú → CustomEvent (registrado al cargar preload, no al montar React). */
+for (const channel of SHELL_MENU_CHANNELS) {
+  ipcRenderer.on(channel, () => {
+    dispatchShellMenuEvent(channel);
+  });
+}
+
 export type AccountDto = {
   id: string;
   label: string;
@@ -128,6 +163,13 @@ export type WhatsAppMediaDiagnosticsResult =
       url?: string;
     };
 
+/** IPC de menú → CustomEvent en el DOM (registrado al cargar preload, no al montar React). */
+for (const channel of SHELL_MENU_CHANNELS) {
+  ipcRenderer.on(channel, () => {
+    dispatchShellMenuEvent(channel);
+  });
+}
+
 const api: AppApi = {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
   getDevContext: () => ipcRenderer.invoke("dev:getContext") as Promise<DevContextDto | null>,
@@ -220,56 +262,20 @@ const api: AppApi = {
     ipcRenderer.on("ui:modeChanged", listener);
     return () => ipcRenderer.removeListener("ui:modeChanged", listener);
   },
-  onOpenSettings: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openSettings", listener);
-    return () => ipcRenderer.removeListener("ui:openSettings", listener);
-  },
-  onOpenQuickSwitcher: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openQuickSwitcher", listener);
-    return () => ipcRenderer.removeListener("ui:openQuickSwitcher", listener);
-  },
-  onOpenActivityCenter: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openActivityCenter", listener);
-    return () => ipcRenderer.removeListener("ui:openActivityCenter", listener);
-  },
-  onOpenPendingInbox: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openPendingInbox", listener);
-    return () => ipcRenderer.removeListener("ui:openPendingInbox", listener);
-  },
-  onOpenUrgentNow: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openUrgentNow", listener);
-    return () => ipcRenderer.removeListener("ui:openUrgentNow", listener);
-  },
-  onOpenPhoneChat: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openPhoneChat", listener);
-    return () => ipcRenderer.removeListener("ui:openPhoneChat", listener);
-  },
+  onOpenSettings: (cb) => subscribeShellMenuChannel("ui:openSettings", cb),
+  onOpenQuickSwitcher: (cb) => subscribeShellMenuChannel("ui:openQuickSwitcher", cb),
+  onOpenActivityCenter: (cb) => subscribeShellMenuChannel("ui:openActivityCenter", cb),
+  onOpenPendingInbox: (cb) => subscribeShellMenuChannel("ui:openPendingInbox", cb),
+  onOpenUrgentNow: (cb) => subscribeShellMenuChannel("ui:openUrgentNow", cb),
+  onOpenPhoneChat: (cb) => subscribeShellMenuChannel("ui:openPhoneChat", cb),
   onZenChanged: (cb) => {
     const listener = (_evt: unknown, enabled: boolean) => cb(!!enabled);
     ipcRenderer.on("ui:zenChanged", listener);
     return () => ipcRenderer.removeListener("ui:zenChanged", listener);
   },
-  onOpenShortcutsHelp: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openShortcutsHelp", listener);
-    return () => ipcRenderer.removeListener("ui:openShortcutsHelp", listener);
-  },
-  onOpenAbout: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openAbout", listener);
-    return () => ipcRenderer.removeListener("ui:openAbout", listener);
-  },
-  onOpenUserManual: (cb) => {
-    const listener = () => cb();
-    ipcRenderer.on("ui:openUserManual", listener);
-    return () => ipcRenderer.removeListener("ui:openUserManual", listener);
-  },
+  onOpenShortcutsHelp: (cb) => subscribeShellMenuChannel("ui:openShortcutsHelp", cb),
+  onOpenAbout: (cb) => subscribeShellMenuChannel("ui:openAbout", cb),
+  onOpenUserManual: (cb) => subscribeShellMenuChannel("ui:openUserManual", cb),
   runWhatsAppMediaDiagnostics: () =>
     ipcRenderer.invoke("diagnostics:whatsappMedia") as Promise<WhatsAppMediaDiagnosticsResult>,
   selectDownloadsDirectory: () =>

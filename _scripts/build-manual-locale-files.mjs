@@ -1,34 +1,153 @@
-import type React from "react";
+/**
+ * Genera src/shared/locales/LANG/manual.json para los 9 idiomas de la app.
+ * Ejecutar: node _scripts/build-manual-locale-files.mjs
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
-  IllustrationAccounts,
-  IllustrationAppLayout,
-  IllustrationCommandPalette,
-  IllustrationNotification,
-  IllustrationQr,
-  IllustrationTray,
-  IllustrationUrgentNow,
-  IllustrationZen,
-} from "./ManualIllustrations";
+  manualDe,
+  manualEn,
+  manualFr,
+  manualIt,
+  manualJa,
+  manualKo,
+  manualPt,
+  manualZh,
+} from "./manual-locale-translations.mjs";
+import { applyManualIdiomaPatch } from "./manual-idioma-patch.mjs";
+import { applyManualVideollamadasPatch } from "./manual-videollamadas-patch.mjs";
 
-export type ManualSection = {
-  id: string;
-  title: string;
-  illustration?: React.ComponentType;
-  paragraphs: string[];
-  bullets?: string[];
-  steps?: string[];
-  note?: string;
-  table?: { headers: string[]; rows: string[][] };
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, "..");
+const localesDir = path.join(root, "src/shared/locales");
+const MANUAL_VERSION = "1.7.0";
+const LANGS = ["es", "en", "pt", "fr", "de", "ko", "ja", "it", "zh"];
+
+/** @type {Record<string, string | null>} */
+const ILLUSTRATION_BY_SECTION = {
+  "primeros-pasos": "qr",
+  ventana: "layout",
+  cuentas: "accounts",
+  "reposo-cuentas": "accounts",
+  zen: "zen",
+  "ahora-mismo": "urgent",
+  paleta: "palette",
+  "ajustes-notificaciones": "notification",
+  bandeja: "tray",
 };
 
-export const MANUAL_INTRO = {
-  title: "Manual de Catrip Connect",
-  subtitle:
-    "Guía para el día a día: varias cuentas de WhatsApp en un solo programa, sin complicaciones.",
-  versionNote: "Versión del manual: 1.6.0",
+/**
+ * @param {string} id
+ * @param {object} section
+ */
+function finalizeSection(id, section) {
+  return {
+    id,
+    title: section.title,
+    illustration: ILLUSTRATION_BY_SECTION[id] ?? null,
+    paragraphs: section.paragraphs ?? null,
+    bullets: section.bullets ?? null,
+    steps: section.steps ?? null,
+    note: section.note ?? null,
+    table: section.table ?? null,
+  };
+}
+
+/**
+ * @param {object} intro
+ * @param {object[]} sections
+ */
+function buildManual(intro, sections) {
+  return {
+    intro,
+    sections: sections.map((s) => finalizeSection(s.id, s)),
+  };
+}
+
+const INTROS = {
+  es: {
+    title: "Manual de Catrip Connect",
+    subtitle:
+      "Guía para el día a día: varias cuentas de WhatsApp en un solo programa, en el idioma que elijas.",
+    versionNote: `Versión del manual: ${MANUAL_VERSION}`,
+    tocTitle: "Índice",
+    closeAria: "Cerrar manual",
+    footer: "Esc para cerrar · Clic fuera del panel también cierra",
+  },
+  en: {
+    title: "Catrip Connect User Manual",
+    subtitle:
+      "Your day-to-day guide: multiple WhatsApp accounts in one desktop app, in the language you choose.",
+    versionNote: `Manual version: ${MANUAL_VERSION}`,
+    tocTitle: "Contents",
+    closeAria: "Close manual",
+    footer: "Esc to close · Click outside the panel also closes",
+  },
+  pt: {
+    title: "Manual do Catrip Connect",
+    subtitle:
+      "Guia para o dia a dia: várias contas do WhatsApp num único programa, sem complicações.",
+    versionNote: `Versão do manual: ${MANUAL_VERSION}`,
+    tocTitle: "Índice",
+    closeAria: "Fechar manual",
+    footer: "Esc para fechar · Clic fora do painel também fecha",
+  },
+  fr: {
+    title: "Manuel de Catrip Connect",
+    subtitle:
+      "Guide au quotidien : plusieurs comptes WhatsApp dans une seule application, en toute simplicité.",
+    versionNote: `Version du manuel : ${MANUAL_VERSION}`,
+    tocTitle: "Sommaire",
+    closeAria: "Fermer le manuel",
+    footer: "Échap pour fermer · Un clic à l'extérieur du panneau ferme aussi",
+  },
+  de: {
+    title: "Catrip Connect – Benutzerhandbuch",
+    subtitle:
+      "Alltagshilfe: mehrere WhatsApp-Konten in einer Desktop-App – unkompliziert und übersichtlich.",
+    versionNote: `Handbuchversion: ${MANUAL_VERSION}`,
+    tocTitle: "Inhalt",
+    closeAria: "Handbuch schließen",
+    footer: "Esc zum Schließen · Klick außerhalb des Panels schließt ebenfalls",
+  },
+  ko: {
+    title: "Catrip Connect 사용자 매뉴얼",
+    subtitle: "일상 가이드: 하나의 프로그램에서 여러 WhatsApp 계정을 간편하게 사용하세요.",
+    versionNote: `매뉴얼 버전: ${MANUAL_VERSION}`,
+    tocTitle: "목차",
+    closeAria: "매뉴얼 닫기",
+    footer: "Esc로 닫기 · 패널 밖을 클릭해도 닫힙니다",
+  },
+  ja: {
+    title: "Catrip Connect ユーザーマニュアル",
+    subtitle: "日常使いのガイド：ひとつのアプリで複数の WhatsApp アカウントをシンプルに。",
+    versionNote: `マニュアル版: ${MANUAL_VERSION}`,
+    tocTitle: "目次",
+    closeAria: "マニュアルを閉じる",
+    footer: "Esc で閉じる · パネル外をクリックしても閉じます",
+  },
+  it: {
+    title: "Manuale di Catrip Connect",
+    subtitle:
+      "Guida quotidiana: più account WhatsApp in un'unica applicazione, senza complicazioni.",
+    versionNote: `Versione del manuale: ${MANUAL_VERSION}`,
+    tocTitle: "Indice",
+    closeAria: "Chiudi manuale",
+    footer: "Esc per chiudere · Clic fuori dal pannello chiude anche",
+  },
+  zh: {
+    title: "Catrip Connect 用户手册",
+    subtitle: "日常使用指南：在一个程序中管理多个 WhatsApp 账户，简单省心。",
+    versionNote: `手册版本：${MANUAL_VERSION}`,
+    tocTitle: "目录",
+    closeAria: "关闭手册",
+    footer: "按 Esc 关闭 · 点击面板外部也会关闭",
+  },
 };
 
-export const MANUAL_SECTIONS: ManualSection[] = [
+// Spanish source (from src/renderer/ui/userManualContent.ts)
+const manualEs = [
   {
     id: "bienvenida",
     title: "¿Qué es Catrip Connect?",
@@ -40,7 +159,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "primeros-pasos",
     title: "Primeros pasos",
-    illustration: IllustrationQr,
     steps: [
       "Abre Catrip Connect desde el menú de aplicaciones de tu sistema (busca «Catrip Connect»).",
       "Si es la primera vez, pulsa el botón para crear tu primera cuenta. Dale un nombre que reconozcas, por ejemplo «Personal» o «Trabajo».",
@@ -53,7 +171,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "ventana",
     title: "Cómo está organizada la ventana",
-    illustration: IllustrationAppLayout,
     paragraphs: [
       "La ventana tiene dos zonas principales. A la izquierda está la barra lateral (a veces la llamamos «el rail»): ahí ves los iconos de tus cuentas y algunos accesos rápidos. A la derecha, la parte grande, es WhatsApp Web de la cuenta que tengas seleccionada.",
       "Arriba encontrarás la barra de menús (Archivo, Ver, Chat, Cuentas, Ayuda) si la tienes activada en Ajustes. Desde ahí puedes hacer casi todo lo que explicamos en este manual.",
@@ -68,7 +185,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "cuentas",
     title: "Trabajar con varias cuentas",
-    illustration: IllustrationAccounts,
     paragraphs: [
       "Puedes tener varias cuentas de WhatsApp en la misma aplicación. Cada una tiene su propio icono de color en la barra lateral.",
     ],
@@ -85,7 +201,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "reposo-cuentas",
     title: "Cuentas en reposo (ahorro de memoria)",
-    illustration: IllustrationAccounts,
     paragraphs: [
       "Con varias cuentas abiertas, cada una consume memoria y procesador mientras mantiene WhatsApp Web cargado. Catrip Connect puede «dormir» las cuentas que no uses: cierra la vista interna de WhatsApp pero conserva tu sesión (cookies y login) en el disco.",
       "Así la aplicación va más ligera con tres, cuatro o más cuentas, sin tener que cerrar sesión ni volver a escanear el QR cada vez.",
@@ -108,7 +223,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "zen",
     title: "Modo Zen (solo el chat)",
-    illustration: IllustrationZen,
     paragraphs: [
       "El modo Zen oculta la barra lateral para que WhatsApp ocupe toda la ventana. Es útil cuando quieres concentrarte en una conversación.",
     ],
@@ -122,7 +236,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "ahora-mismo",
     title: "«Ahora mismo» — lo urgente en un vistazo",
-    illustration: IllustrationUrgentNow,
     paragraphs: [
       "«Ahora mismo» es un panel pequeño que aparece junto a la barra lateral. Muestra hasta tres conversaciones con mensajes sin leer, las más urgentes de todas tus cuentas. A diferencia de las ventanas grandes (centro de actividad o acciones pendientes), no tapa WhatsApp: puedes leer el resumen y seguir viendo el chat al lado.",
     ],
@@ -164,7 +277,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "paleta",
     title: "Paleta de comandos (buscador rápido)",
-    illustration: IllustrationCommandPalette,
     paragraphs: [
       "Pulsa Ctrl+K en cualquier momento para abrir un buscador. Escribe lo que buscas y la lista se filtra al instante.",
       "Además de cuentas y acciones, puedes buscar conversaciones con mensajes sin leer: escribe el nombre del contacto, un fragmento del último mensaje o el nombre de la cuenta (por ejemplo «Ana» o «Trabajo presupuesto»). Al elegir un chat, la app abre esa conversación en la cuenta correcta.",
@@ -205,7 +317,9 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "ajustes-general",
     title: "Ajustes — General",
-    paragraphs: ["Abre Ajustes con Ctrl+P o desde el menú Archivo. La sección General controla el comportamiento diario de la aplicación."],
+    paragraphs: [
+      "Abre Ajustes con Ctrl+P o desde el menú Archivo. La sección General controla el comportamiento diario de la aplicación.",
+    ],
     bullets: [
       "Iniciar minimizada: la app arranca en la bandeja sin mostrar ventana.",
       "Mostrar barra lateral: oculta o muestra la columna de cuentas (necesaria para ⚡, ✉ y ▤).",
@@ -231,7 +345,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "ajustes-notificaciones",
     title: "Ajustes — Notificaciones",
-    illustration: IllustrationNotification,
     bullets: [
       "Notificaciones del sistema: avisos en el escritorio cuando llegan mensajes.",
       "Mostrar nombre de la cuenta: en el aviso verás si es «Trabajo», «Personal», etc.",
@@ -267,7 +380,6 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   {
     id: "bandeja",
     title: "Icono en la bandeja del sistema",
-    illustration: IllustrationTray,
     paragraphs: [
       "Junto al reloj del escritorio (Linux) aparece el icono de Catrip Connect. Desde ahí puedes restaurar la ventana o salir por completo.",
     ],
@@ -345,4 +457,28 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   },
 ];
 
-export const MANUAL_TOC = MANUAL_SECTIONS.map((s) => ({ id: s.id, title: s.title }));
+function applyManualPatches(sections, locale) {
+  return applyManualVideollamadasPatch(applyManualIdiomaPatch(sections, locale), locale);
+}
+
+const MANUALS = {
+  es: () => buildManual(INTROS.es, applyManualPatches(manualEs, "es")),
+  en: () => buildManual(INTROS.en, applyManualPatches(manualEn, "en")),
+  pt: () => buildManual(INTROS.pt, applyManualPatches(manualPt, "pt")),
+  fr: () => buildManual(INTROS.fr, applyManualPatches(manualFr, "fr")),
+  de: () => buildManual(INTROS.de, applyManualPatches(manualDe, "de")),
+  ko: () => buildManual(INTROS.ko, applyManualPatches(manualKo, "ko")),
+  ja: () => buildManual(INTROS.ja, applyManualPatches(manualJa, "ja")),
+  it: () => buildManual(INTROS.it, applyManualPatches(manualIt, "it")),
+  zh: () => buildManual(INTROS.zh, applyManualPatches(manualZh, "zh")),
+};
+
+for (const lang of LANGS) {
+  const dir = path.join(localesDir, lang);
+  fs.mkdirSync(dir, { recursive: true });
+  const outPath = path.join(dir, "manual.json");
+  const manual = MANUALS[lang]();
+  fs.writeFileSync(outPath, `${JSON.stringify(manual, null, 2)}\n`, "utf8");
+  const lines = fs.readFileSync(outPath, "utf8").split("\n").length;
+  console.log(`Wrote ${outPath} (${lines} lines)`);
+}

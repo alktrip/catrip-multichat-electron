@@ -1,6 +1,7 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import AccountAvatar from "./AccountAvatar";
-import { buildPendingChatItems, formatRelativeTime } from "../../main/pendingInboxModel";
+import { buildPendingChatItems, formatRelativeTimeI18n } from "../../shared/i18n/pendingInboxI18n";
 import type { PendingAccountRef } from "../../main/pendingInboxModel";
 import type { AccountActivityMap } from "../../preload/preload";
 
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function PendingInbox({ accounts, activityByAccount, onOpenChat }: Props) {
+  const { t } = useTranslation();
   const items = React.useMemo(
     () => buildPendingChatItems(accounts, activityByAccount),
     [accounts, activityByAccount],
@@ -34,11 +36,10 @@ export default function PendingInbox({ accounts, activityByAccount, onOpenChat }
       >
         <div>
           <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>
-            Acciones pendientes
+            {t("pending.title")}
           </div>
           <p style={{ margin: "6px 0 0", fontSize: 13, color: "#b8c4c4", lineHeight: 1.5 }}>
-            Chats sin leer de todas las cuentas, ordenados por urgencia. Clic para abrir el chat en
-            WhatsApp Web.
+            {t("pending.subtitle")}
           </p>
         </div>
         {totalUnread > 0 ? (
@@ -54,26 +55,17 @@ export default function PendingInbox({ accounts, activityByAccount, onOpenChat }
               color: "#c8f5dc",
             }}
           >
-            {totalUnread > 99 ? "99+" : totalUnread} sin leer
+            {t("common.unread", { count: totalUnread > 99 ? 99 : totalUnread })}
           </span>
         ) : null}
       </div>
 
       {items.length === 0 ? (
         <p className="catrip-text-hint" style={{ margin: 0 }}>
-          No hay chats pendientes en ninguna cuenta.
+          {t("pending.empty")}
         </p>
       ) : (
-        <ul
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
           {items.map((item) => (
             <li key={`${item.accountId}:${item.chatName}`}>
               <button
@@ -95,40 +87,44 @@ export default function PendingInbox({ accounts, activityByAccount, onOpenChat }
               >
                 <AccountAvatar icon={item.accountIcon} labelFallback={item.accountLabel} size={40} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      flexWrap: "wrap",
-                      marginBottom: 4,
-                    }}
-                  >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{item.chatName}</span>
-                    <span style={{ fontSize: 11, color: "#9ca3af" }}>{item.accountLabel}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#9ca3af" }}>
-                      {formatRelativeTime(item.lastActivityAt)}
-                    </span>
+                    {item.unreadCount > 0 ? (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          background: "var(--catrip-accent-soft)",
+                          border: "1px solid var(--catrip-accent-border)",
+                          color: "#c8f5dc",
+                        }}
+                      >
+                        {item.unreadCount > 99 ? "99+" : item.unreadCount}
+                      </span>
+                    ) : null}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#dce4e4",
-                      lineHeight: 1.45,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {item.preview || "Mensajes sin leer"}
+                  <div className="catrip-text-hint" style={{ fontSize: 12, marginBottom: 4 }}>
+                    {item.accountLabel}
+                  </div>
+                  {item.preview ? (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#dce4e4",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {item.preview}
+                    </div>
+                  ) : null}
+                  <div className="catrip-text-hint" style={{ fontSize: 11, marginTop: 4 }}>
+                    {formatRelativeTimeI18n(t, item.lastActivityAt)}
                   </div>
                 </div>
-                <span
-                  className="catrip-unread-dot"
-                  data-count={item.unreadCount > 99 ? "99+" : item.unreadCount}
-                  aria-label={`${item.unreadCount} sin leer en este chat`}
-                  style={{ position: "static", marginTop: 4 }}
-                />
               </button>
             </li>
           ))}

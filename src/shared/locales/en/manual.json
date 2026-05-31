@@ -1,0 +1,506 @@
+{
+  "intro": {
+    "title": "Catrip Connect User Manual",
+    "subtitle": "Your day-to-day guide: multiple WhatsApp accounts in one desktop app, in the language you choose.",
+    "versionNote": "Manual version: 1.7.0",
+    "tocTitle": "Contents",
+    "closeAria": "Close manual",
+    "footer": "Esc to close · Click outside the panel also closes"
+  },
+  "sections": [
+    {
+      "id": "bienvenida",
+      "title": "What is Catrip Connect?",
+      "illustration": null,
+      "paragraphs": [
+        "Catrip Connect is a desktop app that lets you use WhatsApp Web with one or several accounts at once. Each account is independent: messages, contacts, and files from one do not mix with another.",
+        "The main screen shows WhatsApp as you know it in the browser, with extra tools: switch accounts with one click, save memory by suspending accounts you are not using, a quick glance at what is most urgent (Right now), see all unread messages, search chats from Ctrl+K, get desktop notifications, and much more. You can also change the entire interface language (menus, manual, and notifications) from Settings → General."
+      ],
+      "bullets": null,
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "primeros-pasos",
+      "title": "Getting started",
+      "illustration": "qr",
+      "paragraphs": null,
+      "bullets": null,
+      "steps": [
+        "Open Catrip Connect from your system application menu (search for Catrip Connect).",
+        "On first launch, click the button to create your first account. Give it a name you will recognize, for example Personal or Work.",
+        "The WhatsApp Web QR code will appear. On your phone open WhatsApp → Linked devices → Link a device and scan the code.",
+        "When the connection is ready, you will see your chats in the large area of the window.",
+        "To add another account, use the New account button in the sidebar rail or the Accounts menu."
+      ],
+      "note": "If the QR code expires, reload the view with F5 or Chat → Reload.",
+      "table": null
+    },
+    {
+      "id": "ventana",
+      "title": "How the window is organized",
+      "illustration": "layout",
+      "paragraphs": [
+        "The window has two main areas. On the left is the sidebar rail: account icons and quick actions. On the right, the large area is WhatsApp Web for the account you have selected.",
+        "At the top you will find the menu bar (File, View, Chat, Accounts, Help) if you enabled it in Settings. From there you can do almost everything described in this manual."
+      ],
+      "bullets": [
+        "Top of the rail: your account avatars (click to switch, drag to reorder).",
+        "Bottom of the rail: action buttons — new account, chat by number, new chat, ⚡ Right now, ✉ pending, ▤ activity, settings, and Zen mode.",
+        "Center area: chats, calls, and files from WhatsApp Web.",
+        "Top menu: organized shortcuts (includes View → Right now)."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "cuentas",
+      "title": "Working with multiple accounts",
+      "illustration": "accounts",
+      "paragraphs": [
+        "You can have several WhatsApp accounts in the same app. Each one has its own colored icon in the sidebar rail."
+      ],
+      "bullets": [
+        "Click an icon to switch to that account.",
+        "Drag an icon up or down to change the list order.",
+        "A green dot or number on the icon shows unread messages on that account.",
+        "If an account has not been used for a while, it may go idle: the avatar looks dimmer and the tooltip says so. The session stays saved; one click wakes it instantly.",
+        "Hover over an icon to see whether it is connected, idle, waiting for QR, or offline.",
+        "Quick shortcut: Ctrl+1 opens the first account, Ctrl+2 the second, up to Ctrl+9."
+      ],
+      "steps": null,
+      "note": "In Settings → Accounts you can rename each account, change the icon color, or remove it. In Settings → Performance you configure when inactive accounts go idle.",
+      "table": null
+    },
+    {
+      "id": "reposo-cuentas",
+      "title": "Idle accounts (memory savings)",
+      "illustration": "accounts",
+      "paragraphs": [
+        "With several accounts open, each one uses memory and CPU while keeping WhatsApp Web loaded. Catrip Connect can put unused accounts to sleep: it closes the internal WhatsApp view but keeps your session (cookies and login) on disk.",
+        "The app stays lighter with three, four, or more accounts without signing out or scanning the QR again each time."
+      ],
+      "bullets": [
+        "Enabled by default in Settings → Performance → Suspend inactive accounts.",
+        "You can choose the wait time: 5, 10, 15, 30, or 60 minutes.",
+        "The active account is never suspended.",
+        "If a video call is in progress on an account, it is not suspended until you hang up.",
+        "Turning the option off immediately wakes all accounts that were idle."
+      ],
+      "steps": [
+        "Use an account normally; when you switch to another, the previous one starts counting idle time.",
+        "After the configured threshold (15 minutes by default), the account goes idle: its avatar on the rail looks faded.",
+        "To wake it, click its avatar, pick a chat from ✉ pending, Ctrl+K, or open a wa.me link aimed at that account.",
+        "WhatsApp Web reloads in a few seconds with the same session; no need to scan the QR again."
+      ],
+      "note": "While an account is idle, notifications and counters for that account may not update until you open it. The active account and ones you use often still get notifications normally.",
+      "table": null
+    },
+    {
+      "id": "zen",
+      "title": "Zen mode (chat only)",
+      "illustration": "zen",
+      "paragraphs": [
+        "Zen mode hides the sidebar rail so WhatsApp fills the whole window. Useful when you want to focus on one conversation."
+      ],
+      "bullets": [
+        "Turn it on from View → Zen mode, with Ctrl+Shift+Z, or search Zen in the command palette (Ctrl+K).",
+        "To return to normal view, press Escape or use the shortcut again.",
+        "Entering Settings turns Zen mode off automatically."
+      ],
+      "steps": null,
+      "note": "In Zen mode you will not see the ⚡ button on the rail; exit Zen or use Ctrl+Shift+A to open Right now.",
+      "table": null
+    },
+    {
+      "id": "ahora-mismo",
+      "title": "Right now — urgent items at a glance",
+      "illustration": "urgent",
+      "paragraphs": [
+        "Right now is a small panel next to the sidebar rail. It shows up to three conversations with unread messages, the most urgent across all your accounts. Unlike the larger views (activity center or pending actions), it does not cover WhatsApp: you can read the summary and keep seeing the chat beside it."
+      ],
+      "bullets": [
+        "A green dot on the ⚡ button means urgent chats are waiting.",
+        "If there are no unread messages, the panel tells you (You are all caught up).",
+        "You can also type Right now in the Ctrl+K palette."
+      ],
+      "steps": [
+        "Press the ⚡ button on the sidebar rail, use Ctrl+Shift+A, or View → Right now.",
+        "Review the list: contact name, account (Personal, Work…), unread count, and a line from the last message.",
+        "Click a row to open that chat on the correct account. The panel closes on its own.",
+        "To see more conversations, click View all pending at the bottom of the panel.",
+        "To close without opening anything: press Escape, the panel X, or click outside it."
+      ],
+      "note": "The panel uses the same unread information as WhatsApp Web. If you just read a chat on your phone, it may take a few seconds to leave the list.",
+      "table": null
+    },
+    {
+      "id": "actividad",
+      "title": "Activity center and pending actions",
+      "illustration": null,
+      "paragraphs": [
+        "Besides Right now, you have two wider views when you need to review everything calmly."
+      ],
+      "bullets": [
+        "Activity center (▤): one card per account with unread total and last message.",
+        "Pending actions (✉): flat list sorted by urgency across all accounts.",
+        "From Right now you can jump to the full inbox with one click."
+      ],
+      "steps": null,
+      "note": null,
+      "table": {
+        "headers": [
+          "Tool",
+          "When to use it",
+          "How to open it"
+        ],
+        "rows": [
+          [
+            "⚡ Right now",
+            "Quick glance: top 3 urgent without covering the screen",
+            "⚡ button, Ctrl+Shift+A, View → Right now"
+          ],
+          [
+            "▤ Activity center",
+            "Per-account summary: who wrote and preview",
+            "▤ button or Ctrl+K → activity"
+          ],
+          [
+            "✉ Pending actions",
+            "Full list of all unread chats",
+            "✉ button or Ctrl+K → pending"
+          ],
+          [
+            "Ctrl+K → Chats",
+            "Find a specific contact by name or text",
+            "Ctrl+K and type the name"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "paleta",
+      "title": "Command palette (quick search)",
+      "illustration": "palette",
+      "paragraphs": [
+        "Press Ctrl+K anytime to open a search box. Type what you need and the list filters instantly.",
+        "Besides accounts and actions, you can search conversations with unread messages: type the contact name, part of the last message, or the account name (for example Ana or Work budget). Choosing a chat opens that conversation on the right account."
+      ],
+      "bullets": [
+        "Up and down arrows to pick an option.",
+        "Enter to run it (open chat, switch account — waking it if idle —, open Right now, go to Settings, etc.).",
+        "Escape to close without doing anything.",
+        "Matching chats appear at the top under Chats when they match what you type.",
+        "Useful commands: Right now, Pending actions, Activity center, New account, Zen mode.",
+        "To change language type language, idioma, or settings and pick Open Settings → General."
+      ],
+      "steps": null,
+      "note": "Chat search uses unread conversations that WhatsApp Web shows per account. If a chat has no pending messages, it may not appear until new activity arrives.",
+      "table": null
+    },
+    {
+      "id": "chat-numero",
+      "title": "Message someone by number",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": null,
+      "steps": [
+        "Press Ctrl+M or search phone in the palette (Ctrl+K).",
+        "Enter the number with international prefix, for example +34612345678.",
+        "Press OK. The conversation opens on the account that is currently active."
+      ],
+      "note": "The number must include the country code (+ and the right digits).",
+      "table": null
+    },
+    {
+      "id": "videollamadas",
+      "title": "Voice and video calls on WhatsApp Web",
+      "illustration": null,
+      "paragraphs": [
+        "Voice and video calls on WhatsApp Web roll out gradually. Catrip Connect already allows microphone and camera access when WhatsApp requests it; you do not need extra setup in the app.",
+        "If you still do not see phone and camera icons in an individual chat, you likely need to join the WhatsApp Web beta from WhatsApp itself."
+      ],
+      "bullets": [
+        "Settings → Performance includes Prevent sleep during video call: keeps the system awake while a call is active.",
+        "Availability depends on WhatsApp: not every account gets the beta at the same time."
+      ],
+      "steps": [
+        "Make sure the account is connected (not waiting for QR) and selected as active in Catrip Connect.",
+        "In WhatsApp Web, look at the bottom-left corner of the sidebar, above your profile photo.",
+        "Tap the BETA option there and follow WhatsApp's instructions to enable calls on the web version.",
+        "Open a one-to-one chat (web calls are usually limited to individual chats for now).",
+        "Check for phone (voice) and camera (video) icons at the top right of the chat.",
+        "If they are missing, reload with F5 (Chat → Reload) or sign out and back into WhatsApp Web."
+      ],
+      "note": "WhatsApp Web uses its own language; the BETA label may appear in another language depending on your phone or web.whatsapp.com settings.",
+      "table": null
+    },
+    {
+      "id": "enlaces",
+      "title": "Open WhatsApp links from the web",
+      "illustration": null,
+      "paragraphs": [
+        "If someone sends you a wa.me link or you open a whatsapp:// link from another app, Catrip Connect can open the chat directly."
+      ],
+      "bullets": [
+        "After installing the app, in Settings → General you can register Catrip Connect as the default handler for WhatsApp links.",
+        "Under Incoming WhatsApp links choose which account to use: ask if there are several, always the active account, or a fixed account.",
+        "If the link includes a pre-filled message, it appears ready to send in the chat.",
+        "Group invites (chat.whatsapp.com) can also open in the app."
+      ],
+      "steps": null,
+      "note": "If the browser says no app is available, use Register as default app in Settings → General.",
+      "table": null
+    },
+    {
+      "id": "ajustes-general",
+      "title": "Settings — General",
+      "illustration": null,
+      "paragraphs": [
+        "Open Settings with Ctrl+P or from the File menu. General controls day-to-day app behavior."
+      ],
+      "bullets": [
+        "Start minimized: the app launches to the tray without showing a window.",
+        "Show sidebar rail: hide or show the account column (needed for ⚡, ✉, and ▤).",
+        "Show menu bar: the File / View / Chat strip at the top.",
+        "On close, minimize to tray: clicking X keeps the app in the background (recommended).",
+        "Start automatically with the system: open Catrip Connect when the computer boots.",
+        "Download folder: where files you receive on WhatsApp are saved.",
+        "Interface scale: enlarge or shrink text and icons (100% to 200%).",
+        "Check for updates on startup: notify when a new version is available."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "idioma",
+      "title": "Interface language",
+      "illustration": null,
+      "paragraphs": [
+        "Catrip Connect is available in several languages. You can change the language of menus, windows, this user manual, system notifications, and the tray icon without restarting the app."
+      ],
+      "bullets": [
+        "What changes: top menus (File, View, Chat…), sidebar rail, modals, Ctrl+K palette, Settings screen, this manual (Help → User manual), native notifications, and the tray icon menu.",
+        "What does not change: WhatsApp Web inside the window uses its own language (from your phone or web.whatsapp.com settings), independent of Catrip Connect.",
+        "If the manual is open when you switch language, the text updates immediately.",
+        "With System language, the app reads the OS locale; if unsupported, English is used by default."
+      ],
+      "steps": [
+        "Open Settings with Ctrl+P, the gear button on the sidebar rail, or File → Settings.",
+        "In the left panel choose General.",
+        "At the top you will see Interface language. Open the dropdown.",
+        "Pick a specific language (Spanish, English, Portuguese, French, German, Korean, Japanese, Italian, or Simplified Chinese) or System language to follow your computer locale.",
+        "The change applies instantly and is saved automatically for future launches."
+      ],
+      "note": "In the command palette (Ctrl+K) you can type language or settings to jump to General.",
+      "table": null
+    },
+    {
+      "id": "ajustes-cuentas",
+      "title": "Settings — Accounts",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": [
+        "Rename: change the visible account name (only in Catrip Connect, not in WhatsApp).",
+        "Regenerate icon or pick a color variant: customize the sidebar rail avatar.",
+        "Per-account notifications: enable or mute alerts for one account.",
+        "Remove account: remove the session from the app (does not delete WhatsApp on your phone)."
+      ],
+      "steps": null,
+      "note": "Removing an account in Catrip Connect does not log you out on your phone; it only stops showing it in the app.",
+      "table": null
+    },
+    {
+      "id": "ajustes-notificaciones",
+      "title": "Settings — Notifications",
+      "illustration": "notification",
+      "paragraphs": null,
+      "bullets": [
+        "System notifications: desktop alerts when messages arrive.",
+        "Show account name: the alert shows whether it is Work, Personal, etc.",
+        "Show preview: one line of the message in the alert.",
+        "Do not disturb: no pop-up alerts (the tray counter still works).",
+        "System sound: beep when a notification arrives."
+      ],
+      "steps": null,
+      "note": "Clicking a notification opens the window and selects the account that received the message. You can then use ⚡ to see what else is pending.",
+      "table": null
+    },
+    {
+      "id": "ajustes-red",
+      "title": "Settings — Network",
+      "illustration": null,
+      "paragraphs": [
+        "You only need this section if your connection goes through a proxy (corporate network, special VPN, etc.). Enable Network proxy and enter the rules your administrator gave you."
+      ],
+      "bullets": null,
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "ajustes-rendimiento",
+      "title": "Settings — Performance",
+      "illustration": null,
+      "paragraphs": [
+        "This section helps balance smoothness, memory use, and stability when you use several accounts at once."
+      ],
+      "bullets": [
+        "Suspend inactive accounts: frees RAM by closing the WhatsApp view for accounts you do not select for a while. The session stays on disk.",
+        "Suspend after (minutes): how long without using an account before it goes idle (5 to 60 minutes).",
+        "GPU boost: improves video smoothness on some Linux machines. Requires restarting the app.",
+        "Renderer process limit: useful with many accounts when the computer is tight on memory. Requires restart.",
+        "Prevent sleep during video call: the system does not sleep while an active call runs in WhatsApp Web (system power lock).",
+        "Clear cache: if WhatsApp is slow or files fail, try clearing cache (does not sign you out)."
+      ],
+      "steps": null,
+      "note": "Account suspension and the process limit tackle the same problem (memory) from different angles: the first closes views you are not using; the second caps how many Chromium processes can open in total.",
+      "table": null
+    },
+    {
+      "id": "bandeja",
+      "title": "System tray icon",
+      "illustration": "tray",
+      "paragraphs": [
+        "Next to the desktop clock (Linux) you will see the Catrip Connect icon. From there you can restore the window or quit completely."
+      ],
+      "bullets": [
+        "Click the icon: show or hide the main window.",
+        "Context menu: lists your accounts with status and unread counts; also lets you quit.",
+        "Icon badge: shows total unread messages (if enabled in Settings).",
+        "When restoring from the tray, the window returns to the same size and position as before."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "actualizaciones",
+      "title": "Updating the app",
+      "illustration": null,
+      "paragraphs": [
+        "With Check for updates on startup enabled, Catrip Connect checks for new versions online."
+      ],
+      "bullets": [
+        "If you installed the .deb package: the app shows release notes and lets you download the installer to a folder you choose, or open the link in the browser. You decide when to install.",
+        "If you use AppImage: the download may run on its own; when ready, click Restart now.",
+        "The update panel scrolls so you can read all release notes without resizing the window."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "atajos",
+      "title": "Keyboard shortcuts",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": null,
+      "steps": null,
+      "note": "You can also see a quick list under Help → Keyboard shortcuts and the full manual under Help → User manual.",
+      "table": {
+        "headers": [
+          "Shortcut",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "Ctrl+K",
+            "Open search (unread chats, accounts, and actions)"
+          ],
+          [
+            "Ctrl+P",
+            "Open Settings"
+          ],
+          [
+            "Ctrl+1 … Ctrl+9",
+            "Go to account 1, 2, 3… (up to 9)"
+          ],
+          [
+            "Ctrl+N",
+            "New chat in WhatsApp Web"
+          ],
+          [
+            "Ctrl+M",
+            "Chat by phone number"
+          ],
+          [
+            "Ctrl+U",
+            "New account"
+          ],
+          [
+            "Ctrl+Shift+A",
+            "Open or close Right now (top 3 urgent)"
+          ],
+          [
+            "Ctrl+Shift+Z",
+            "Toggle Zen mode"
+          ],
+          [
+            "Escape",
+            "Close Right now, exit Zen mode, or close palette"
+          ],
+          [
+            "Ctrl+W",
+            "Hide window"
+          ],
+          [
+            "Ctrl+Q",
+            "Quit the application"
+          ],
+          [
+            "F5",
+            "Reload WhatsApp Web"
+          ],
+          [
+            "F11",
+            "Full screen"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "problemas",
+      "title": "Tips and common issues",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": [
+        "WhatsApp does not load or shows black: Chat → Reload (F5). If it persists, in Settings → Performance try toggling GPU boost and restart.",
+        "QR code does not appear: check your internet and reload with F5.",
+        "Notifications do not arrive: check Settings → Notifications and that the system allows alerts for Catrip Connect.",
+        "Right now is empty but I know there are messages: wait a few seconds or open ✉ Pending actions; WhatsApp Web must detect unreads first.",
+        "An avatar looks dim (idle): normal if you have not used that account for a while. Click to wake it; you can also disable suspension in Settings → Performance.",
+        "No alerts from an idle account: while sleeping it does not check for new messages. Open it or shorten the suspend time if you need alerts more often.",
+        "I do not see the ⚡ button: enable Show sidebar rail in Settings and exit Zen mode.",
+        "Tray icons do not show: on some Linux distributions you need tray icon support (AppIndicator).",
+        "wa.me link does not open the app: register Catrip Connect in Settings → General and close the browser before trying again.",
+        "Several accounts feel slow: enable Suspend inactive accounts, lower the process limit, or use fewer active accounts at once.",
+        "The interface is in one language but WhatsApp in another: that is normal. Catrip Connect and WhatsApp Web use separate language settings; change Catrip under Settings → General → Interface language.",
+        "Call icons missing in a chat: join the WhatsApp Web beta (Voice and video calls section in this manual), tap BETA above your profile photo, and reload with F5."
+      ],
+      "steps": null,
+      "note": "Keeping the app updated usually fixes compatibility issues with WhatsApp Web.",
+      "table": null
+    },
+    {
+      "id": "ayuda",
+      "title": "More help",
+      "illustration": null,
+      "paragraphs": [
+        "From the Help menu you can open this user manual, the keyboard shortcut list, and the About window with the installed version.",
+        "Catrip Connect uses official WhatsApp Web inside the app: everything that works on web.whatsapp.com (chats, files, status where supported) works the same here."
+      ],
+      "bullets": [
+        "User manual: full indexed guide in your chosen language (including this languages section).",
+        "Keyboard shortcuts: quick reference.",
+        "About: installed version number."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    }
+  ]
+}

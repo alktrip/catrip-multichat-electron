@@ -1,5 +1,6 @@
 import { nativeImage } from "electron";
 import * as dbus from "dbus-next";
+import { tMain } from "./i18n";
 
 type Bus = any;
 type Variant = any;
@@ -132,10 +133,10 @@ export async function createLinuxSniTray(opts: {
         0,
         { "children-display": v("s", "submenu") },
         [
-          leaf(1, itemProps("Mostrar")),
-          leaf(2, itemProps("Ocultar")),
-          leaf(3, itemProps("Ajustes")),
-          leaf(4, itemProps("Salir")),
+          leaf(1, itemProps(tMain("main.tray.show"))),
+          leaf(2, itemProps(tMain("main.tray.hide"))),
+          leaf(3, itemProps(tMain("main.tray.settings"))),
+          leaf(4, itemProps(tMain("main.tray.quit"))),
         ],
       ];
       return [0, root] as any;

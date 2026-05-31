@@ -23,5 +23,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    /** Incluir raíz del repo: `root` apunta a src/renderer y los imports usan src/shared. */
+    fs: {
+      allow: [path.resolve(__dirname)],
+    },
+  },
+  /** Preferir .ts sobre .js si coexisten (p. ej. restos de tsc en src/shared). */
+  resolve: {
+    extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
   },
 });

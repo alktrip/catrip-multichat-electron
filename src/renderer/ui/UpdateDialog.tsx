@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 export type UpdateDialogButton = {
   id: string;
@@ -74,6 +75,7 @@ export default function UpdateDialog({
   onAction: (buttonId: string) => void;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation();
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onDismiss();
@@ -114,7 +116,7 @@ export default function UpdateDialog({
           </div>
         </div>
 
-        <div className="catrip-update-dialog-notes" role="region" aria-label="Notas de la versión">
+        <div className="catrip-update-dialog-notes" role="region" aria-label={t("app.updateDialog.releaseNotesAria")}>
           {renderReleaseNotes(payload.releaseNotes)}
         </div>
 
@@ -141,7 +143,7 @@ export default function UpdateDialog({
               className="catrip-update-dialog-link"
               onClick={() => onAction("open-release-url")}
             >
-              Ver release completa en GitHub
+              {t("app.updateDialog.openRelease")}
             </button>
           ) : null}
         </div>

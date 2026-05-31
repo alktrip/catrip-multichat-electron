@@ -1,5 +1,6 @@
 import React from "react";
-import { MANUAL_INTRO, MANUAL_SECTIONS, MANUAL_TOC } from "./userManualContent";
+import { useTranslation } from "react-i18next";
+import { useManualContent, type ManualSection } from "./useManualContent";
 
 function ManualTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
@@ -26,7 +27,7 @@ function ManualTable({ headers, rows }: { headers: string[]; rows: string[][] })
   );
 }
 
-function ManualSectionBlock({ section }: { section: (typeof MANUAL_SECTIONS)[number] }) {
+function ManualSectionBlock({ section }: { section: ManualSection }) {
   const Illus = section.illustration;
   return (
     <section id={`manual-${section.id}`} className="catrip-manual-section">
@@ -62,8 +63,16 @@ function ManualSectionBlock({ section }: { section: (typeof MANUAL_SECTIONS)[num
 }
 
 export default function UserManual({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  const { intro, sections, toc } = useManualContent();
   const bodyRef = React.useRef<HTMLDivElement>(null);
-  const [activeId, setActiveId] = React.useState(MANUAL_SECTIONS[0]?.id ?? "bienvenida");
+  const [activeId, setActiveId] = React.useState(sections[0]?.id ?? "bienvenida");
+
+  React.useEffect(() => {
+    if (sections.length > 0 && !sections.some((s) => s.id === activeId)) {
+      setActiveId(sections[0].id);
+    }
+  }, [sections, activeId]);
 
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -97,21 +106,21 @@ export default function UserManual({ onClose }: { onClose: () => void }) {
         <header className="catrip-manual-header">
           <div>
             <h1 id="catrip-manual-title" className="catrip-manual-title">
-              {MANUAL_INTRO.title}
+              {intro.title}
             </h1>
-            <p className="catrip-manual-subtitle">{MANUAL_INTRO.subtitle}</p>
-            <p className="catrip-manual-version">{MANUAL_INTRO.versionNote}</p>
+            <p className="catrip-manual-subtitle">{intro.subtitle}</p>
+            <p className="catrip-manual-version">{intro.versionNote}</p>
           </div>
-          <button type="button" className="catrip-btn" onClick={onClose} aria-label="Cerrar manual">
-            Cerrar
+          <button type="button" className="catrip-btn" onClick={onClose} aria-label={intro.closeAria}>
+            {t("common.close")}
           </button>
         </header>
 
         <div className="catrip-manual-body">
-          <nav className="catrip-manual-toc" aria-label="Índice del manual">
-            <div className="catrip-manual-toc-title">Índice</div>
+          <nav className="catrip-manual-toc" aria-label={intro.tocTitle}>
+            <div className="catrip-manual-toc-title">{intro.tocTitle}</div>
             <ul>
-              {MANUAL_TOC.map((item) => (
+              {toc.map((item) => (
                 <li key={item.id}>
                   <button
                     type="button"
@@ -126,14 +135,14 @@ export default function UserManual({ onClose }: { onClose: () => void }) {
           </nav>
 
           <div ref={bodyRef} className="catrip-manual-content">
-            {MANUAL_SECTIONS.map((section) => (
+            {sections.map((section) => (
               <ManualSectionBlock key={section.id} section={section} />
             ))}
           </div>
         </div>
 
         <footer className="catrip-manual-footer">
-          <span className="catrip-text-hint">Esc para cerrar · Clic fuera del panel también cierra</span>
+          <span className="catrip-text-hint">{intro.footer}</span>
         </footer>
       </div>
     </div>

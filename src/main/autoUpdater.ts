@@ -10,6 +10,7 @@ import {
   isLinuxDebPackagedInstall,
 } from "./debUpdateFlow";
 import { showUpdateDialogRequest } from "./updateDialogBridge";
+import { tMain } from "./i18n";
 
 const E2E_MODE = process.env.CATRIP_E2E === "1";
 
@@ -80,11 +81,11 @@ async function verifyDownloadedArtifact(
   try {
     const actual = await sha512File(filePath);
     if (actual === expectedSha512) {
-      return { ok: true, message: "Integridad verificada (SHA-512)." };
+      return { ok: true, message: tMain("main.updates.integrityOk") };
     }
     return {
       ok: false,
-      message: "La suma SHA-512 del archivo descargado no coincide con la publicada en GitHub.",
+      message: tMain("main.updates.integrityFail"),
     };
   } catch (err) {
     return {
@@ -94,7 +95,7 @@ async function verifyDownloadedArtifact(
   }
 }
 
-/** AppImage / Windows / macOS: descarga autom?tica e instalaci?n al reiniciar. */
+/** AppImage / Windows / macOS: descarga automática e instalación al reiniciar. */
 function setupAppImageStyleUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -109,7 +110,7 @@ function setupAppImageStyleUpdater() {
   autoUpdater.on("update-downloaded", async (info) => {
     const version = info?.version ?? pendingUpdate?.version ?? "";
     let changelog = pendingUpdate?.changelog ?? "";
-    if ((!changelog || changelog === "Sin notas de la versi?n.") && version) {
+    if ((!changelog || changelog === tMain("main.integrations.noReleaseNotes")) && version) {
       changelog = await buildChangelogForUpdate(info, fetchGithubReleaseNotes, getChannel());
     }
 
@@ -125,14 +126,14 @@ function setupAppImageStyleUpdater() {
     let integrityLine = "";
     if (filePath && deb?.sha512 && filePath.endsWith(".deb")) {
       const v = await verifyDownloadedArtifact(filePath, deb.sha512);
-      integrityLine = v.ok ? `\n\n${v.message}` : `\n\n? ${v.message}`;
+      integrityLine = v.ok ? `\n\n${v.message}` : `\n\n⚠ ${v.message}`;
       if (!v.ok) {
         await dialog.showMessageBox({
           type: "warning",
-          title: "Verificaci?n de descarga",
-          message: "No se pudo verificar el paquete .deb",
+          title: tMain("main.updates.verifyTitle"),
+          message: tMain("main.updates.verifyFailed"),
           detail: v.message,
-          buttons: ["Entendido"],
+          buttons: [tMain("main.updates.understood")],
         });
       }
     }
@@ -140,14 +141,14 @@ function setupAppImageStyleUpdater() {
     const askRestart = async () => {
       try {
         const action = await showUpdateDialogRequest({
-          title: "Actualizaci?n disponible",
-          message: `Catrip Connect ${version} est? listo para instalar.`,
+          title: tMain("main.updates.available"),
+          message: tMain("main.updates.availableMessage", { version }),
           releaseNotes: changelog,
-          footerHint: `La aplicaci?n se reiniciar? para aplicar la actualizaci?n.${integrityLine}`,
+          footerHint: tMain("main.updates.restartFooterHint", { integrityLine }),
           releaseUrl: releaseNotesGithubUrl(version),
           buttons: [
-            { id: "restart", label: "Reiniciar ahora", primary: true },
-            { id: "later", label: "M?s tarde" },
+            { id: "restart", label: tMain("main.updates.restartNow"), primary: true },
+            { id: "later", label: tMain("main.updates.later") },
           ],
         });
         if (action === "restart") autoUpdater.quitAndInstall(false, true);
@@ -155,10 +156,10 @@ function setupAppImageStyleUpdater() {
         const brief = formatReleaseNotesBrief(changelog);
         const r = await dialog.showMessageBox({
           type: "info",
-          title: "Actualizaci?n disponible",
-          message: `Catrip Connect ${version} est? listo para instalar.`,
-          detail: `${brief}${integrityLine}\n\nLa aplicaci?n se reiniciar? para aplicar la actualizaci?n.`,
-          buttons: ["Reiniciar ahora", "M?s tarde"],
+          title: tMain("main.updates.available"),
+          message: tMain("main.updates.availableMessage", { version }),
+          detail: `${brief}${integrityLine}\n\n${tMain("main.updates.restartFooterHint", { integrityLine: "" })}`,
+          buttons: [tMain("main.updates.restartNow"), tMain("main.updates.later")],
           defaultId: 0,
           cancelId: 1,
         });
@@ -172,7 +173,7 @@ function setupAppImageStyleUpdater() {
   });
 }
 
-/** .deb instalado: sin descarga autom?tica; el usuario elige carpeta o solo el enlace. */
+/** .deb instalado: sin descarga automática; el usuario elige carpeta o solo el enlace. */
 function setupDebManualUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;

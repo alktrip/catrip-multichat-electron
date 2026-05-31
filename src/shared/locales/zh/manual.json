@@ -1,0 +1,507 @@
+{
+  "intro": {
+    "title": "Catrip Connect 用户手册",
+    "subtitle": "日常使用指南：在一个程序中管理多个 WhatsApp 账户，简单省心。",
+    "versionNote": "手册版本：1.7.0",
+    "tocTitle": "目录",
+    "closeAria": "关闭手册",
+    "footer": "按 Esc 关闭 · 点击面板外部也会关闭"
+  },
+  "sections": [
+    {
+      "id": "bienvenida",
+      "title": "什么是 Catrip Connect？",
+      "illustration": null,
+      "paragraphs": [
+        "Catrip Connect 是一款桌面程序，可让您同时使用一个或多个 WhatsApp 账户访问 WhatsApp Web。每个账户相互独立：一个账户的消息、联系人和文件不会与另一个混在一起。",
+        "主界面显示您熟悉的浏览器版 WhatsApp，并附带额外工具：一键切换账户、暂停不用的账户以节省内存、快速查看最紧急事项（此刻）、查看全部未读消息、用 Ctrl+K 搜索聊天、接收桌面通知等。，还可在设置 → 常规中更改整个界面语言（菜单、手册和通知）."
+      ],
+      "bullets": null,
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "primeros-pasos",
+      "title": "入门步骤",
+      "illustration": "qr",
+      "paragraphs": null,
+      "bullets": null,
+      "steps": [
+        "从系统应用菜单打开 Catrip Connect（搜索「Catrip Connect」）。",
+        "首次使用时，点击按钮创建第一个账户。起一个容易识别的名称，例如「个人」或「工作」。",
+        "将显示 WhatsApp Web 二维码。在手机上打开 WhatsApp → 已关联的设备 → 关联设备并扫描二维码。",
+        "连接成功后，您会在窗口的大片区域看到聊天列表。",
+        "要添加其他账户，请使用侧边栏 rail 上的「新账户」按钮或账户菜单。"
+      ],
+      "note": "若二维码过期，请按 F5 或通过聊天 → 重新加载刷新视图。",
+      "table": null
+    },
+    {
+      "id": "ventana",
+      "title": "窗口布局",
+      "illustration": "layout",
+      "paragraphs": [
+        "窗口分为两个主要区域。左侧是侧边栏 rail（有时称为 rail）：显示账户图标和快捷操作。右侧大片区域是当前所选账户的 WhatsApp Web。",
+        "若已在设置中启用，顶部有菜单栏（文件、查看、聊天、账户、帮助）。几乎所有本手册说明的功能都可从这里访问。"
+      ],
+      "bullets": [
+        "rail 上部：账户头像（点击切换，拖动排序）。",
+        "rail 下部：操作按钮 — 新账户、按号码聊天、新聊天、⚡ 此刻、✉ 待处理、▤ 活动、设置和 Zen 模式。",
+        "中央区域：WhatsApp Web 的聊天、通话和文件。",
+        "顶部菜单：分类快捷入口（含查看 → 此刻）。"
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "cuentas",
+      "title": "使用多个账户",
+      "illustration": "accounts",
+      "paragraphs": [
+        "您可以在同一应用中登录多个 WhatsApp 账户。每个账户在侧边栏 rail 上有不同颜色的图标。"
+      ],
+      "bullets": [
+        "点击图标切换到该账户。",
+        "上下拖动图标可调整列表顺序。",
+        "图标上的绿点或数字表示该账户的未读消息。",
+        "若账户一段时间未使用，可能进入「休眠」：头像变淡，工具提示会说明。会话仍保存在本地；单击即可立即恢复。",
+        "将鼠标悬停在图标上可查看是否已连接、休眠、等待二维码或离线。",
+        "快捷方式：Ctrl+1 打开第一个账户，Ctrl+2 第二个，直至 Ctrl+9。"
+      ],
+      "steps": null,
+      "note": "在设置 → 账户中可重命名、更改图标颜色或删除账户。在设置 → 性能中可配置非活跃账户何时进入休眠。",
+      "table": null
+    },
+    {
+      "id": "reposo-cuentas",
+      "title": "休眠账户（节省内存）",
+      "illustration": "accounts",
+      "paragraphs": [
+        "多个账户同时打开时，每个账户在保持 WhatsApp Web 加载的同时都会占用内存和 CPU。Catrip Connect 可让不用的账户「休眠」：关闭内部 WhatsApp 视图，但将会话（Cookie 和登录）保存在磁盘上。",
+        "这样在三、四个或更多账户时应用更轻量，无需退出登录或每次重新扫描二维码。"
+      ],
+      "bullets": [
+        "默认在设置 → 性能 →「暂停非活跃账户」中启用。",
+        "可选择等待时间：5、10、15、30 或 60 分钟。",
+        "当前活跃账户永远不会被暂停。",
+        "若某账户正在进行视频通话，挂断前不会被暂停。",
+        "关闭该选项会立即恢复所有处于休眠的账户。"
+      ],
+      "steps": [
+        "正常使用某个账户；切换到其他账户后，前一个账户开始计时不活跃时间。",
+        "超过设定阈值（默认 15 分钟）后，账户进入休眠：rail 上的头像变淡。",
+        "要恢复，请点击其头像，从 ✉ 待处理或 Ctrl+K 选择聊天，或打开指向该账户的 wa.me 链接。",
+        "WhatsApp Web 会在几秒内以同一会话重新加载；无需再次扫描二维码。"
+      ],
+      "note": "账户休眠期间，该账户的通知和计数可能直到您打开才会更新。活跃账户和常用账户仍会正常接收通知。",
+      "table": null
+    },
+    {
+      "id": "zen",
+      "title": "Zen 模式（仅聊天）",
+      "illustration": "zen",
+      "paragraphs": [
+        "Zen 模式隐藏侧边栏 rail，让 WhatsApp 占满整个窗口。适合专注于某次对话时使用。"
+      ],
+      "bullets": [
+        "通过查看 → Zen 模式、Ctrl+Shift+Z 或在命令面板（Ctrl+K）中搜索「Zen」开启。",
+        "要恢复正常视图，按 Escape 或再次使用同一快捷键。",
+        "进入设置时 Zen 模式会自动关闭。"
+      ],
+      "steps": null,
+      "note": "Zen 模式下看不到 rail 上的 ⚡ 按钮；请退出 Zen 或使用 Ctrl+Shift+A 打开此刻。",
+      "table": null
+    },
+    {
+      "id": "ahora-mismo",
+      "title": "此刻 — 一眼看清紧急事项",
+      "illustration": "urgent",
+      "paragraphs": [
+        "此刻是侧边栏 rail 旁的小面板。显示最多三条有未读消息的对话，即所有账户中最紧急的。与较大的视图（活动中心或待处理操作）不同，它不会挡住 WhatsApp：您可以边看摘要边在旁边继续聊天。"
+      ],
+      "bullets": [
+        "⚡ 按钮上的绿点表示有紧急待处理聊天。",
+        "若无未读消息，面板会提示（您已全部处理完毕）。",
+        "也可在 Ctrl+K 面板中输入「此刻」。"
+      ],
+      "steps": [
+        "点击侧边栏 rail 的 ⚡ 按钮、使用 Ctrl+Shift+A 或查看 → 此刻。",
+        "查看列表：联系人姓名、账户（个人、工作…）、未读数量和最后一条消息摘要。",
+        "点击某行可在正确账户中打开该聊天。面板会自动关闭。",
+        "要查看更多对话，请点击面板底部的「查看全部待处理」。",
+        "不打开任何内容就关闭：按 Escape、面板上的 X 或点击外部。"
+      ],
+      "note": "面板使用与 WhatsApp Web 相同的未读信息。若您刚在手机上读完某聊天，可能需几秒才会从列表中消失。",
+      "table": null
+    },
+    {
+      "id": "actividad",
+      "title": "活动中心与待处理操作",
+      "illustration": null,
+      "paragraphs": [
+        "除此刻外，还有两个更宽的视图，供您从容查看全部内容。"
+      ],
+      "bullets": [
+        "活动中心（▤）：每个账户一张卡片，含未读总数和最后消息。",
+        "待处理操作（✉）：按紧急程度排序的扁平列表，涵盖所有账户。",
+        "从此刻可一键跳转到完整收件箱。"
+      ],
+      "steps": null,
+      "note": null,
+      "table": {
+        "headers": [
+          "工具",
+          "何时使用",
+          "如何打开"
+        ],
+        "rows": [
+          [
+            "⚡ 此刻",
+            "快速浏览：不遮挡屏幕的前 3 条紧急项",
+            "⚡ 按钮、Ctrl+Shift+A、查看 → 此刻"
+          ],
+          [
+            "▤ 活动中心",
+            "按账户汇总：谁发来消息及预览",
+            "▤ 按钮或 Ctrl+K →「活动」"
+          ],
+          [
+            "✉ 待处理操作",
+            "全部未读聊天的完整列表",
+            "✉ 按钮或 Ctrl+K →「待处理」"
+          ],
+          [
+            "Ctrl+K → 聊天",
+            "按姓名或文字查找联系人",
+            "Ctrl+K 后输入姓名"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "paleta",
+      "title": "命令面板（快速搜索）",
+      "illustration": "palette",
+      "paragraphs": [
+        "随时按 Ctrl+K 打开搜索框。输入内容后列表会即时筛选。",
+        "除账户和操作外，还可搜索有未读消息的对话：输入联系人姓名、最后消息片段或账户名（例如「Ana」或「工作 预算」）。选择聊天后会在正确账户中打开。"
+      ],
+      "bullets": [
+        "用上下箭头选择选项。",
+        "按 Enter 执行（打开聊天、切换账户 — 若休眠则唤醒 —、打开此刻、进入设置等）。",
+        "按 Escape 关闭且不执行任何操作。",
+        "匹配的聊天会显示在「聊天」区顶部。",
+        "常用命令：「此刻」「待处理操作」「活动中心」「新账户」「Zen 模式」。",
+        "更改语言：在 Ctrl+K 中搜索 language、idioma 或 settings，打开设置 → 常规。"
+      ],
+      "steps": null,
+      "note": "聊天搜索使用各账户 WhatsApp Web 中显示的未读对话。若无待处理消息，可能直到有新活动才会出现。",
+      "table": null
+    },
+    {
+      "id": "chat-numero",
+      "title": "按号码发消息",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": null,
+      "steps": [
+        "按 Ctrl+M 或在面板（Ctrl+K）中搜索「电话」。",
+        "输入带国际区号的号码，例如 +8613812345678。",
+        "按确定。将在当前活跃账户中打开对话。"
+      ],
+      "note": "号码须包含国家/地区代码（+ 及相应数字）。",
+      "table": null
+    },
+    {
+      "id": "videollamadas",
+      "title": "WhatsApp Web 语音和视频通话",
+      "illustration": null,
+      "paragraphs": [
+        "WhatsApp Web 的语音和视频通话正在逐步推出。Catrip Connect 在 WhatsApp 请求时已允许麦克风和摄像头，无需在应用中额外配置。",
+        "若个人聊天中仍看不到电话和摄像头图标，可能需要在 WhatsApp 界面中加入 WhatsApp Web Beta 计划。"
+      ],
+      "bullets": [
+        "设置 → 性能中的「视频通话期间防止休眠」可在通话进行时避免系统进入睡眠。",
+        "是否可用取决于 WhatsApp：并非所有账户会同时获得 Beta。"
+      ],
+      "steps": [
+        "确保账户已连接（非等待 QR）且在 Catrip Connect 中为活动账户。",
+        "在 WhatsApp Web 左侧边栏左下角、头像上方查看。",
+        "点击显示的 BETA 选项，并按 WhatsApp 说明在 Web 版中启用通话。",
+        "打开一对一聊天（目前 Web 通话通常仅限个人聊天）。",
+        "检查聊天右上角的电话（语音）和摄像头（视频）图标。",
+        "若没有，请按 F5 刷新（聊天 → 重新加载）或重新登录 WhatsApp Web。"
+      ],
+      "note": "WhatsApp Web 使用独立语言；BETA 标签可能因手机或 web.whatsapp.com 设置而显示为其他语言。",
+      "table": null
+    },
+    {
+      "id": "enlaces",
+      "title": "从网络打开 WhatsApp 链接",
+      "illustration": null,
+      "paragraphs": [
+        "若有人发送 wa.me 链接，或您从其他应用打开 whatsapp:// 链接，Catrip Connect 可直接打开对应聊天。"
+      ],
+      "bullets": [
+        "安装后，可在设置 → 常规中将 Catrip Connect 注册为 WhatsApp 链接的默认应用。",
+        "在「传入的 WhatsApp 链接」中选择账户：多个时询问、始终使用当前账户或固定某一账户。",
+        "若链接带有预填消息，会在聊天中显示为可发送状态。",
+        "群组邀请（chat.whatsapp.com）也可在应用中打开。"
+      ],
+      "steps": null,
+      "note": "若浏览器提示没有可用应用，请在设置 → 常规中使用「注册为默认应用」，关闭浏览器后再试。",
+      "table": null
+    },
+    {
+      "id": "ajustes-general",
+      "title": "设置 — 常规",
+      "illustration": null,
+      "paragraphs": [
+        "用 Ctrl+P 或文件菜单打开设置。常规部分控制应用的日常使用行为。"
+      ],
+      "bullets": [
+        "界面语言：西班牙语、英语、葡萄牙语、法语、德语、韩语、日语、意大利语、简体中文或系统语言（见本手册的界面语言章节）。",
+        "最小化启动：应用启动时进入托盘且不显示窗口。",
+        "显示侧边栏 rail：隐藏或显示账户列（⚡、✉、▤ 需要）。",
+        "显示菜单栏：顶部的文件/查看/聊天条。",
+        "关闭时最小化到托盘：点 X 后应用仍在后台运行（推荐）。",
+        "随系统自动启动：开机时打开 Catrip Connect。",
+        "下载文件夹：WhatsApp 接收文件的保存位置。",
+        "界面缩放：放大或缩小文字和图标（100% 至 200%）。",
+        "启动时检查更新：有新版本时通知。"
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "idioma",
+      "title": "界面语言",
+      "illustration": null,
+      "paragraphs": [
+        "Catrip Connect 支持多种语言。无需重启应用即可更改菜单、窗口、用户手册、系统通知和托盘图标菜单的语言。"
+      ],
+      "bullets": [
+        "会更新的内容：顶部菜单、侧边栏、模态框、Ctrl+K 命令面板、设置界面、本手册（帮助 → 用户手册）、原生通知和托盘菜单。",
+        "不会更改的内容：窗口内的 WhatsApp Web 使用自己的语言，与 Catrip Connect 无关。",
+        "若手册已打开，切换语言后文本会立即更新。",
+        "选择系统语言时，应用读取操作系统区域；若不受支持，默认使用英语。"
+      ],
+      "steps": [
+        "通过 Ctrl+P、侧边栏齿轮按钮或文件 → 设置打开设置。",
+        "在左侧面板选择常规。",
+        "顶部有界面语言，打开下拉列表。",
+        "选择具体语言（西班牙语、English、Português、Français、Deutsch、한국어、日本語、Italiano、简体中文）或系统语言以跟随计算机语言。",
+        "更改立即生效，并自动保存供下次启动使用。"
+      ],
+      "note": "在命令面板（Ctrl+K）中可搜索 language、idioma 或 settings 快速进入常规设置。",
+      "table": null
+    },
+    {
+      "id": "ajustes-cuentas",
+      "title": "设置 — 账户",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": [
+        "重命名：更改账户显示名称（仅在 Catrip Connect 中，不影响 WhatsApp）。",
+        "重新生成图标或选择颜色变体：自定义侧边栏 rail 头像。",
+        "按账户通知：为某个账户开启或静音提醒。",
+        "删除账户：从应用中移除会话（不会删除手机上的 WhatsApp）。"
+      ],
+      "steps": null,
+      "note": "在 Catrip Connect 中删除账户不会退出手机上的 WhatsApp；只是不再在程序中显示。",
+      "table": null
+    },
+    {
+      "id": "ajustes-notificaciones",
+      "title": "设置 — 通知",
+      "illustration": "notification",
+      "paragraphs": null,
+      "bullets": [
+        "系统通知：收到消息时的桌面提醒。",
+        "显示账户名称：提醒中会显示「工作」「个人」等。",
+        "显示预览：提醒中显示一行消息内容。",
+        "勿扰：无弹出提醒（托盘计数仍有效）。",
+        "系统声音：收到提醒时播放提示音。"
+      ],
+      "steps": null,
+      "note": "点击通知会打开窗口并选中收到消息的账户。之后可用 ⚡ 查看还有哪些待处理项。",
+      "table": null
+    },
+    {
+      "id": "ajustes-red",
+      "title": "设置 — 网络",
+      "illustration": null,
+      "paragraphs": [
+        "仅当连接经过代理（公司网络、特殊 VPN 等）时需要此部分。启用「网络代理」并输入管理员提供的规则。"
+      ],
+      "bullets": null,
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "ajustes-rendimiento",
+      "title": "设置 — 性能",
+      "illustration": null,
+      "paragraphs": [
+        "此部分帮助在同时使用多个账户时平衡流畅度、内存占用和稳定性。"
+      ],
+      "bullets": [
+        "暂停非活跃账户：关闭一段时间未选中的账户的 WhatsApp 视图以释放内存。会话仍保存在磁盘。",
+        "暂停前等待（分钟）：账户进入休眠前的未使用时间（5 至 60 分钟）。",
+        "GPU 增强：在部分 Linux 设备上改善视频流畅度。需重启应用。",
+        "渲染进程上限：账户多且内存紧张时有用。需重启。",
+        "视频通话期间防止休眠：WhatsApp Web 中有活跃通话时系统不会进入睡眠。",
+        "清除缓存：若 WhatsApp 变慢或文件异常，可尝试清除缓存（不会退出登录）。"
+      ],
+      "steps": null,
+      "note": "账户暂停与进程上限从不同角度解决同一问题（内存）：前者关闭不用的视图；后者限制 Chromium 进程总数。",
+      "table": null
+    },
+    {
+      "id": "bandeja",
+      "title": "系统托盘图标",
+      "illustration": "tray",
+      "paragraphs": [
+        "桌面时钟旁（Linux）会显示 Catrip Connect 图标。可从中恢复窗口或完全退出。"
+      ],
+      "bullets": [
+        "点击图标：显示或隐藏主窗口。",
+        "上下文菜单：列出账户及状态和未读数；也可退出。",
+        "图标角标：显示未读消息总数（若在设置中启用）。",
+        "从托盘恢复时，窗口会回到之前的大小和位置。"
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "actualizaciones",
+      "title": "更新应用",
+      "illustration": null,
+      "paragraphs": [
+        "启用「启动时检查更新」后，Catrip Connect 会在线检查新版本。"
+      ],
+      "bullets": [
+        "若安装了 .deb 包：应用会显示更新说明，可将安装程序下载到您选择的文件夹，或在浏览器中打开链接。安装时间由您决定。",
+        "若使用 AppImage：下载可能自动进行；准备好后点击「立即重启」。",
+        "更新面板可滚动，无需放大窗口即可阅读全部更新说明。"
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "atajos",
+      "title": "键盘快捷键",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": null,
+      "steps": null,
+      "note": "还可在帮助 → 键盘快捷键查看简要列表，在帮助 → 用户手册查看完整手册。",
+      "table": {
+        "headers": [
+          "快捷键",
+          "作用"
+        ],
+        "rows": [
+          [
+            "Ctrl+K",
+            "打开搜索（未读聊天、账户和操作）"
+          ],
+          [
+            "Ctrl+P",
+            "打开设置"
+          ],
+          [
+            "Ctrl+1 … Ctrl+9",
+            "切换到账户 1、2、3…（最多 9 个）"
+          ],
+          [
+            "Ctrl+N",
+            "在 WhatsApp Web 中新建聊天"
+          ],
+          [
+            "Ctrl+M",
+            "按电话号码聊天"
+          ],
+          [
+            "Ctrl+U",
+            "新账户"
+          ],
+          [
+            "Ctrl+Shift+A",
+            "打开或关闭此刻（前 3 条紧急项）"
+          ],
+          [
+            "Ctrl+Shift+Z",
+            "切换 Zen 模式"
+          ],
+          [
+            "Escape",
+            "关闭此刻、退出 Zen 模式或关闭面板"
+          ],
+          [
+            "Ctrl+W",
+            "隐藏窗口"
+          ],
+          [
+            "Ctrl+Q",
+            "退出应用"
+          ],
+          [
+            "F5",
+            "重新加载 WhatsApp Web"
+          ],
+          [
+            "F11",
+            "全屏"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "problemas",
+      "title": "提示与常见问题",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": [
+        "WhatsApp 无法加载或黑屏：聊天 → 重新加载（F5）。若仍如此，在设置 → 性能中尝试开关「GPU 增强」并重启。",
+        "二维码不显示：检查网络并用 F5 重新加载。",
+        "收不到通知：检查设置 → 通知，并确认系统允许 Catrip Connect 的通知。",
+        "此刻为空但确定有消息：等待几秒或打开 ✉ 待处理操作；需先由 WhatsApp Web 检测到未读。",
+        "头像变淡（「休眠」）：一段时间不用属正常。点击唤醒；也可在设置 → 性能中关闭暂停。",
+        "休眠账户无提醒：休眠期间不会检查新消息。若需更频繁提醒请打开该账户或缩短暂停时间。",
+        "看不到 ⚡ 按钮：在设置中启用「显示侧边栏 rail」并退出 Zen 模式。",
+        "看不到托盘图标：部分 Linux 发行版需安装托盘图标支持（AppIndicator）。",
+        "wa.me 链接打不开应用：在设置 → 常规中注册 Catrip Connect，关闭浏览器后再试。",
+        "多个账户变慢：启用「暂停非活跃账户」、降低进程上限或减少同时活跃的账户数。",
+        "界面与 WhatsApp 语言不同：属正常现象。Catrip Connect 与 WhatsApp Web 语言独立；请在设置 → 常规 → 界面语言中更改 Catrip。",
+        "聊天中看不到通话图标：加入 WhatsApp Web Beta（本手册「WhatsApp Web 语音和视频通话」），点击头像上方的 BETA，然后按 F5 刷新。"
+      ],
+      "steps": null,
+      "note": "保持应用为最新版本通常可解决与 WhatsApp Web 的兼容问题。",
+      "table": null
+    },
+    {
+      "id": "ayuda",
+      "title": "更多帮助",
+      "illustration": null,
+      "paragraphs": [
+        "通过帮助菜单可打开本用户手册、键盘快捷键列表以及显示已安装版本的「关于」窗口。",
+        "Catrip Connect 在应用内使用官方 WhatsApp Web：在 web.whatsapp.com 上可用的功能（聊天、文件、受支持的状态等）在此同样可用。"
+      ],
+      "bullets": [
+        "用户手册：以所选语言显示的完整索引指南（含语言章节）。",
+        "键盘快捷键：快速参考。",
+        "关于：已安装版本号。"
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    }
+  ]
+}

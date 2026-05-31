@@ -1,8 +1,12 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import AccountAvatar from "./AccountAvatar";
 import { Overlay } from "./Overlay";
 import { ToggleRow } from "./primitives";
 import { useToasts } from "./Toasts";
+import type { LanguageSetting } from "../../shared/i18n/types";
+import { LANGUAGE_SETTING_OPTIONS } from "../../shared/i18n/localeMeta";
+import { changeRendererLanguage } from "../i18n";
 
 export type SettingsPage = "general" | "accounts" | "notifications" | "network" | "performance";
 
@@ -33,6 +37,7 @@ type Settings = {
     checkForUpdates: boolean;
     updateChannel: "stable" | "beta";
     openDownloadsWithDefaultApp: boolean;
+    language: LanguageSetting;
   };
   notifications: {
     enabled: boolean;
@@ -89,6 +94,7 @@ export default function SettingsView({
   onPageChange: (p: SettingsPage) => void;
   onBack: () => void;
 }) {
+  const { t } = useTranslation();
   const setPage = onPageChange;
   const [fadeKey, setFadeKey] = React.useState(0);
   const [settings, setSettings] = React.useState<Settings | null>(null);
@@ -121,6 +127,7 @@ export default function SettingsView({
   const [variantsOpenFor, setVariantsOpenFor] = React.useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [deletingInFlight, setDeletingInFlight] = React.useState(false);
+  const [whatsappLangNoticeOpen, setWhatsappLangNoticeOpen] = React.useState(false);
   const toasts = useToasts();
 
   React.useEffect(() => {
@@ -171,8 +178,15 @@ export default function SettingsView({
   }, []);
 
   const update = (next: Settings) => {
+    const prevLang = settings?.general?.language;
     setSettings(next);
     void window.catrip.setSettings(next);
+    if (next.general.language !== prevLang) {
+      void (async () => {
+        await changeRendererLanguage(next.general.language, navigator.language);
+        setWhatsappLangNoticeOpen(true);
+      })();
+    }
   };
 
   const runMediaDiag = () => {
@@ -203,19 +217,17 @@ export default function SettingsView({
       .then((ok) => {
         setCacheBusy(false);
         if (ok) {
-          setCacheMsg("Caché HTTP limpiada.");
-          toasts.success(
-            `Caché HTTP limpiada (${accounts.length} cuenta${accounts.length === 1 ? "" : "s"}).`,
-          );
+          setCacheMsg(t("settings.performance.cacheCleared"));
+          toasts.success(t("settings.performance.cacheCleared"));
         } else {
-          setCacheMsg("No se pudo limpiar la caché.");
-          toasts.error("No se pudo limpiar la caché.");
+          setCacheMsg(t("settings.performance.cacheFailed"));
+          toasts.error(t("settings.performance.cacheFailed"));
         }
       })
       .catch(() => {
         setCacheBusy(false);
-        setCacheMsg("No se pudo limpiar la caché.");
-        toasts.error("No se pudo limpiar la caché.");
+        setCacheMsg(t("settings.performance.cacheFailed"));
+        toasts.error(t("settings.performance.cacheFailed"));
       });
   };
 
@@ -247,16 +259,16 @@ export default function SettingsView({
               cursor: "pointer",
             }}
           >
-            Atrás
+            {t("common.back")}
           </button>
-          <div style={{ fontSize: 12, opacity: 0.7, padding: "0 15px 10px" }}>AJUSTES</div>
+          <div style={{ fontSize: 12, opacity: 0.7, padding: "0 15px 10px" }}>{t("settings.title")}</div>
           <div className="catrip-gradient-divider" style={{ margin: "6px 0 10px" }} />
           <SidebarButton
             ref={(el) => {
               sidebarButtonRefs.current.general = el;
             }}
             active={page === "general"}
-            label="General"
+            label={t("settings.pages.general")}
             onClick={() => setPage("general")}
           />
           <SidebarButton
@@ -264,17 +276,17 @@ export default function SettingsView({
               sidebarButtonRefs.current.accounts = el;
             }}
             active={page === "accounts"}
-            label="Cuentas"
+            label={t("settings.pages.accounts")}
             onClick={() => setPage("accounts")}
           />
-          <div style={{ fontSize: 12, opacity: 0.7, padding: "14px 15px 6px" }}>HERRAMIENTAS</div>
+          <div style={{ fontSize: 12, opacity: 0.7, padding: "14px 15px 6px" }}>{t("settings.tools")}</div>
           <div className="catrip-gradient-divider" style={{ margin: "6px 0 10px" }} />
           <SidebarButton
             ref={(el) => {
               sidebarButtonRefs.current.notifications = el;
             }}
             active={page === "notifications"}
-            label="Notificaciones"
+            label={t("settings.pages.notifications")}
             onClick={() => setPage("notifications")}
           />
           <SidebarButton
@@ -282,7 +294,7 @@ export default function SettingsView({
               sidebarButtonRefs.current.performance = el;
             }}
             active={page === "performance"}
-            label="Rendimiento"
+            label={t("settings.pages.performance")}
             onClick={() => setPage("performance")}
           />
           <SidebarButton
@@ -290,7 +302,7 @@ export default function SettingsView({
               sidebarButtonRefs.current.network = el;
             }}
             active={page === "network"}
-            label="Red"
+            label={t("settings.pages.network")}
             onClick={() => setPage("network")}
           />
           <div
@@ -318,7 +330,7 @@ export default function SettingsView({
               cursor: "pointer",
             }}
           >
-            Salir
+            {t("common.exit")}
           </button>
         </div>
       </div>
@@ -333,18 +345,10 @@ export default function SettingsView({
           <div style={{ padding: 18 }}>
             <div style={{ maxWidth: 900, margin: "0 auto" }}>
               <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>
-                {page === "general"
-                  ? "General"
-                  : page === "accounts"
-                    ? "Cuentas"
-                    : page === "notifications"
-                      ? "Notificaciones"
-                      : page === "network"
-                        ? "Red"
-                        : "Rendimiento (experimental)"}
+                {t(`settings.pages.${page}`)}
               </div>
               {!settings ? (
-                <div style={{ opacity: 0.8 }}>Cargando…</div>
+                <div style={{ opacity: 0.8 }}>{t("common.loading")}</div>
               ) : page === "accounts" ? (
                 <div style={{ opacity: 0.92 }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -367,11 +371,9 @@ export default function SettingsView({
                         fontWeight: 650,
                       }}
                     >
-                      Nueva cuenta
+                      {t("settings.accounts.newAccount")}
                     </button>
-                    <div className="catrip-text-hint">
-                      Renombra y selecciona un ícono por cuenta. El rail usa estos mismos datos.
-                    </div>
+                    <div className="catrip-text-hint">{t("settings.accounts.hint")}</div>
                   </div>
 
                   <div className="catrip-gradient-divider" style={{ margin: "14px 0" }} />
@@ -424,7 +426,7 @@ export default function SettingsView({
                               <input
                                 type="text"
                                 className="catrip-field"
-                                aria-label="Nombre de la cuenta"
+                                aria-label={t("settings.accounts.accountName")}
                                 autoFocus
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
@@ -443,12 +445,12 @@ export default function SettingsView({
                               </div>
                             )}
                             <details className="catrip-settings-id">
-                              <summary>Identificador interno</summary>
+                              <summary>{t("settings.accounts.internalId")}</summary>
                               {a.id}
                             </details>
                             <div style={{ marginTop: 4 }}>
                               <ToggleRow
-                                label="Notificaciones para esta cuenta"
+                                label={t("settings.accounts.notifications")}
                                 checked={a.notificationsEnabled !== false}
                                 onChange={(v) =>
                                   void window.catrip.setAccountNotificationsEnabled(a.id, v)
@@ -482,7 +484,10 @@ export default function SettingsView({
                                         setEditLabel("");
                                         if (res && next && next !== original) {
                                           toasts.success(
-                                            `Cuenta «${original}» renombrada a «${res.label}».`,
+                                            t("settings.accounts.renamed", {
+                                              from: original,
+                                              to: res.label,
+                                            }),
                                           );
                                         }
                                       });
@@ -497,7 +502,7 @@ export default function SettingsView({
                                     fontWeight: 650,
                                   }}
                                 >
-                                  Guardar
+                                  {t("common.save")}
                                 </button>
                                 <button
                                   type="button"
@@ -515,7 +520,7 @@ export default function SettingsView({
                                     cursor: "pointer",
                                   }}
                                 >
-                                  Cancelar
+                                  {t("common.cancel")}
                                 </button>
                               </>
                             ) : (
@@ -535,7 +540,7 @@ export default function SettingsView({
                                   cursor: "pointer",
                                 }}
                               >
-                                Renombrar
+                                {t("common.rename")}
                               </button>
                             )}
 
@@ -562,7 +567,7 @@ export default function SettingsView({
                                 cursor: "pointer",
                               }}
                             >
-                              Elegir ícono
+                              {t("settings.accounts.chooseIcon")}
                             </button>
                             <button
                               type="button"
@@ -576,9 +581,9 @@ export default function SettingsView({
                                 color: "inherit",
                                 cursor: "pointer",
                               }}
-                              title="Volver al ícono generado (variante)"
+                              title={t("settings.accounts.regenerateIconTitle")}
                             >
-                              Variante
+                              {t("settings.accounts.regenerateIcon")}
                             </button>
                             <button
                               type="button"
@@ -593,9 +598,9 @@ export default function SettingsView({
                                 cursor: "pointer",
                                 fontWeight: 600,
                               }}
-                              title="Eliminar esta cuenta y todos sus datos"
+                              title={t("settings.accounts.deleteTitle")}
                             >
-                              Eliminar
+                              {t("common.delete")}
                             </button>
                           </div>
 
@@ -653,7 +658,34 @@ export default function SettingsView({
                 </div>
               ) : page === "general" ? (
                 <div style={{ opacity: 0.92 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>Escala</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
+                    {t("settings.language.label")}
+                  </div>
+                  <select
+                    className="catrip-select"
+                    value={settings.general.language ?? "system"}
+                    onChange={(e) =>
+                      update({
+                        ...settings,
+                        general: {
+                          ...settings.general,
+                          language: e.target.value as LanguageSetting,
+                        },
+                      })
+                    }
+                    style={{ minWidth: 280, marginBottom: 8 }}
+                  >
+                    {LANGUAGE_SETTING_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.useI18n ? t(opt.label) : opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="catrip-text-hint" style={{ marginBottom: 14 }}>
+                    {t("settings.language.hint")}
+                  </div>
+                  <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>{t("settings.scale.title")}</div>
                   <select
                     className="catrip-select"
                     value={String(settings.general.uiScale ?? 1)}
@@ -675,38 +707,38 @@ export default function SettingsView({
                     <option value="2">200%</option>
                   </select>
                   <div className="catrip-text-hint" style={{ marginBottom: 10 }}>
-                    Afecta la UI y WhatsApp Web. Se aplica al instante.
+                    {t("settings.scale.hint")}
                   </div>
                   <ToggleRow
-                    label="Iniciar minimizada"
+                    label={t("settings.general.startMinimized")}
                     checked={settings.general.startMinimized}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, startMinimized: v } })
                     }
                   />
                   <ToggleRow
-                    label="Mostrar barra lateral"
+                    label={t("settings.general.showSidebar")}
                     checked={settings.general.showSidebar}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, showSidebar: v } })
                     }
                   />
                   <ToggleRow
-                    label="Mostrar barra de menú"
+                    label={t("settings.general.showMenuBar")}
                     checked={settings.general.showMenuBar}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, showMenuBar: v } })
                     }
                   />
                   <ToggleRow
-                    label="Al cerrar, minimizar a la bandeja (tray)"
+                    label={t("settings.general.closeToTray")}
                     checked={settings.general.closeToTray}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, closeToTray: v } })
                     }
                   />
                   <ToggleRow
-                    label="Iniciar automáticamente con el sistema"
+                    label={t("settings.general.autoStart")}
                     checked={settings.general.autoStart}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, autoStart: v } })
@@ -714,11 +746,10 @@ export default function SettingsView({
                   />
                   <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />
                   <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
-                    Enlaces WhatsApp entrantes
+                    {t("settings.general.incomingLinks")}
                   </div>
                   <div className="catrip-text-hint" style={{ marginBottom: 8 }}>
-                    Al abrir <code style={{ fontSize: 11 }}>whatsapp://</code> o{" "}
-                    <code style={{ fontSize: 11 }}>wa.me</code> desde el sistema.
+                    {t("settings.general.incomingLinksHint")}
                   </div>
                   <select
                     className="catrip-select"
@@ -741,9 +772,9 @@ export default function SettingsView({
                     }}
                     style={{ minWidth: 280, marginBottom: 8 }}
                   >
-                    <option value="auto">Preguntar si hay varias cuentas</option>
-                    <option value="active">Siempre la cuenta activa</option>
-                    <option value="fixed">Cuenta fija</option>
+                    <option value="auto">{t("settings.general.incomingLinkAuto")}</option>
+                    <option value="active">{t("settings.general.incomingLinkActive")}</option>
+                    <option value="fixed">{t("settings.general.incomingLinkFixed")}</option>
                   </select>
                   {(settings.general.incomingLinkMode ?? "auto") === "fixed" ? (
                     <select
@@ -761,7 +792,7 @@ export default function SettingsView({
                       style={{ minWidth: 280, marginBottom: 8 }}
                     >
                       {accounts.length === 0 ? (
-                        <option value="">(sin cuentas)</option>
+                        <option value="">{t("common.noAccounts")}</option>
                       ) : (
                         accounts.map((a) => (
                           <option key={a.id} value={a.id}>
@@ -790,41 +821,27 @@ export default function SettingsView({
                         cursor: "pointer",
                       }}
                     >
-                      Registrar como app predeterminada (whatsapp://)
+                      {t("settings.general.registerProtocol")}
                     </button>
                   </div>
                   <div
                     className="catrip-text-hint"
                     style={{ marginBottom: 10, lineHeight: 1.5 }}
                   >
-                    <strong>whatsapp://</strong> — Tras registrar, el sistema puede abrir enlaces
-                    compatibles directamente en Catrip.
+                    {t("settings.general.registerProtocolHint")}
                     <br />
-                    <strong>https://wa.me en el navegador</strong> — En Wayland/Linux el navegador
-                    no delega HTTPS a apps arbitrarias. Opciones reales:
+                    <strong>{t("settings.general.waylandBrowserTitle")}</strong> —{" "}
+                    {t("settings.general.waylandBrowserIntro")}
                     <ol style={{ margin: "8px 0 0 18px", padding: 0 }}>
-                      <li>
-                        Usar enlaces que redirijan a <code style={{ fontSize: 11 }}>whatsapp://</code>{" "}
-                        (p. ej. desde otra app o marcador).
-                      </li>
-                      <li>
-                        En el navegador: menú del enlace → <em>Abrir con…</em> → Catrip Connect (si
-                        aparece tras registrar).
-                      </li>
-                      <li>
-                        Extensión del navegador que envíe <code style={{ fontSize: 11 }}>wa.me</code> al
-                        protocolo (no incluida en Catrip).
-                      </li>
-                      <li>
-                        Dentro de la app: <kbd>Ctrl+M</kbd> (chat por número) o pegar el enlace si
-                        el sistema lo entrega a Catrip.
-                      </li>
+                      <li>{t("settings.general.waylandOption1")}</li>
+                      <li>{t("settings.general.waylandOption2")}</li>
+                      <li>{t("settings.general.waylandOption3")}</li>
+                      <li>{t("settings.general.waylandOption4")}</li>
                     </ol>
-                    También puedes ejecutar en terminal:{" "}
-                    <code style={{ fontSize: 11 }}>npm run register:whatsapp</code>
+                    {t("settings.general.waylandTerminal")}
                   </div>
                   <ToggleRow
-                    label="Buscar actualizaciones al iniciar (GitHub Releases)"
+                    label={t("settings.general.checkUpdates")}
                     checked={settings.general.checkForUpdates !== false}
                     onChange={(v) =>
                       update({
@@ -835,7 +852,9 @@ export default function SettingsView({
                   />
                   {settings.general.checkForUpdates !== false ? (
                     <div style={{ padding: "6px 0 10px", opacity: 0.92 }}>
-                      <div style={{ fontSize: 13, marginBottom: 6 }}>Canal de actualización</div>
+                      <div style={{ fontSize: 13, marginBottom: 6 }}>
+                        {t("settings.general.updateChannel")}
+                      </div>
                       <select
                         className="catrip-select"
                         value={settings.general.updateChannel === "beta" ? "beta" : "stable"}
@@ -850,22 +869,20 @@ export default function SettingsView({
                         }
                         style={{ minWidth: 280 }}
                       >
-                        <option value="stable">Estable (releases)</option>
-                        <option value="beta">Beta (pre-releases)</option>
+                        <option value="stable">{t("settings.general.updateChannelStable")}</option>
+                        <option value="beta">{t("settings.general.updateChannelBeta")}</option>
                       </select>
                       <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-                        AppImage: descarga e instala al reiniciar. Instalación .deb: se te preguntará
-                        si quieres descargar el paquete a una carpeta o abrir solo el enlace de
-                        GitHub; el changelog y SHA-512 del .deb se muestran en el diálogo.
+                        {t("settings.general.updateChannelHint")}
                       </div>
                     </div>
                   ) : null}
                   <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />
                   <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
-                    Descargas
+                    {t("settings.general.downloadsSection")}
                   </div>
                   <ToggleRow
-                    label="Abrir archivos descargados con la app predeterminada"
+                    label={t("settings.general.openDownloads")}
                     checked={settings.general.openDownloadsWithDefaultApp !== false}
                     onChange={(v) =>
                       update({
@@ -875,7 +892,7 @@ export default function SettingsView({
                     }
                   />
                   <ToggleRow
-                    label="Preguntar siempre “Guardar como…”"
+                    label={t("settings.general.askSaveAs")}
                     checked={settings.general.downloadsAskSaveAs}
                     onChange={(v) =>
                       update({
@@ -885,14 +902,16 @@ export default function SettingsView({
                     }
                   />
                   <div style={{ padding: "6px 0 10px", opacity: 0.92 }}>
-                    <div style={{ fontSize: 13, marginBottom: 6 }}>Carpeta de descargas</div>
+                    <div style={{ fontSize: 13, marginBottom: 6 }}>
+                      {t("settings.general.downloadsFolder")}
+                    </div>
                     <div
                       style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}
                     >
                       <input
                         className="catrip-field"
                         value={settings.general.downloadsDirectory || ""}
-                        placeholder="(usar la carpeta del sistema)"
+                        placeholder={t("settings.general.downloadsPlaceholder")}
                         onChange={(e) =>
                           update({
                             ...settings,
@@ -925,7 +944,7 @@ export default function SettingsView({
                           cursor: "pointer",
                         }}
                       >
-                        Elegir…
+                        {t("settings.general.chooseDownloadsFolder")}
                       </button>
                       <button
                         type="button"
@@ -945,16 +964,15 @@ export default function SettingsView({
                           cursor: "pointer",
                         }}
                       >
-                        Restablecer
+                        {t("settings.general.resetDownloads")}
                       </button>
                     </div>
                     <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-                      WhatsApp Web controla el nombre del archivo. Si un archivo existe, se generará
-                      un nombre alternativo.
+                      {t("settings.general.downloadsFilenameHint")}
                     </div>
                   </div>
                   <ToggleRow
-                    label="Badge del tray según WhatsApp Web (no leídos)"
+                    label={t("settings.notifications.trayBadge")}
                     checked={settings.general.trayUnreadBadge}
                     onChange={(v) =>
                       update({
@@ -968,14 +986,14 @@ export default function SettingsView({
                     }
                   />
                   <ToggleRow
-                    label="Badge en el icono del dock / lanzador (Linux)"
+                    label={t("settings.notifications.dockBadge")}
                     checked={settings.general.dockUnreadBadge !== false}
                     onChange={(v) =>
                       update({ ...settings, general: { ...settings.general, dockUnreadBadge: v } })
                     }
                   />
                   <div className="catrip-text-hint" style={{ marginBottom: 8 }}>
-                    Suma no leídos de todas las cuentas. Requiere soporte del entorno (GNOME/KDE).
+                    {t("settings.notifications.badgeSumHint")}
                   </div>
                   <label
                     style={{
@@ -986,13 +1004,13 @@ export default function SettingsView({
                       opacity: 0.92,
                     }}
                   >
-                    <span>Badge manual (prueba; vacío = automático)</span>
+                    <span>{t("settings.notifications.manualBadgeLabel")}</span>
                     <input
                       type="number"
                       className="catrip-field catrip-field--narrow"
                       min={0}
                       max={999}
-                      placeholder="Automático"
+                      placeholder={t("common.automatic")}
                       value={
                         settings.general.trayBadgeManual === null ||
                         settings.general.trayBadgeManual === undefined
@@ -1024,13 +1042,15 @@ export default function SettingsView({
               ) : page === "network" ? (
                 <div style={{ opacity: 0.92 }}>
                   <ToggleRow
-                    label="Proxy de red"
+                    label={t("settings.network.proxy")}
                     checked={settings.network.proxyEnabled}
                     onChange={(v) =>
                       update({ ...settings, network: { ...settings.network, proxyEnabled: v } })
                     }
                   />
-                  <div style={{ marginTop: 10, opacity: 0.85 }}>Reglas del proxy</div>
+                  <div style={{ marginTop: 10, opacity: 0.85 }}>
+                    {t("settings.network.proxyRulesLabel")}
+                  </div>
                   <input
                     className="catrip-field"
                     value={settings.network.proxyRules}
@@ -1040,17 +1060,17 @@ export default function SettingsView({
                         network: { ...settings.network, proxyRules: e.target.value },
                       })
                     }
-                    placeholder='Ej: "http=127.0.0.1:8080;https=127.0.0.1:8080"'
+                    placeholder={t("settings.network.proxyPlaceholder")}
                     style={{ width: "100%", marginTop: 6 }}
                   />
                   <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-                    Se aplica al guardar (no hay botón Apply aún).
+                    {t("settings.network.applyOnSaveHint")}
                   </div>
                 </div>
               ) : page === "notifications" ? (
                 <div style={{ opacity: 0.92 }}>
                   <ToggleRow
-                    label="Notificaciones del sistema"
+                    label={t("settings.notifications.enabled")}
                     checked={settings.notifications.enabled}
                     onChange={(v) =>
                       update({
@@ -1060,7 +1080,7 @@ export default function SettingsView({
                     }
                   />
                   <ToggleRow
-                    label="Mostrar nombre de la cuenta"
+                    label={t("settings.notifications.showAccountName")}
                     checked={!!settings.notifications.showAccountName}
                     onChange={(v) =>
                       update({
@@ -1070,7 +1090,7 @@ export default function SettingsView({
                     }
                   />
                   <ToggleRow
-                    label="Mostrar detalle (preview)"
+                    label={t("settings.notifications.showPreview")}
                     checked={!!settings.notifications.showPreview}
                     onChange={(v) =>
                       update({
@@ -1080,7 +1100,7 @@ export default function SettingsView({
                     }
                   />
                   <ToggleRow
-                    label="No molestar (sin avisos nativos)"
+                    label={t("settings.notifications.doNotDisturb")}
                     checked={!!settings.notifications.doNotDisturb}
                     onChange={(v) =>
                       update({
@@ -1090,7 +1110,7 @@ export default function SettingsView({
                     }
                   />
                   <ToggleRow
-                    label="Sonido del sistema en notificaciones"
+                    label={t("settings.notifications.playSound")}
                     checked={settings.notifications.playSound !== false}
                     onChange={(v) =>
                       update({
@@ -1100,20 +1120,17 @@ export default function SettingsView({
                     }
                   />
                   <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-                    Aviso cuando suben los no leídos en cualquier cuenta (con límite por cuenta). Al
-                    pulsar la notificación se enfoca la ventana y se activa esa cuenta.
+                    {t("settings.notifications.riseHint")}
                   </div>
                 </div>
               ) : (
                 <div style={{ opacity: 0.92 }}>
                   <div className="catrip-text-hint" style={{ marginBottom: 14 }}>
-                    Catrip Connect usa la GPU de Chromium para dibujar la ventana, el rail y cada
-                    cuenta de WhatsApp Web. En Linux la ventana va <strong>opaca</strong> por
-                    defecto (mejor composición). Solo desactiva la GPU si ves pantalla negra:{" "}
+                    {t("settings.performance.gpuInfo")}{" "}
                     <code style={{ fontSize: 11 }}>CATRIP_DISABLE_GPU=1</code>.
                   </div>
                   <ToggleRow
-                    label="Refuerzo GPU al arrancar (experimental)"
+                    label={t("settings.performance.gpuBoost")}
                     checked={!!settings.performance.gpuBoost}
                     onChange={(v) =>
                       update({
@@ -1123,11 +1140,10 @@ export default function SettingsView({
                     }
                   />
                   <div className="catrip-text-hint" style={{ marginBottom: 12 }}>
-                    Activa rasterización reforzada, zero-copy y VA-API ampliado en Linux. Reinicia
-                    la app tras cambiar esta opción o el límite de procesos.
+                    {t("settings.performance.gpuBoostHint")}
                   </div>
                   <div style={{ opacity: 0.85, marginBottom: 8 }}>
-                    Límite de procesos del renderer
+                    {t("settings.performance.rendererLimit")}
                   </div>
                   <select
                     className="catrip-select"
@@ -1142,7 +1158,7 @@ export default function SettingsView({
                       })
                     }
                   >
-                    <option value="0">Predeterminado</option>
+                    <option value="0">{t("settings.performance.rendererDefault")}</option>
                     <option value="1">1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -1150,11 +1166,10 @@ export default function SettingsView({
                     <option value="6">6</option>
                   </select>
                   <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                    Más procesos pueden ayudar con varias cuentas abiertas a la vez; consume más RAM.
-                    Valor 0 = política por defecto de Electron.
+                    {t("settings.performance.rendererLimitHint")}
                   </div>
                   <ToggleRow
-                    label="Suspender cuentas inactivas"
+                    label={t("settings.performance.suspendInactive")}
                     checked={settings.performance.suspendInactiveAccounts !== false}
                     onChange={(v) =>
                       update({
@@ -1167,7 +1182,7 @@ export default function SettingsView({
                     }
                   />
                   <div style={{ opacity: 0.85, marginBottom: 8, marginTop: 4 }}>
-                    Suspender tras (minutos sin usar la cuenta)
+                    {t("settings.performance.suspendAfterLabel")}
                   </div>
                   <select
                     className="catrip-select"
@@ -1183,19 +1198,17 @@ export default function SettingsView({
                       })
                     }
                   >
-                    <option value="5">5 minutos</option>
-                    <option value="10">10 minutos</option>
-                    <option value="15">15 minutos</option>
-                    <option value="30">30 minutos</option>
-                    <option value="60">60 minutos</option>
+                    <option value="5">{t("settings.performance.minutesOption", { count: 5 })}</option>
+                    <option value="10">{t("settings.performance.minutesOption", { count: 10 })}</option>
+                    <option value="15">{t("settings.performance.minutesOption", { count: 15 })}</option>
+                    <option value="30">{t("settings.performance.minutesOption", { count: 30 })}</option>
+                    <option value="60">{t("settings.performance.minutesOption", { count: 60 })}</option>
                   </select>
                   <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
-                    Libera RAM cerrando la vista de WhatsApp de las cuentas que no uses; la sesión
-                    (cookies) se conserva. Al volver a la cuenta se reactiva al instante. Mientras
-                    esté en reposo, los avisos de esa cuenta pueden no actualizarse.
+                    {t("settings.performance.suspendHint")}
                   </div>
                   <ToggleRow
-                    label="Evitar suspensión durante videollamada"
+                    label={t("settings.performance.inhibitSleep")}
                     checked={settings.performance.inhibitSleepDuringCall !== false}
                     onChange={(v) =>
                       update({
@@ -1208,8 +1221,7 @@ export default function SettingsView({
                     }
                   />
                   <div className="catrip-text-hint" style={{ marginBottom: 16 }}>
-                    Usa el bloqueo de energía de Electron (equivalente a portal/systemd-inhibit en
-                    Linux) mientras WhatsApp Web detecta una llamada activa.
+                    {t("settings.performance.inhibitSleepHint")}
                   </div>
 
                   <div
@@ -1219,12 +1231,13 @@ export default function SettingsView({
                       borderTop: "1px solid rgba(255,255,255,0.10)",
                     }}
                   >
-                    <div style={{ fontWeight: 700, marginBottom: 8 }}>Almacenamiento</div>
+                    <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                      {t("settings.performance.storageSection")}
+                    </div>
                     <p
                       style={{ margin: "0 0 12px", opacity: 0.82, fontSize: 13, lineHeight: 1.55 }}
                     >
-                      Limpia la caché HTTP de todas las cuentas (reduce espacio; normalmente
-                      mantiene la sesión).
+                      {t("settings.performance.storageHint")}
                     </p>
                     <button
                       type="button"
@@ -1242,7 +1255,7 @@ export default function SettingsView({
                         marginRight: 10,
                       }}
                     >
-                      {cacheBusy ? "Limpiando…" : "Limpiar caché HTTP (todas las cuentas)"}
+                      {cacheBusy ? t("common.cleaning") : t("settings.performance.clearCache")}
                     </button>
                     {cacheMsg ? (
                       <div className="catrip-text-hint" style={{ marginTop: 10 }}>
@@ -1252,14 +1265,12 @@ export default function SettingsView({
 
                     <div className="catrip-gradient-divider" style={{ margin: "18px 0" }} />
                     <div style={{ fontWeight: 700, marginBottom: 8 }}>
-                      Diagnóstico multimedia (WhatsApp Web)
+                      {t("settings.performance.mediaDiagSection")}
                     </div>
                     <p
                       style={{ margin: "0 0 12px", opacity: 0.82, fontSize: 13, lineHeight: 1.55 }}
                     >
-                      Comprueba si Chromium puede reproducir códecs típicos de vídeo/audio en la
-                      sesión de la cuenta activa (misma ventana que WhatsApp Web). Funciona aunque
-                      estés en esta pantalla de ajustes.
+                      {t("settings.performance.mediaDiagHint")}
                     </p>
                     <button
                       type="button"
@@ -1278,7 +1289,7 @@ export default function SettingsView({
                         fontWeight: 600,
                       }}
                     >
-                      {mediaDiagBusy ? "Comprobando…" : "Comprobar códecs ahora"}
+                      {mediaDiagBusy ? t("common.checking") : t("settings.performance.checkCodecs")}
                     </button>
                     {mediaDiagText ? (
                       <pre
@@ -1304,10 +1315,7 @@ export default function SettingsView({
                       className="catrip-text-hint"
                       style={{ margin: "12px 0 0", lineHeight: 1.45 }}
                     >
-                      Si{" "}
-                      <code style={{ color: "#b8e8cc" }}>decodingInfo_mp4_h264_aac.supported</code>{" "}
-                      es <strong>false</strong> o MediaSource rechaza los MIME de MP4, audio/vídeo
-                      en WhatsApp pueden fallar.
+                      {t("settings.performance.mediaDiagFootnote")}
                     </p>
                   </div>
                 </div>
@@ -1322,6 +1330,89 @@ export default function SettingsView({
 }
         `}</style>
       </div>
+      <Overlay open={whatsappLangNoticeOpen} onClose={() => setWhatsappLangNoticeOpen(false)}>
+        <div style={{ padding: "22px 22px 20px" }}>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 18,
+              color: "#ffffff",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.3,
+              marginBottom: 12,
+            }}
+          >
+            {t("settings.language.whatsappNotice.title")}
+          </div>
+          <p
+            style={{
+              margin: "0 0 14px",
+              fontSize: 14,
+              lineHeight: 1.55,
+              color: "#dce4e4",
+            }}
+          >
+            {t("settings.language.whatsappNotice.intro")}
+          </p>
+          <div
+            role="note"
+            style={{
+              margin: "0 0 16px",
+              padding: "12px 14px",
+              borderRadius: 10,
+              border: "1px solid rgba(251, 191, 36, 0.45)",
+              background: "rgba(251, 191, 36, 0.10)",
+              fontSize: 13.5,
+              lineHeight: 1.55,
+              color: "#fde68a",
+              fontWeight: 600,
+            }}
+          >
+            {t("settings.language.whatsappNotice.metaRestriction")}
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#ffffff",
+              marginBottom: 8,
+            }}
+          >
+            {t("settings.language.whatsappNotice.stepsTitle")}
+          </div>
+          <ol
+            style={{
+              margin: "0 0 18px",
+              paddingLeft: 20,
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: "#dce4e4",
+            }}
+          >
+            <li style={{ marginBottom: 6 }}>{t("settings.language.whatsappNotice.step1")}</li>
+            <li style={{ marginBottom: 6 }}>{t("settings.language.whatsappNotice.step2")}</li>
+            <li>{t("settings.language.whatsappNotice.step3")}</li>
+          </ol>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              className="catrip-btn catrip-btn-accent"
+              onClick={() => setWhatsappLangNoticeOpen(false)}
+              style={{
+                borderRadius: 10,
+                padding: "10px 18px",
+                border: "1px solid var(--catrip-accent-border)",
+                background: "var(--catrip-accent-soft)",
+                color: "#c8f5dc",
+                cursor: "pointer",
+                fontWeight: 700,
+              }}
+            >
+              {t("common.accept")}
+            </button>
+          </div>
+        </div>
+      </Overlay>
       <Overlay
         open={confirmDeleteId !== null}
         onClose={() => {
@@ -1332,7 +1423,7 @@ export default function SettingsView({
         <div style={{ padding: "22px 22px 22px" }}>
           {(() => {
             const target = accounts.find((a) => a.id === confirmDeleteId);
-            const label = target?.label ?? "esta cuenta";
+            const label = target?.label ?? t("common.thisAccount");
             return (
               <>
                 <div
@@ -1366,7 +1457,7 @@ export default function SettingsView({
                       lineHeight: 1.25,
                     }}
                   >
-                    ¿Eliminar la cuenta «{label}»?
+                    {t("settings.accounts.deleteConfirm", { name: label })}
                   </div>
                 </div>
                 <p
@@ -1377,9 +1468,7 @@ export default function SettingsView({
                     color: "#dce4e4",
                   }}
                 >
-                  Se borrará permanentemente <strong>toda su sesión</strong> de WhatsApp Web
-                  (cookies, almacenamiento local, IndexedDB, Service Workers y caché HTTP). Esta
-                  acción no se puede deshacer.
+                  {t("settings.accounts.deleteWarning")}
                 </p>
                 <p
                   style={{
@@ -1389,8 +1478,7 @@ export default function SettingsView({
                     color: "var(--catrip-text-hint)",
                   }}
                 >
-                  Si solo quieres dejar de recibir notificaciones, puedes desactivarlas desde la
-                  tarjeta sin perder la sesión.
+                  {t("settings.accounts.deleteHint")}
                 </p>
                 <div
                   style={{
@@ -1414,7 +1502,7 @@ export default function SettingsView({
                       opacity: deletingInFlight ? 0.6 : 1,
                     }}
                   >
-                    Cancelar
+                    {t("common.cancel")}
                   </button>
                   <button
                     type="button"
@@ -1423,21 +1511,21 @@ export default function SettingsView({
                     onClick={async () => {
                       if (!confirmDeleteId) return;
                       const target = accounts.find((acc) => acc.id === confirmDeleteId);
-                      const targetLabel = target?.label ?? "la cuenta";
+                      const targetLabel = target?.label ?? t("common.theAccount");
                       setDeletingInFlight(true);
                       try {
                         const ok = await window.catrip.deleteAccount(confirmDeleteId);
                         if (ok) {
-                          toasts.success(`Cuenta «${targetLabel}» eliminada.`);
+                          toasts.success(t("settings.accounts.deleted", { name: targetLabel }));
                         } else {
                           console.warn("[catrip] deleteAccount returned false", {
                             id: confirmDeleteId,
                           });
-                          toasts.error(`No se pudo eliminar «${targetLabel}».`);
+                          toasts.error(t("settings.accounts.deleteFailed", { name: targetLabel }));
                         }
                       } catch (err) {
                         console.error("[catrip] deleteAccount failed", err);
-                        toasts.error(`Error al eliminar «${targetLabel}». Revisa la consola.`);
+                        toasts.error(t("settings.accounts.deleteError", { name: targetLabel }));
                       } finally {
                         setDeletingInFlight(false);
                         setConfirmDeleteId(null);
@@ -1454,7 +1542,7 @@ export default function SettingsView({
                       letterSpacing: "-0.005em",
                     }}
                   >
-                    {deletingInFlight ? "Eliminando…" : "Eliminar definitivamente"}
+                    {deletingInFlight ? t("common.deleting") : t("common.deletePermanently")}
                   </button>
                 </div>
               </>

@@ -6,6 +6,32 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-05-31
+
+### Añadido
+
+- **Internacionalización (i18n)** en **9 idiomas**: español, inglés, portugués, francés, alemán, coreano, japonés, italiano y chino simplificado, más la opción **Idioma del sistema** (**Ajustes → General → Idioma de la interfaz**).
+- Traducción de la **interfaz de Catrip Connect**: menús nativos, bandeja del sistema (tray/SNI), notificaciones, diálogos de actualización, integración Linux y textos del shell React.
+- **Manual de usuario multilingüe** (**Ayuda → Manual de usuario**): contenido en los 9 idiomas, generado desde catálogos (`manual.json` por locale); sección **Llamadas y videollamadas en WhatsApp Web** (activar beta BETA encima del avatar).
+- **Aviso al cambiar idioma**: modal que explica que WhatsApp Web usa un idioma independiente y cómo cambiarlo dentro de WhatsApp.
+- **Atajos de teclado con foco en WhatsApp Web**: interceptación en el proceso principal (`before-input-event`) para que `Ctrl+K`, `Ctrl+P`, `Ctrl+1`–`9`, `F5`, etc. funcionen aunque el cursor esté en un chat o campo de texto de WhatsApp Web.
+- Tests unitarios: paridad de claves i18n (`i18n-locale`), detección de atajos (`catrip-shortcuts`).
+
+### Cambiado
+
+- **Idioma por defecto**: **idioma del sistema**; si no está soportado, la interfaz se muestra en **inglés** (antes el fallback implícito era español).
+- **«Ahora mismo»** (`Ctrl+Shift+A`, botón ⚡ del rail, **Ver → Ahora mismo**): abre la **bandeja de acciones pendientes** (`PendingInbox`) en lugar del popover lateral que podía quedar recortado.
+- Paleta de comandos, ajustes, centro de actividad, bandeja pendiente, toasts y diálogos migrados a **react-i18next**.
+
+### Corregido
+
+- **Pantalla negra o menú sin respuesta** tras cambios de i18n: eliminados artefactos `.js` obsoletos en `src/shared/i18n/`; `.gitignore` y `vite.config.ts` priorizan fuentes `.ts`.
+- Unificación del flujo **Ver → Ahora mismo** con el botón ⚡ del rail (mismo overlay de pendientes).
+
+### Documentación
+
+- **README.md** con imágenes explicativas (`docs/images/`), **USAGE.md** y manual actualizados a **1.7.0**.
+
 ## [1.6.0] — 2026-05-30
 
 ### Añadido
@@ -257,6 +283,7 @@ Primera versión estable publicada de **Catrip Connect** como cliente de escrito
 - Ventana principal con **WebContentsView** para separar shell React y vistas de WhatsApp Web.
 - Variables de entorno documentadas en el README (GPU, ventana transparente, depuración de vistas embebidas).
 
+[1.7.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.7.0
 [1.6.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.6.0
 [1.5.1]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.1
 [1.5.0]: https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.5.0

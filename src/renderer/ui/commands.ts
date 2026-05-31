@@ -2,24 +2,24 @@
  * Define la lista de comandos navegables desde la paleta y el filtrado.
  * Tipos puros: aquí no se renderiza nada.
  */
+import type { TFunction } from "i18next";
 import type { SystemIconName } from "./SystemIconImg";
 import type { SettingsPage } from "./SettingsView";
 import type { PendingChatItem } from "../../main/pendingInboxModel";
+import {
+  COMMAND_GROUP_KEYS,
+  type CommandGroupKey,
+  commandGroupLabel,
+} from "../../shared/i18n/formatters";
 
 export type CommandIcon =
   | { kind: "system"; name: SystemIconName }
   | { kind: "avatar"; data: string; fallback: string }
   | { kind: "symbol"; char: string };
 
-export type CommandGroup = "Chats" | "Cuentas" | "Acciones" | "Navegación" | "Apariencia";
+export type CommandGroup = CommandGroupKey;
 
-export const COMMAND_GROUPS: CommandGroup[] = [
-  "Chats",
-  "Cuentas",
-  "Acciones",
-  "Navegación",
-  "Apariencia",
-];
+export const COMMAND_GROUPS: CommandGroup[] = COMMAND_GROUP_KEYS;
 
 export type Command = {
   id: string;
@@ -49,7 +49,7 @@ export type CommandContext = {
   settings: CommandSettingsShape | null;
   zen: boolean;
   mode: "browser" | "settings";
-  /* Acciones que el componente App expone al construir comandos. */
+  t: TFunction;
   setActiveAccount: (id: string) => void;
   goToSettings: (page?: SettingsPage) => void;
   toggleZen: (next: boolean) => void;
@@ -64,38 +64,38 @@ export type CommandContext = {
 
 const SETTINGS_PAGES: ReadonlyArray<{
   page: SettingsPage;
-  label: string;
+  labelKey: string;
   keywords: string[];
   glyph: string;
 }> = [
   {
     page: "general",
-    label: "General",
-    keywords: ["escala", "tema", "minimizar", "tray", "descargas", "downloads"],
+    labelKey: "settings.pages.general",
+    keywords: ["escala", "tema", "minimizar", "tray", "descargas", "downloads", "scale", "theme"],
     glyph: "G",
   },
   {
     page: "accounts",
-    label: "Cuentas",
-    keywords: ["accounts", "iconos", "renombrar", "avatar"],
+    labelKey: "settings.pages.accounts",
+    keywords: ["accounts", "iconos", "renombrar", "avatar", "cuentas"],
     glyph: "C",
   },
   {
     page: "notifications",
-    label: "Notificaciones",
-    keywords: ["notifications", "alertas", "alerts"],
+    labelKey: "settings.pages.notifications",
+    keywords: ["notifications", "alertas", "alerts", "notificaciones"],
     glyph: "N",
   },
   {
     page: "performance",
-    label: "Rendimiento",
-    keywords: ["performance", "caché", "cache", "códecs", "codecs", "memoria"],
+    labelKey: "settings.pages.performance",
+    keywords: ["performance", "caché", "cache", "códecs", "codecs", "memoria", "rendimiento"],
     glyph: "R",
   },
   {
     page: "network",
-    label: "Red",
-    keywords: ["network", "proxy", "vpn", "internet"],
+    labelKey: "settings.pages.network",
+    keywords: ["network", "proxy", "vpn", "internet", "red"],
     glyph: "P",
   },
 ];
@@ -110,18 +110,17 @@ const UI_SCALES: ReadonlyArray<{ value: number; label: string }> = [
 ];
 
 export function buildCommands(ctx: CommandContext): Command[] {
+  const { t } = ctx;
   const cmds: Command[] = [];
 
   ctx.accounts.forEach((a, idx) => {
     const isActive = a.id === ctx.activeAccountId;
-    // Las primeras 9 cuentas tienen un atajo Ctrl+1..9 ya implementado en la
-    // app; lo exponemos aquí para que el usuario lo descubra desde la paleta.
     const shortcut = idx < 9 ? `Ctrl+${idx + 1}` : undefined;
     cmds.push({
       id: `account:${a.id}`,
       label: a.label,
-      description: isActive ? "Cuenta activa" : "Cambiar a esta cuenta",
-      group: "Cuentas",
+      description: isActive ? t("commands.activeAccount") : t("commands.switchAccount"),
+      group: "accounts",
       keywords: ["cuenta", "account", "switch", a.label],
       shortcut,
       icon: { kind: "avatar", data: a.icon, fallback: a.label },
@@ -131,10 +130,10 @@ export function buildCommands(ctx: CommandContext): Command[] {
 
   cmds.push({
     id: "action:new-account",
-    label: "Nueva cuenta",
-    group: "Acciones",
+    label: t("commands.newAccount"),
+    group: "actions",
     shortcut: "Ctrl+U",
-    keywords: ["añadir", "agregar", "crear", "create", "new account"],
+    keywords: ["añadir", "agregar", "crear", "create", "new account", "nova conta"],
     icon: { kind: "system", name: "new-account" },
     perform: () => ctx.createAccount(),
   });
@@ -142,8 +141,8 @@ export function buildCommands(ctx: CommandContext): Command[] {
   if (ctx.mode === "browser") {
     cmds.push({
       id: "action:new-chat",
-      label: "Nuevo chat (WhatsApp Web)",
-      group: "Acciones",
+      label: t("commands.newChat"),
+      group: "actions",
       shortcut: "Ctrl+N",
       keywords: ["new chat", "compose", "mensaje", "message"],
       icon: { kind: "system", name: "new-chat" },
@@ -153,19 +152,19 @@ export function buildCommands(ctx: CommandContext): Command[] {
 
   cmds.push({
     id: "action:phone-chat",
-    label: "Chat por número de teléfono…",
-    group: "Acciones",
+    label: t("commands.phoneChat"),
+    group: "actions",
     shortcut: "Ctrl+M",
-    keywords: ["telefono", "phone", "número", "msisdn"],
+    keywords: ["telefono", "phone", "número", "msisdn", "teléfono"],
     icon: { kind: "system", name: "new-chat-number" },
     perform: () => ctx.openPhoneDialog(),
   });
 
   cmds.push({
     id: "action:urgent-now",
-    label: "Ahora mismo",
-    description: "Top 3 chats urgentes sin abrir un panel grande",
-    group: "Acciones",
+    label: t("commands.urgentNow"),
+    description: t("commands.urgentNowDesc"),
+    group: "actions",
     shortcut: "Ctrl+Shift+A",
     keywords: ["urgente", "ahora", "now", "rapido", "inbox", "pendientes", "top"],
     icon: { kind: "system", name: "urgent-now" },
@@ -174,9 +173,9 @@ export function buildCommands(ctx: CommandContext): Command[] {
 
   cmds.push({
     id: "action:activity-center",
-    label: "Centro de actividad",
-    description: "Resumen de todas las cuentas y mensajes sin leer",
-    group: "Acciones",
+    label: t("commands.activityCenter"),
+    description: t("commands.activityCenterDesc"),
+    group: "actions",
     keywords: ["actividad", "activity", "resumen", "inbox", "sin leer", "unread", "cuentas"],
     icon: { kind: "symbol", char: "▤" },
     perform: () => ctx.openActivityCenter(),
@@ -184,9 +183,9 @@ export function buildCommands(ctx: CommandContext): Command[] {
 
   cmds.push({
     id: "action:pending-inbox",
-    label: "Acciones pendientes",
-    description: "Chats sin leer ordenados por urgencia en todas las cuentas",
-    group: "Acciones",
+    label: t("commands.pendingInbox"),
+    description: t("commands.pendingInboxDesc"),
+    group: "actions",
     keywords: ["pendientes", "pending", "inbox", "sin leer", "unread", "chats", "urgente"],
     icon: { kind: "symbol", char: "✉" },
     perform: () => ctx.openPendingInbox(),
@@ -196,8 +195,8 @@ export function buildCommands(ctx: CommandContext): Command[] {
     if (!ctx.zen) {
       cmds.push({
         id: "action:zen-on",
-        label: "Activar modo Zen",
-        group: "Acciones",
+        label: t("commands.zenOn"),
+        group: "actions",
         shortcut: "Ctrl+Shift+Z",
         keywords: ["zen", "fullscreen", "ocultar rail", "focus"],
         icon: { kind: "system", name: "zen-mode" },
@@ -206,8 +205,8 @@ export function buildCommands(ctx: CommandContext): Command[] {
     } else {
       cmds.push({
         id: "action:zen-off",
-        label: "Salir del modo Zen",
-        group: "Acciones",
+        label: t("commands.zenOff"),
+        group: "actions",
         shortcut: "Esc",
         keywords: ["zen", "exit", "salir"],
         icon: { kind: "system", name: "zen-mode" },
@@ -219,8 +218,8 @@ export function buildCommands(ctx: CommandContext): Command[] {
   for (const sp of SETTINGS_PAGES) {
     cmds.push({
       id: `goto:settings:${sp.page}`,
-      label: `Abrir Ajustes → ${sp.label}`,
-      group: "Navegación",
+      label: t("commands.openSettings", { page: t(sp.labelKey) }),
+      group: "navigation",
       shortcut: sp.page === "general" ? "Ctrl+P" : undefined,
       keywords: ["ajustes", "settings", "preferencias", ...sp.keywords],
       icon: { kind: "symbol", char: sp.glyph },
@@ -233,9 +232,9 @@ export function buildCommands(ctx: CommandContext): Command[] {
     const showSidebar = s.general.showSidebar !== false;
     cmds.push({
       id: "toggle:sidebar",
-      label: showSidebar ? "Ocultar barra lateral (rail)" : "Mostrar barra lateral (rail)",
-      group: "Apariencia",
-      keywords: ["rail", "sidebar", "barra lateral", "ocultar", "mostrar"],
+      label: showSidebar ? t("commands.hideSidebar") : t("commands.showSidebar"),
+      group: "appearance",
+      keywords: ["rail", "sidebar", "barra lateral", "ocultar", "mostrar", "hide", "show"],
       icon: { kind: "symbol", char: "▎" },
       perform: () =>
         ctx.applySettings({
@@ -248,9 +247,9 @@ export function buildCommands(ctx: CommandContext): Command[] {
     cmds.push({
       id: "toggle:notifications",
       label: notifEnabled
-        ? "Desactivar notificaciones del sistema"
-        : "Activar notificaciones del sistema",
-      group: "Apariencia",
+        ? t("commands.disableNotifications")
+        : t("commands.enableNotifications"),
+      group: "appearance",
       keywords: ["notifications", "alertas", "silencio", "mute"],
       icon: { kind: "symbol", char: "♪" },
       perform: () =>
@@ -265,8 +264,8 @@ export function buildCommands(ctx: CommandContext): Command[] {
       if (sc.value === currentScale) continue;
       cmds.push({
         id: `scale:${sc.value}`,
-        label: `Escala de la interfaz: ${sc.label}`,
-        group: "Apariencia",
+        label: t("commands.uiScale", { scale: sc.label }),
+        group: "appearance",
         keywords: ["zoom", "scale", "tamaño", "ui", "escala"],
         icon: { kind: "symbol", char: "%" },
         perform: () =>
@@ -284,15 +283,19 @@ export function buildCommands(ctx: CommandContext): Command[] {
 export function buildChatSearchCommands(
   items: PendingChatItem[],
   openChat: (accountId: string, chatName: string) => void,
+  t: TFunction,
 ): Command[] {
   return items.map((item) => {
-    const unreadPart = item.unreadCount > 0 ? ` · ${item.unreadCount} sin leer` : "";
+    const unreadPart =
+      item.unreadCount > 0
+        ? t("commands.unreadSuffix", { count: item.unreadCount })
+        : "";
     const previewPart = item.preview ? ` · ${item.preview}` : "";
     return {
       id: `chat:${item.accountId}:${encodeURIComponent(item.chatName)}`,
       label: item.chatName,
       description: `${item.accountLabel}${previewPart}${unreadPart}`,
-      group: "Chats",
+      group: "chats",
       keywords: [
         item.chatName,
         item.preview,
@@ -308,9 +311,6 @@ export function buildChatSearchCommands(
   });
 }
 
-/* Filtrado por tokens AND: cada palabra de la consulta debe aparecer en
- * algún lugar (label, descripción o palabras clave). Case-insensitive y
- * sin diacríticos para que "Conexion" empareje con "conexión", etc. */
 function normalize(s: string): string {
   return s
     .toLowerCase()
@@ -327,3 +327,5 @@ export function filterCommands(commands: Command[], query: string): Command[] {
     return tokens.every((t) => haystack.includes(t));
   });
 }
+
+export { commandGroupLabel };

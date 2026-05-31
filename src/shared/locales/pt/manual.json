@@ -1,0 +1,506 @@
+{
+  "intro": {
+    "title": "Manual do Catrip Connect",
+    "subtitle": "Guia para o dia a dia: várias contas do WhatsApp num único programa, sem complicações.",
+    "versionNote": "Versão do manual: 1.7.0",
+    "tocTitle": "Índice",
+    "closeAria": "Fechar manual",
+    "footer": "Esc para fechar · Clic fora do painel também fecha"
+  },
+  "sections": [
+    {
+      "id": "bienvenida",
+      "title": "O que é o Catrip Connect?",
+      "illustration": null,
+      "paragraphs": [
+        "O Catrip Connect é um programa para computador que permite usar o WhatsApp Web com uma ou várias contas ao mesmo tempo. Cada conta é independente: as mensagens, contactos e ficheiros de uma não se misturam com os de outra.",
+        "O ecrã principal mostra o WhatsApp tal como o conhece no navegador, mas com ferramentas extra: mudar de conta com um clique, poupar memória suspendendo contas que não usa, um olhar rápido ao mais urgente (Agora), ver todas as mensagens por ler, procurar conversas com Ctrl+K, receber avisos no ambiente de trabalho e muito mais. Também pode mudar o idioma de toda a interface (menus, manual e notificações) em Definições → Geral."
+      ],
+      "bullets": null,
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "primeros-pasos",
+      "title": "Primeiros passos",
+      "illustration": "qr",
+      "paragraphs": null,
+      "bullets": null,
+      "steps": [
+        "Abra o Catrip Connect no menu de aplicações do sistema (procure «Catrip Connect»).",
+        "Na primeira vez, prima o botão para criar a sua primeira conta. Dê-lhe um nome que reconheça, por exemplo «Pessoal» ou «Trabalho».",
+        "Aparecerá o código QR do WhatsApp Web. No telemóvel abra o WhatsApp → Dispositivos ligados → Ligar dispositivo e leia o código.",
+        "Quando a ligação estiver pronta, verá as suas conversas na zona grande da janela.",
+        "Para adicionar outra conta, use o botão «Nova conta» na barra lateral ou o menu Contas."
+      ],
+      "note": "Se o código QR expirar, recarregue a vista com F5 ou Chat → Recarregar.",
+      "table": null
+    },
+    {
+      "id": "ventana",
+      "title": "Como a janela está organizada",
+      "illustration": "layout",
+      "paragraphs": [
+        "A janela tem duas zonas principais. À esquerda está a barra lateral (por vezes chamamos «o rail»): aí vê os ícones das suas contas e alguns acessos rápidos. À direita, a parte grande, é o WhatsApp Web da conta selecionada.",
+        "Em cima encontra a barra de menus (Ficheiro, Ver, Chat, Contas, Ajuda) se a tiver ativada em Definições. A partir daí pode fazer quase tudo o que explicamos neste manual."
+      ],
+      "bullets": [
+        "Parte superior do rail: avatares das suas contas (clique para mudar, arrastar para reordenar).",
+        "Parte inferior do rail: botões de ação — nova conta, chat por número, novo chat, ⚡ Agora, ✉ pendentes, ▤ atividade, definições e modo Zen.",
+        "Zona central: conversas, chamadas e ficheiros do WhatsApp Web.",
+        "Menu superior: acessos organizados por categorias (inclui Ver → Agora)."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "cuentas",
+      "title": "Trabalhar com várias contas",
+      "illustration": "accounts",
+      "paragraphs": [
+        "Pode ter várias contas de WhatsApp na mesma aplicação. Cada uma tem o seu ícone de cor na barra lateral."
+      ],
+      "bullets": [
+        "Clique num ícone para mudar para essa conta.",
+        "Arraste um ícone para cima ou para baixo para alterar a ordem da lista.",
+        "O ponto verde ou o número no ícone indica mensagens por ler nessa conta.",
+        "Se uma conta ficar sem uso durante algum tempo, pode passar a «em repouso»: o avatar fica mais ténue e a dica indica-o. A sessão mantém-se guardada; um clique reativa-a de imediato.",
+        "Passe o rato sobre um ícone para ver se está ligada, em repouso, à espera de QR ou sem internet.",
+        "Atalho rápido: Ctrl+1 abre a primeira conta, Ctrl+2 a segunda, até Ctrl+9."
+      ],
+      "steps": null,
+      "note": "Em Definições → Contas pode renomear cada conta, mudar a cor do ícone ou eliminá-la. Em Definições → Desempenho configura quando as contas inativas entram em repouso.",
+      "table": null
+    },
+    {
+      "id": "reposo-cuentas",
+      "title": "Contas em repouso (poupança de memória)",
+      "illustration": "accounts",
+      "paragraphs": [
+        "Com várias contas abertas, cada uma consome memória e processador enquanto mantém o WhatsApp Web carregado. O Catrip Connect pode «adormecer» as contas que não usa: fecha a vista interna do WhatsApp mas conserva a sessão (cookies e login) no disco.",
+        "Assim a aplicação fica mais leve com três, quatro ou mais contas, sem ter de terminar sessão nem voltar a ler o QR de cada vez."
+      ],
+      "bullets": [
+        "Ativado por defeito em Definições → Desempenho → «Suspender contas inativas».",
+        "Pode escolher o tempo de espera: 5, 10, 15, 30 ou 60 minutos.",
+        "A conta ativa nunca é suspensa.",
+        "Se houver uma videochamada em curso numa conta, não é suspensa até desligar.",
+        "Desativar a opção reativa de imediato todas as contas que estavam em repouso."
+      ],
+      "steps": [
+        "Use uma conta normalmente; ao mudar para outra, a anterior começa a contar o tempo de inatividade.",
+        "Após o limiar configurado (por defeito 15 minutos), a conta entra em repouso: o avatar no rail fica atenuado.",
+        "Para reativar, clique no avatar, escolha um chat em ✉ pendentes, Ctrl+K ou abra um link wa.me dirigido a essa conta.",
+        "O WhatsApp Web volta a carregar em poucos segundos com a mesma sessão; não é preciso ler o QR outra vez."
+      ],
+      "note": "Enquanto uma conta está em repouso, os avisos e contadores dessa conta podem não atualizar até a abrir. A conta ativa e as que usa com frequência continuam a receber notificações normalmente.",
+      "table": null
+    },
+    {
+      "id": "zen",
+      "title": "Modo Zen (só o chat)",
+      "illustration": "zen",
+      "paragraphs": [
+        "O modo Zen oculta a barra lateral para o WhatsApp ocupar toda a janela. É útil quando quer concentrar-se numa conversa."
+      ],
+      "bullets": [
+        "Ative-o em Ver → Modo Zen, com Ctrl+Shift+Z ou procure «Zen» na paleta de comandos (Ctrl+K).",
+        "Para voltar à vista normal, prima Escape ou repita o atalho.",
+        "Ao entrar em Definições, o modo Zen desativa-se sozinho."
+      ],
+      "steps": null,
+      "note": "Em modo Zen não verá o botão ⚡ do rail; saia do modo Zen ou use Ctrl+Shift+A para abrir Agora.",
+      "table": null
+    },
+    {
+      "id": "ahora-mismo",
+      "title": "Agora — o urgente num relance",
+      "illustration": "urgent",
+      "paragraphs": [
+        "Agora é um painel pequeno junto à barra lateral. Mostra até três conversas com mensagens por ler, as mais urgentes de todas as suas contas. Ao contrário das vistas grandes (centro de atividade ou ações pendentes), não tapa o WhatsApp: pode ler o resumo e continuar a ver o chat ao lado."
+      ],
+      "bullets": [
+        "Um ponto verde no botão ⚡ indica que há conversas urgentes pendentes.",
+        "Se não houver mensagens por ler, o painel diz-lhe («Está em dia»).",
+        "Também pode escrever «Agora» na paleta Ctrl+K."
+      ],
+      "steps": [
+        "Prima o botão ⚡ na barra lateral, use Ctrl+Shift+A ou Ver → Agora.",
+        "Revise a lista: verá o nome do contacto, a conta (Pessoal, Trabalho…), quantas mensagens por ler há e uma linha da última mensagem.",
+        "Clique numa linha para abrir essa conversa na conta certa. O painel fecha-se sozinho.",
+        "Se precisar de ver mais conversas, prima «Ver todas as pendentes» no rodapé do painel.",
+        "Para fechar sem abrir nada: prima Escape, o X do painel ou clique fora dele."
+      ],
+      "note": "O painel usa a mesma informação que o WhatsApp Web sobre mensagens por ler. Se acabou de ler uma conversa no telemóvel, pode demorar alguns segundos a sair da lista.",
+      "table": null
+    },
+    {
+      "id": "actividad",
+      "title": "Centro de atividade e ações pendentes",
+      "illustration": null,
+      "paragraphs": [
+        "Para além de Agora, tem duas vistas mais amplas quando precisa de rever tudo com calma."
+      ],
+      "bullets": [
+        "Centro de atividade (▤): um cartão por conta com total de por ler e última mensagem.",
+        "Ações pendentes (✉): lista plana ordenada por urgência em todas as contas.",
+        "A partir de Agora pode saltar para a bandeja completa com um clique."
+      ],
+      "steps": null,
+      "note": null,
+      "table": {
+        "headers": [
+          "Ferramenta",
+          "Quando usar",
+          "Como abrir"
+        ],
+        "rows": [
+          [
+            "⚡ Agora",
+            "Olhar rápido: top 3 urgentes sem tapar o ecrã",
+            "Botão ⚡, Ctrl+Shift+A, Ver → Agora"
+          ],
+          [
+            "▤ Centro de atividade",
+            "Resumo por conta: quem escreveu e pré-visualização",
+            "Botão ▤ ou Ctrl+K → «atividade»"
+          ],
+          [
+            "✉ Ações pendentes",
+            "Lista completa de todas as conversas por ler",
+            "Botão ✉ ou Ctrl+K → «pendentes»"
+          ],
+          [
+            "Ctrl+K → Conversas",
+            "Procurar um contacto por nome ou texto",
+            "Ctrl+K e escreva o nome"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "paleta",
+      "title": "Paleta de comandos (pesquisa rápida)",
+      "illustration": "palette",
+      "paragraphs": [
+        "Prima Ctrl+K a qualquer momento para abrir um pesquisador. Escreva o que procura e a lista filtra-se de imediato.",
+        "Para além de contas e ações, pode procurar conversas com mensagens por ler: escreva o nome do contacto, um excerto da última mensagem ou o nome da conta (por exemplo «Ana» ou «Trabalho orçamento»). Ao escolher uma conversa, a app abre-a na conta certa."
+      ],
+      "bullets": [
+        "Setas para cima e para baixo para escolher uma opção.",
+        "Enter para executar (abrir conversa, mudar de conta — reativando se estava em repouso —, abrir Agora, ir a Definições, etc.).",
+        "Escape para fechar sem fazer nada.",
+        "As conversas aparecem no topo na secção «Conversas» quando coincidem com o que escreve.",
+        "Comandos úteis: «Agora», «Ações pendentes», «Centro de atividade», «Nova conta», «Modo Zen».",
+        "Para mudar o idioma escreva idioma, language ou definições e escolha Abrir Definições → Geral."
+      ],
+      "steps": null,
+      "note": "A pesquisa de conversas usa as conversas por ler que o WhatsApp Web mostra em cada conta. Se uma conversa não tiver mensagens pendentes, pode não aparecer até haver atividade nova.",
+      "table": null
+    },
+    {
+      "id": "chat-numero",
+      "title": "Escrever a alguém por número",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": null,
+      "steps": [
+        "Prima Ctrl+M ou procure «telefone» na paleta (Ctrl+K).",
+        "Escreva o número com prefixo internacional, por exemplo +351912345678.",
+        "Prima Aceitar. Abrir-se-á a conversa na conta que tiver ativa."
+      ],
+      "note": "O número deve incluir o indicativo do país (o + e os dígitos correspondentes).",
+      "table": null
+    },
+    {
+      "id": "videollamadas",
+      "title": "Chamadas e videochamadas no WhatsApp Web",
+      "illustration": null,
+      "paragraphs": [
+        "Chamadas de voz e vídeo no WhatsApp Web são ativadas gradualmente. O Catrip Connect já permite microfone e câmara quando o WhatsApp pede; não precisa de configuração extra na aplicação.",
+        "Se ainda não vê os ícones de telefone e câmara num chat individual, provavelmente precisa de aderir ao beta do WhatsApp Web na própria interface do WhatsApp."
+      ],
+      "bullets": [
+        "Em Definições → Desempenho encontra «Evitar suspensão durante videochamada»: impede que o equipamento adormeça durante uma chamada ativa.",
+        "A disponibilidade depende do WhatsApp: nem todas as contas recebem o beta ao mesmo tempo."
+      ],
+      "steps": [
+        "Certifique-se de que a conta está ligada (não à espera de QR) e selecionada como ativa no Catrip Connect.",
+        "No WhatsApp Web, olhe para o canto inferior esquerdo da barra lateral, acima da foto de perfil.",
+        "Toque na opção BETA que aparece aí e siga as instruções do WhatsApp para ativar chamadas na versão web.",
+        "Abra um chat individual (por agora as chamadas na Web costumam limitar-se a conversas a dois).",
+        "Verifique os ícones de telefone (voz) e câmara (vídeo) no canto superior direito do chat.",
+        "Se não aparecerem, recarregue com F5 (Chat → Recarregar) ou termine e volte a iniciar sessão no WhatsApp Web."
+      ],
+      "note": "O WhatsApp Web usa o seu próprio idioma; a etiqueta BETA pode aparecer noutro idioma consoante o telemóvel ou web.whatsapp.com.",
+      "table": null
+    },
+    {
+      "id": "enlaces",
+      "title": "Abrir links do WhatsApp da internet",
+      "illustration": null,
+      "paragraphs": [
+        "Se alguém lhe enviar um link wa.me ou abrir um link whatsapp:// noutra aplicação, o Catrip Connect pode abrir a conversa diretamente."
+      ],
+      "bullets": [
+        "Após instalar a aplicação, em Definições → Geral pode registar o Catrip Connect como programa predefinido para links WhatsApp.",
+        "Em «Links WhatsApp recebidos» escolhe que conta usar: perguntar se houver várias, sempre a conta ativa ou uma conta fixa.",
+        "Se o link trouxer uma mensagem pré-carregada, aparece pronta a enviar na conversa.",
+        "Convites para grupos (chat.whatsapp.com) também podem abrir na app."
+      ],
+      "steps": null,
+      "note": "Se o navegador disser que não há aplicação disponível, use «Registar como app predefinida» em Definições → Geral.",
+      "table": null
+    },
+    {
+      "id": "ajustes-general",
+      "title": "Definições — Geral",
+      "illustration": null,
+      "paragraphs": [
+        "Abra Definições com Ctrl+P ou no menu Ficheiro. A secção Geral controla o comportamento diário da aplicação."
+      ],
+      "bullets": [
+        "Iniciar minimizada: a app arranca na bandeja sem mostrar janela.",
+        "Mostrar barra lateral: oculta ou mostra a coluna de contas (necessária para ⚡, ✉ e ▤).",
+        "Mostrar barra de menus: a faixa Ficheiro / Ver / Chat em cima.",
+        "Ao fechar, minimizar para a bandeja: ao premir o X, a app continua em segundo plano (recomendado).",
+        "Iniciar automaticamente com o sistema: abre o Catrip Connect ao ligar o computador.",
+        "Pasta de transferências: onde se guardam ficheiros recebidos no WhatsApp.",
+        "Escala da interface: aumenta ou reduz textos e ícones (100 % a 200 %).",
+        "Procurar atualizações ao iniciar: avisa quando há versão nova."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "idioma",
+      "title": "Idioma da interface",
+      "illustration": null,
+      "paragraphs": [
+        "O Catrip Connect está disponível em vários idiomas. Pode mudar o idioma dos menus, janelas, manual de utilizador, notificações do sistema e ícone da bandeja sem reiniciar a aplicação."
+      ],
+      "bullets": [
+        "O que muda: menus superiores, rail lateral, modais, paleta Ctrl+K, ecrã de Definições, este manual (Ajuda → Manual de utilizador), notificações nativas e menu do ícone na bandeja.",
+        "O que não muda: o WhatsApp Web na janela usa o seu próprio idioma, independente do Catrip Connect.",
+        "Se o manual estiver aberto ao mudar o idioma, o texto atualiza na hora.",
+        "Com Idioma do sistema, a app deteta o locale do SO; se não for suportado, usa inglês por defeito."
+      ],
+      "steps": [
+        "Abra Definições com Ctrl+P, o botão de engrenagem no rail lateral ou o menu Ficheiro → Definições.",
+        "No painel esquerdo escolha Geral.",
+        "No topo verá Idioma da interface. Abra a lista.",
+        "Escolha um idioma (Espanhol, English, Português, Français, Deutsch, 한국어, 日本語, Italiano ou 简体中文) ou Idioma do sistema para seguir o idioma do computador.",
+        "A alteração aplica-se de imediato e guarda-se automaticamente para arranques futuros."
+      ],
+      "note": "Na paleta de comandos (Ctrl+K) pode escrever idioma, language ou definições para ir a Geral.",
+      "table": null
+    },
+    {
+      "id": "ajustes-cuentas",
+      "title": "Definições — Contas",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": [
+        "Renomear: muda o nome visível da conta (só no Catrip Connect, não no WhatsApp).",
+        "Regenerar ícone ou escolher variante de cor: personaliza o avatar da barra lateral.",
+        "Notificações por conta: ativa ou silencia avisos de uma conta concreta.",
+        "Eliminar conta: remove a sessão da app (não apaga o WhatsApp do telemóvel)."
+      ],
+      "steps": null,
+      "note": "Eliminar uma conta no Catrip Connect não fecha o WhatsApp no telefone; só deixa de a mostrar no programa.",
+      "table": null
+    },
+    {
+      "id": "ajustes-notificaciones",
+      "title": "Definições — Notificações",
+      "illustration": "notification",
+      "paragraphs": null,
+      "bullets": [
+        "Notificações do sistema: avisos no ambiente de trabalho quando chegam mensagens.",
+        "Mostrar nome da conta: no aviso verá se é «Trabalho», «Pessoal», etc.",
+        "Mostrar detalhe (pré-visualização): uma linha da mensagem no aviso.",
+        "Não incomodar: sem avisos emergentes (o contador na bandeja continua a funcionar).",
+        "Som do sistema: sinal sonoro ao receber um aviso."
+      ],
+      "steps": null,
+      "note": "Ao clicar numa notificação, a janela abre-se e seleciona-se a conta que recebeu a mensagem. Depois pode usar ⚡ para ver o que mais fica pendente.",
+      "table": null
+    },
+    {
+      "id": "ajustes-red",
+      "title": "Definições — Rede",
+      "illustration": null,
+      "paragraphs": [
+        "Só precisa desta secção se a ligação passar por um proxy (rede empresarial, VPN especial, etc.). Ative «Proxy de rede» e introduza as regras que o administrador lhe deu."
+      ],
+      "bullets": null,
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "ajustes-rendimiento",
+      "title": "Definições — Desempenho",
+      "illustration": null,
+      "paragraphs": [
+        "Esta secção ajuda a equilibrar fluidez, consumo de memória e estabilidade quando usa várias contas ao mesmo tempo."
+      ],
+      "bullets": [
+        "Suspender contas inativas: liberta RAM fechando a vista do WhatsApp das contas que não seleciona durante algum tempo. A sessão permanece no disco.",
+        "Suspender após (minutos): quanto tempo deve passar sem usar uma conta antes de entrar em repouso (5 a 60 minutos).",
+        "Reforço GPU: melhora a fluidez de vídeos em alguns equipamentos Linux. Requer reiniciar a app.",
+        "Limite de processos do renderer: útil com muitas contas quando o computador vai justo de memória. Requer reiniciar.",
+        "Evitar suspensão durante videochamada: o equipamento não adormece enquanto há chamada ativa no WhatsApp Web (bloqueio de energia do sistema).",
+        "Limpar cache: se o WhatsApp vai lento ou falham ficheiros, experimente esvaziar a cache (não termina sessão)."
+      ],
+      "steps": null,
+      "note": "A suspensão de contas e o limite de processos atacam o mesmo problema (memória) por ângulos distintos: a primeira fecha vistas que não usa; o segundo limita quantos processos Chromium pode abrir no total.",
+      "table": null
+    },
+    {
+      "id": "bandeja",
+      "title": "Ícone na bandeja do sistema",
+      "illustration": "tray",
+      "paragraphs": [
+        "Junto ao relógio do ambiente de trabalho (Linux) aparece o ícone do Catrip Connect. A partir daí pode restaurar a janela ou sair por completo."
+      ],
+      "bullets": [
+        "Clique no ícone: mostra ou oculta a janela principal.",
+        "Menu contextual: lista as suas contas com estado e mensagens por ler; também permite sair.",
+        "Contador no ícone: mostra quantas mensagens por ler há no total (se estiver ativado em Definições).",
+        "Ao restaurar da bandeja, a janela volta ao mesmo tamanho e posição de antes."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "actualizaciones",
+      "title": "Atualizar a aplicação",
+      "illustration": null,
+      "paragraphs": [
+        "Com «Procurar atualizações ao iniciar» ativo, o Catrip Connect verifica se há versões novas na internet."
+      ],
+      "bullets": [
+        "Se instalou o pacote .deb: a app mostra as novidades e pode descarregar o instalador para uma pasta à sua escolha, ou abrir o link no navegador. Você decide quando instalar.",
+        "Se usa AppImage: a transferência pode fazer-se sozinha; quando estiver pronta, prima «Reiniciar agora».",
+        "O painel de atualização tem scroll para ler todas as novidades sem aumentar a janela."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    },
+    {
+      "id": "atajos",
+      "title": "Atalhos de teclado",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": null,
+      "steps": null,
+      "note": "Também pode ver uma lista rápida em Ajuda → Atalhos de teclado e o manual completo em Ajuda → Manual do utilizador.",
+      "table": {
+        "headers": [
+          "Atalho",
+          "O que faz"
+        ],
+        "rows": [
+          [
+            "Ctrl+K",
+            "Abrir pesquisa (conversas por ler, contas e ações)"
+          ],
+          [
+            "Ctrl+P",
+            "Abrir Definições"
+          ],
+          [
+            "Ctrl+1 … Ctrl+9",
+            "Ir para a conta 1, 2, 3… (até 9)"
+          ],
+          [
+            "Ctrl+N",
+            "Nova conversa no WhatsApp Web"
+          ],
+          [
+            "Ctrl+M",
+            "Conversa por número de telefone"
+          ],
+          [
+            "Ctrl+U",
+            "Nova conta"
+          ],
+          [
+            "Ctrl+Shift+A",
+            "Abrir ou fechar Agora (top 3 urgentes)"
+          ],
+          [
+            "Ctrl+Shift+Z",
+            "Ativar ou desativar modo Zen"
+          ],
+          [
+            "Escape",
+            "Fechar Agora, sair do modo Zen ou fechar paleta"
+          ],
+          [
+            "Ctrl+W",
+            "Ocultar janela"
+          ],
+          [
+            "Ctrl+Q",
+            "Sair da aplicação"
+          ],
+          [
+            "F5",
+            "Recarregar WhatsApp Web"
+          ],
+          [
+            "F11",
+            "Ecrã inteiro"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "problemas",
+      "title": "Dicas e problemas frequentes",
+      "illustration": null,
+      "paragraphs": null,
+      "bullets": [
+        "O WhatsApp não carrega ou fica preto: Chat → Recarregar (F5). Se persistir, em Definições → Desempenho experimente ativar ou desativar «Reforço GPU» e reinicie.",
+        "O código QR não aparece: verifique a internet e recarregue com F5.",
+        "Não chegam notificações: reveja Definições → Notificações e que o sistema permita avisos para o Catrip Connect.",
+        "Agora está vazio mas sei que há mensagens: espere alguns segundos ou abra ✉ Ações pendentes; o WhatsApp Web tem de detetar os por ler primeiro.",
+        "Um avatar parece apagado («em repouso»): é normal se não usa essa conta há algum tempo. Clique para reativar; também pode desativar a suspensão em Definições → Desempenho.",
+        "Não recebo avisos de uma conta em repouso: enquanto dorme, essa conta não verifica mensagens novas. Abra-a ou reduza o tempo de suspensão se precisar de avisos mais frequentes.",
+        "Não vejo o botão ⚡: ative «Mostrar barra lateral» em Definições e saia do modo Zen.",
+        "Não se vêem os ícones da bandeja: em algumas distribuições Linux é preciso instalar suporte para ícones de bandeja (AppIndicator).",
+        "Link wa.me não abre a app: registe o Catrip Connect em Definições → Geral e feche o navegador antes de tentar de novo.",
+        "Várias contas vão lentas: ative «Suspender contas inativas», reduza o limite de processos ou use menos contas ativas de uma vez.",
+        "A interface está num idioma e o WhatsApp noutro: é normal. Catrip Connect e WhatsApp Web têm idiomas independentes; mude o do Catrip em Definições → Geral → Idioma da interface.",
+        "Não vejo ícones de chamada num chat: adira ao beta do WhatsApp Web (secção Chamadas e videochamadas deste manual), toque em BETA acima da foto de perfil e recarregue com F5."
+      ],
+      "steps": null,
+      "note": "Manter a aplicação atualizada costuma resolver falhas de compatibilidade com o WhatsApp Web.",
+      "table": null
+    },
+    {
+      "id": "ayuda",
+      "title": "Mais ajuda",
+      "illustration": null,
+      "paragraphs": [
+        "No menu Ajuda pode abrir este manual do utilizador, a lista de atalhos de teclado e a janela «Acerca de» com a versão instalada.",
+        "O Catrip Connect usa o WhatsApp Web oficial dentro do programa: tudo o que funciona em web.whatsapp.com (conversas, ficheiros, estados conforme suporte) funciona igual aqui."
+      ],
+      "bullets": [
+        "Manual de utilizador: guia completa com índice no idioma escolhido (inclui esta secção sobre idiomas).",
+        "Atalhos de teclado: referência rápida.",
+        "Acerca de: número da versão instalada."
+      ],
+      "steps": null,
+      "note": null,
+      "table": null
+    }
+  ]
+}

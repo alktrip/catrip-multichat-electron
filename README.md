@@ -5,14 +5,53 @@ Cliente de escritorio (**Electron**) para WhatsApp Web con **varias cuentas** y 
 | Documentación | Contenido |
 |---------------|-----------|
 | **[USAGE.md](USAGE.md)** | Guía detallada de uso: interfaz, atajos, ajustes, bandeja, enlaces `whatsapp://` y consejos. |
-| **Ayuda → Manual de usuario** (en la app) | Manual integrado para usuarios finales, con ilustraciones e índice. |
+| **Ayuda → Manual de usuario** (en la app) | Manual integrado para usuarios finales, con ilustraciones e índice (**9 idiomas**). |
 | **[CHANGELOG.md](CHANGELOG.md)** | Historial de versiones y cambios destacados. |
 
-**Versión actual:** **1.6.0** — «Ahora mismo», búsqueda de chats en `Ctrl+K`, suspensión de cuentas inactivas y manual de usuario integrado; incluye 1.5.x (centro de actividad, acciones pendientes, diálogo de actualización con scroll).
+**Versión actual:** **1.7.0** — **internacionalización** (9 idiomas + idioma del sistema), manual multilingüe, **atajos de teclado con foco en WhatsApp Web** y mejoras de «Ahora mismo»; incluye 1.6.x (Ahora mismo, búsqueda `Ctrl+K`, reposo de cuentas).
 
 > El identificador técnico del paquete npm sigue siendo `catrip_multichat_electron` para no romper la persistencia existente (`~/.config/catrip_multichat_electron/`). El nombre visible (**Catrip Connect**), el ejecutable **`catrip-connect`** y el lanzador del escritorio están alineados para integración en Linux.
 
 Este proyecto toma **ideas y enfoque** del cliente [**ZapZap**](https://github.com/rafatosta/zapzap) (PyQt6 + WebEngine); Catrip Connect es una implementación distinta en **Electron** y no comparte código con ZapZap.
+
+---
+
+### Vista general
+
+![Organización de la ventana: rail de cuentas y WhatsApp Web](docs/images/catrip-layout-overview.png)
+
+- **Rail (izquierda)**: avatares de cuentas, accesos rápidos (⚡ pendientes, ▤ actividad, ajustes, Zen…).
+- **Área principal**: WhatsApp Web de la cuenta activa, con sesión aislada por cuenta.
+
+---
+
+### Idiomas (i18n)
+
+![Selector de idioma y alcance de las traducciones](docs/images/catrip-i18n-languages.png)
+
+| Idioma | Código |
+|--------|--------|
+| Español | `es` |
+| English | `en` |
+| Português | `pt` |
+| Français | `fr` |
+| Deutsch | `de` |
+| 한국어 | `ko` |
+| 日本語 | `ja` |
+| Italiano | `it` |
+| 中文（简体） | `zh` |
+
+- **Por defecto:** idioma del **sistema operativo**; si no está soportado → **inglés**.
+- **Ajustes → General → Idioma de la interfaz** (o **Idioma del sistema**).
+- Afecta menús, notificaciones, bandeja, manual y textos de Catrip Connect. **WhatsApp Web** mantiene su propio idioma (configurable dentro de WhatsApp).
+
+---
+
+### Atajos de teclado
+
+![Atajos activos aunque WhatsApp Web tenga el foco](docs/images/catrip-keyboard-shortcuts.png)
+
+Los atajos de Catrip (`Ctrl+K`, `Ctrl+P`, `Ctrl+1`–`9`, `Ctrl+Shift+A`, `F5`, …) funcionan **aunque estés escribiendo en un chat** de WhatsApp Web. Lista completa en **Ayuda → Atajos de teclado** y en **[USAGE.md](USAGE.md)**.
 
 ---
 
@@ -34,6 +73,13 @@ Otros comandos útiles: `npm run build`, `npm run lint`, `npm run test:unit`, `n
 
 En cada push a `master`/`main`, GitHub Actions ejecuta lint, formato, typecheck, build y tests (ver `.github/workflows/ci.yml`).
 
+Regenerar traducciones y manual:
+
+```bash
+node _scripts/build-locale-files.mjs
+node _scripts/build-manual-locale-files.mjs
+```
+
 ---
 
 ### Empaquetado para Linux
@@ -51,12 +97,12 @@ sudo apt install dpkg fakeroot
 | `npm run dist:linux` | Ambos |
 | `npm run dist` | Todos los targets definidos en `package.json` → `build` |
 
-Artefactos en **`release/`** (versión actual en `package.json`, **1.6.0**):
+Artefactos en **`release/`** (versión actual en `package.json`, **1.7.0**):
 
 ```
 release/
-├── catrip-connect_1.6.0_amd64.deb
-└── catrip-connect_1.6.0_x86_64.AppImage
+├── catrip-connect_1.7.0_amd64.deb
+└── catrip-connect_1.7.0_x86_64.AppImage
 ```
 
 Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mjs`).
@@ -64,7 +110,7 @@ Los iconos PNG se generan antes del empaquetado (`_scripts/generate-app-icons.mj
 #### `.deb` — instalación
 
 ```bash
-sudo apt install ./release/catrip-connect_1.6.0_amd64.deb
+sudo apt install ./release/catrip-connect_1.7.0_amd64.deb
 ```
 
 Dependencias habituales las resuelve `apt` (`libgtk-3-0`, `libnotify4`, `libnss3`, …; recomendable `libappindicator3-1` para bandeja).
@@ -90,14 +136,14 @@ sudo apt remove catrip-multichat-electron
 Ejecutable autocontenido; permisos de ejecución:
 
 ```bash
-chmod +x release/catrip-connect_1.6.0_x86_64.AppImage
-./release/catrip-connect_1.6.0_x86_64.AppImage
+chmod +x release/catrip-connect_1.7.0_x86_64.AppImage
+./release/catrip-connect_1.7.0_x86_64.AppImage
 ```
 
 Para integrar menú e iconos en el escritorio del usuario (opcional pero recomendable si no usas AppImageLauncher):
 
 ```bash
-_scripts/install-appimage.sh release/catrip-connect_1.6.0_x86_64.AppImage
+_scripts/install-appimage.sh release/catrip-connect_1.7.0_x86_64.AppImage
 # revertir:
 _scripts/install-appimage.sh --uninstall
 ```

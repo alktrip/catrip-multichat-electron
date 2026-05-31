@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Overlay } from "./Overlay";
 import SettingsView, { type SettingsPage } from "./SettingsView";
 import SystemIconImg from "./SystemIconImg";
@@ -9,6 +10,7 @@ import {
   buildChatSearchCommands,
   filterCommands,
   COMMAND_GROUPS,
+  commandGroupLabel,
   type Command,
   type CommandIcon,
 } from "./commands";
@@ -16,17 +18,11 @@ import { filterChatSearchItems } from "../../main/chatSearchModel";
 import type { AccountSessionStatus, AppApi, AccountActivityMap, UpdateDialogPayload } from "../../preload/preload";
 import ActivityCenter from "./ActivityCenter";
 import PendingInbox from "./PendingInbox";
-import UrgentNowPanel from "./UrgentNowPanel";
 import UpdateDialog from "./UpdateDialog";
 import UserManual from "./UserManual";
 import { pickTopUrgentChats } from "../../main/pendingInboxModel";
-
-const SESSION_STATUS_LABEL: Record<AccountSessionStatus, string> = {
-  loading: "Cargando…",
-  qr: "Esperando QR",
-  connected: "Conectada",
-  offline: "Sin red",
-};
+import { sessionStatusLabel } from "../../shared/i18n/formatters";
+import { changeRendererLanguage } from "../i18n";
 
 declare global {
   interface Window {
@@ -174,6 +170,7 @@ function ShortcutRow({ keys, children }: { keys: string; children: React.ReactNo
 }
 
 export default function App() {
+  const { t, i18n } = useTranslation();
   /** Versión de la raíz `package.json` inyectada en `vite build` (coherente con el artefacto empaquetado). */
   const version = __CATRIP_APP_VERSION__;
   const [accounts, setAccounts] = React.useState<
@@ -215,8 +212,6 @@ export default function App() {
   const [quickOpen, setQuickOpen] = React.useState(false);
   const [activityOpen, setActivityOpen] = React.useState(false);
   const [pendingInboxOpen, setPendingInboxOpen] = React.useState(false);
-  const [urgentPanelOpen, setUrgentPanelOpen] = React.useState(false);
-  const urgentAnchorRef = React.useRef<HTMLDivElement>(null);
   const [quickQuery, setQuickQuery] = React.useState("");
   const quickInputRef = React.useRef<HTMLInputElement | null>(null);
   const [phoneOpen, setPhoneOpen] = React.useState(false);
@@ -242,10 +237,18 @@ export default function App() {
     setMode("settings");
   }, []);
 
-  const applySettingsRemote = React.useCallback((next: any) => {
-    setSettings(next);
-    void window.catrip.setSettings(next);
-  }, []);
+  const applySettingsRemote = React.useCallback(
+    (next: any) => {
+      setSettings(next);
+      void window.catrip.setSettings(next);
+      const prevLang = settings?.general?.language;
+      const nextLang = next?.general?.language;
+      if (nextLang && nextLang !== prevLang) {
+        void changeRendererLanguage(nextLang, navigator.language);
+      }
+    },
+    [settings?.general?.language],
+  );
 
   React.useEffect(() => {
     let mounted = true;
@@ -305,7 +308,10 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    const off = window.catrip.onOpenSettings(() => enterSettings("general"));
+    const off = window.catrip.onOpenSettings(() => {
+      if (import.meta.env.DEV) console.log("[catrip-embed-renderer]", "menu:openSettings");
+      enterSettings("general");
+    });
     return () => off();
   }, [enterSettings]);
 
@@ -332,14 +338,12 @@ export default function App() {
       setQuickOpen(false);
       setPhoneOpen(false);
       setActivityOpen(false);
-      setUrgentPanelOpen(false);
     });
     const offUrgent = window.catrip.onOpenUrgentNow(() => {
-      setUrgentPanelOpen((open) => !open);
+      setPendingInboxOpen(true);
       setQuickOpen(false);
       setPhoneOpen(false);
       setActivityOpen(false);
-      setPendingInboxOpen(false);
     });
     const offPhone = window.catrip.onOpenPhoneChat(() => {
       setPhoneValue("+");
@@ -350,8 +354,12 @@ export default function App() {
       setZen(enabled);
     });
     const offShortcuts = window.catrip.onOpenShortcutsHelp(() => setShortcutsOpen(true));
-    const offAbout = window.catrip.onOpenAbout(() => setAboutOpen(true));
+    const offAbout = window.catrip.onOpenAbout(() => {
+      if (import.meta.env.DEV) console.log("[catrip-embed-renderer]", "menu:openAbout");
+      setAboutOpen(true);
+    });
     const offManual = window.catrip.onOpenUserManual(() => {
+      if (import.meta.env.DEV) console.log("[catrip-embed-renderer]", "menu:openUserManual");
       setManualOpen(true);
       setQuickOpen(false);
       setPhoneOpen(false);
@@ -448,12 +456,11 @@ export default function App() {
         setQuickQuery("");
         setQuickOpen(true);
         setPhoneOpen(false);
-        setUrgentPanelOpen(false);
         return;
       }
       if (mode === "browser" && k === "a" && e.shiftKey && !e.altKey) {
         e.preventDefault();
-        setUrgentPanelOpen((open) => !open);
+        setPendingInboxOpen((open) => !open);
         setQuickOpen(false);
         setPhoneOpen(false);
         return;
@@ -493,7 +500,6 @@ export default function App() {
     setQuickOpen(false);
     setPhoneOpen(false);
     setPendingInboxOpen(false);
-    setUrgentPanelOpen(false);
   }, []);
 
   const openPendingInbox = React.useCallback(() => {
@@ -501,15 +507,13 @@ export default function App() {
     setQuickOpen(false);
     setPhoneOpen(false);
     setActivityOpen(false);
-    setUrgentPanelOpen(false);
   }, []);
 
   const openUrgentNow = React.useCallback(() => {
-    setUrgentPanelOpen((open) => !open);
+    setPendingInboxOpen((open) => !open);
     setQuickOpen(false);
     setPhoneOpen(false);
     setActivityOpen(false);
-    setPendingInboxOpen(false);
   }, []);
 
   const urgentTopItems = React.useMemo(
@@ -519,26 +523,7 @@ export default function App() {
 
   const hasUrgentChats = urgentTopItems.length > 0;
 
-  React.useEffect(() => {
-    if (!urgentPanelOpen) return;
-    const onPointerDown = (e: MouseEvent) => {
-      const root = urgentAnchorRef.current;
-      if (root && !root.contains(e.target as Node)) {
-        setUrgentPanelOpen(false);
-      }
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setUrgentPanelOpen(false);
-    };
-    window.addEventListener("mousedown", onPointerDown, { capture: true });
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    return () => {
-      window.removeEventListener("mousedown", onPointerDown, { capture: true });
-      window.removeEventListener("keydown", onKeyDown, { capture: true });
-    };
-  }, [urgentPanelOpen]);
-
-  const openChatFromUrgent = React.useCallback((accountId: string, chatName: string) => {
+  const openChatFromPending = React.useCallback((accountId: string, chatName: string) => {
     setActiveId(accountId);
     void window.catrip.setActiveAccount(accountId);
     void window.catrip.openChatByName(accountId, chatName);
@@ -557,6 +542,7 @@ export default function App() {
         settings,
         zen,
         mode,
+        t,
         setActiveAccount: (id) => {
           setActiveId(id);
           void window.catrip.setActiveAccount(id);
@@ -588,6 +574,8 @@ export default function App() {
       openPendingInbox,
       openUrgentNow,
       applySettingsRemote,
+      t,
+      i18n.language,
     ],
   );
 
@@ -600,8 +588,8 @@ export default function App() {
   const chatSearchCommands = React.useMemo(() => {
     if (!quickQuery.trim()) return [];
     const matches = filterChatSearchItems(accounts, activityByAccount, quickQuery);
-    return buildChatSearchCommands(matches, openChatFromPalette);
-  }, [accounts, activityByAccount, quickQuery, openChatFromPalette]);
+    return buildChatSearchCommands(matches, openChatFromPalette, t);
+  }, [accounts, activityByAccount, quickQuery, openChatFromPalette, t]);
 
   const filteredCommands = React.useMemo(() => {
     const actionMatches = filterCommands(commands, quickQuery);
@@ -643,7 +631,7 @@ export default function App() {
     void window.catrip.setChromeMetrics(metrics);
   }, [zen, mode, settings]);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (mode === "settings" && zen) {
       setZen(false);
       void window.catrip.setZenMode(false);
@@ -666,7 +654,19 @@ export default function App() {
       await window.catrip.setMode(mode);
       await window.catrip.setRendererModalOpen(modalBlocking);
     })();
-  }, [mode, quickOpen, phoneOpen, incomingLinkOpen, shortcutsOpen, aboutOpen, activityOpen, pendingInboxOpen, updateDialog, manualOpen, zen]);
+  }, [
+    mode,
+    quickOpen,
+    phoneOpen,
+    incomingLinkOpen,
+    shortcutsOpen,
+    aboutOpen,
+    activityOpen,
+    pendingInboxOpen,
+    updateDialog,
+    manualOpen,
+    zen,
+  ]);
 
   const manualOverlay = manualOpen ? <UserManual onClose={() => setManualOpen(false)} /> : null;
 
@@ -685,29 +685,26 @@ export default function App() {
               letterSpacing: "-0.02em",
             }}
           >
-            Atajos de teclado
+            {t("app.shortcuts.title")}
           </div>
-          <p style={{ margin: "0 0 16px", fontSize: 13, color: "#b8c4c4", lineHeight: 1.5 }}>
-            Referencia rápida; también están en el menú superior.
-          </p>
           <dl style={{ margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-            <dt style={{ ...modalSectionTitle, marginTop: 0 }}>Archivo</dt>
-            <ShortcutRow keys="Ctrl+P">Ajustes</ShortcutRow>
-            <ShortcutRow keys="Ctrl+W">Ocultar ventana</ShortcutRow>
-            <ShortcutRow keys="Ctrl+Q">Salir</ShortcutRow>
-            <dt style={modalSectionTitle}>Ver</dt>
-            <ShortcutRow keys="Ctrl+K">Cambio rápido de cuenta</ShortcutRow>
-            <ShortcutRow keys="Ctrl+Shift+A">Ahora mismo (top 3 urgentes)</ShortcutRow>
-            <ShortcutRow keys="F11">Pantalla completa</ShortcutRow>
-            <ShortcutRow keys="Ctrl+Shift+Z">Modo Zen</ShortcutRow>
-            <ShortcutRow keys="Esc">Salir del modo Zen</ShortcutRow>
-            <dt style={modalSectionTitle}>Chat</dt>
-            <ShortcutRow keys="F5">Recargar WhatsApp Web</ShortcutRow>
-            <ShortcutRow keys="Ctrl+N">Nuevo chat (WhatsApp Web)</ShortcutRow>
-            <ShortcutRow keys="Ctrl+M">Chat por número de teléfono</ShortcutRow>
-            <dt style={modalSectionTitle}>Cuentas</dt>
-            <ShortcutRow keys="Ctrl+U">Nueva cuenta</ShortcutRow>
-            <ShortcutRow keys="Ctrl+1–9">Cambiar de cuenta (posición en la lista)</ShortcutRow>
+            <dt style={{ ...modalSectionTitle, marginTop: 0 }}>{t("app.shortcuts.file")}</dt>
+            <ShortcutRow keys="Ctrl+P">{t("app.shortcuts.settings")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+W">{t("app.shortcuts.hideWindow")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+Q">{t("app.shortcuts.quit")}</ShortcutRow>
+            <dt style={modalSectionTitle}>{t("app.shortcuts.view")}</dt>
+            <ShortcutRow keys="Ctrl+K">{t("app.shortcuts.quickSwitch")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+Shift+A">{t("app.shortcuts.urgentNow")}</ShortcutRow>
+            <ShortcutRow keys="F11">{t("app.shortcuts.fullscreen")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+Shift+Z">{t("app.shortcuts.zenMode")}</ShortcutRow>
+            <ShortcutRow keys="Esc">{t("app.shortcuts.exitZen")}</ShortcutRow>
+            <dt style={modalSectionTitle}>{t("app.shortcuts.chat")}</dt>
+            <ShortcutRow keys="F5">{t("app.shortcuts.reload")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+N">{t("app.shortcuts.newChat")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+M">{t("app.shortcuts.phoneChat")}</ShortcutRow>
+            <dt style={modalSectionTitle}>{t("app.shortcuts.accounts")}</dt>
+            <ShortcutRow keys="Ctrl+U">{t("app.shortcuts.newAccount")}</ShortcutRow>
+            <ShortcutRow keys="Ctrl+1–9">{t("app.shortcuts.switchAccount")}</ShortcutRow>
           </dl>
           <div
             style={{
@@ -719,7 +716,7 @@ export default function App() {
               lineHeight: 1.45,
             }}
           >
-            Esc cierra este cuadro. Clic fuera del panel también lo cierra.
+            {t("app.shortcuts.footer")}
           </div>
         </div>
       </Overlay>
@@ -743,11 +740,11 @@ export default function App() {
                 lineHeight: 1.25,
               }}
             >
-              Acerca de Catrip Connect
+              {t("app.about.title")}
             </div>
           </div>
           <p style={{ margin: "0 0 16px", fontSize: 14, color: "#dce4e4", lineHeight: 1.65 }}>
-            Cliente de escritorio para WhatsApp Web con varias cuentas y sesiones aisladas.
+            {t("app.about.description")}
           </p>
           <div
             style={{
@@ -763,13 +760,13 @@ export default function App() {
               fontWeight: 600,
             }}
           >
-            Versión <span style={{ color: "#ffffff" }}>{version || "…"}</span>
+            {t("common.version")} <span style={{ color: "#ffffff" }}>{version || "…"}</span>
           </div>
           <p className="catrip-text-hint" style={{ margin: "18px 0 0", lineHeight: 1.55 }}>
-            Electron + Chromium embebido para reproducir audio y vídeo de forma fiable.
+            {t("app.about.electronNote")}
           </p>
           <p className="catrip-text-hint" style={{ margin: "12px 0 0", lineHeight: 1.55 }}>
-            Inspirado en ideas del proyecto{" "}
+            {t("app.about.inspired")}{" "}
             <a
               href="https://github.com/rafatosta/zapzap"
               target="_blank"
@@ -777,8 +774,8 @@ export default function App() {
               style={{ color: "#7dd3a8", textDecoration: "underline" }}
             >
               ZapZap
-            </a>{" "}
-            (PyQt6 + WebEngine). Implementación independiente en Electron.
+            </a>
+            .
           </p>
         </div>
       </Overlay>
@@ -805,7 +802,7 @@ export default function App() {
 
   return (
     <>
-      <div style={{ height: "100vh", display: "flex" }}>
+      <div style={{ height: "100vh", display: "flex", background: "#1d1f1f" }}>
         {zen || !sidebarAllowed ? null : (
           <div
             style={{
@@ -827,11 +824,17 @@ export default function App() {
                 const showUnreadDot = unread > 0 && a.notificationsEnabled !== false;
                 const status = accountStatusById[a.id] ?? "loading";
                 const isSuspended = suspendedByAccount[a.id] === true;
-                const statusLabel = SESSION_STATUS_LABEL[status];
-                const unreadPart =
-                  showUnreadDot ? ` · ${unread} sin leer` : "";
-                const suspendPart = isSuspended ? " · En reposo (ahorra memoria)" : "";
-                const tooltip = `${a.label} · ${statusLabel}${unreadPart}${suspendPart} · Arrastrar para reordenar · Clic derecho: variante`;
+                const statusLabel = sessionStatusLabel(t, status);
+                const unreadPart = showUnreadDot
+                  ? t("commands.unreadSuffix", { count: unread })
+                  : "";
+                const suspendPart = isSuspended ? t("app.rail.suspended") : "";
+                const tooltip = t("app.rail.tooltip", {
+                  label: a.label,
+                  status: statusLabel,
+                  unread: unreadPart,
+                  suspended: suspendPart,
+                });
                 const isDragging = dragId === a.id;
                 const showSlotBefore = dropIndex === idx;
                 const accentRgb = extractAccountAccentRgb(a.icon);
@@ -955,7 +958,7 @@ export default function App() {
                             key={`unread-${a.id}-${unreadPulseTokens[a.id] ?? 0}`}
                             className="catrip-unread-dot"
                             data-count={unread > 99 ? "99+" : unread}
-                            aria-label={`${unread} mensajes sin leer`}
+                            aria-label={t("common.messagesUnread", { count: unread })}
                           />
                         ) : null}
                       </div>
@@ -974,7 +977,7 @@ export default function App() {
               <button
                 type="button"
                 className={`catrip-rail-action-btn${accounts.length === 0 ? " is-pulsing" : ""}`}
-                title={accounts.length === 0 ? "Crear tu primera cuenta" : "Nueva cuenta"}
+                title={accounts.length === 0 ? t("app.rail.createFirst") : t("app.rail.newAccount")}
                 onClick={() => void window.catrip.createAccount()}
               >
                 <SystemIconImg name="new-account" size={22} />
@@ -983,7 +986,7 @@ export default function App() {
               <button
                 type="button"
                 className="catrip-rail-action-btn"
-                title="Nuevo chat por número de teléfono"
+                title={t("app.rail.phoneChat")}
                 onClick={() => {
                   setPhoneValue("+");
                   setPhoneOpen(true);
@@ -994,41 +997,29 @@ export default function App() {
               <button
                 type="button"
                 className="catrip-rail-action-btn"
-                title="Nuevo chat (WhatsApp Web)"
+                title={t("app.rail.newChat")}
                 onClick={() => {
                   void window.catrip.triggerNewChat();
                 }}
               >
                 <SystemIconImg name="new-chat" size={22} />
               </button>
-              <div ref={urgentAnchorRef} className="catrip-rail-urgent-anchor">
+              <div className="catrip-rail-urgent-anchor">
                 <button
                   type="button"
-                  className={`catrip-rail-action-btn${urgentPanelOpen ? " is-active" : ""}`}
-                  title="Ahora mismo — chats más urgentes (Ctrl+Shift+A)"
-                  aria-expanded={urgentPanelOpen}
+                  className={`catrip-rail-action-btn${pendingInboxOpen ? " is-active" : ""}`}
+                  title={t("app.rail.urgentNow")}
+                  aria-expanded={pendingInboxOpen}
                   onClick={() => openUrgentNow()}
                 >
                   <SystemIconImg name="urgent-now" size={22} />
                   {hasUrgentChats ? <span className="catrip-rail-urgent-dot" aria-hidden /> : null}
                 </button>
-                {urgentPanelOpen ? (
-                  <UrgentNowPanel
-                    accounts={accounts}
-                    activityByAccount={activityByAccount}
-                    onOpenChat={openChatFromUrgent}
-                    onOpenAllPending={() => {
-                      setUrgentPanelOpen(false);
-                      openPendingInbox();
-                    }}
-                    onClose={() => setUrgentPanelOpen(false)}
-                  />
-                ) : null}
               </div>
               <button
                 type="button"
                 className="catrip-rail-action-btn"
-                title="Acciones pendientes"
+                title={t("app.rail.pending")}
                 onClick={() => openPendingInbox()}
               >
                 <span
@@ -1047,7 +1038,7 @@ export default function App() {
               <button
                 type="button"
                 className="catrip-rail-action-btn"
-                title="Centro de actividad"
+                title={t("app.rail.activity")}
                 onClick={() => openActivityCenter()}
               >
                 <span
@@ -1067,7 +1058,7 @@ export default function App() {
               <button
                 type="button"
                 className="catrip-rail-action-btn"
-                title="Ajustes"
+                title={t("app.rail.settings")}
                 onClick={() => {
                   enterSettings("general");
                 }}
@@ -1077,7 +1068,7 @@ export default function App() {
               <button
                 type="button"
                 className="catrip-rail-action-btn"
-                title="Modo Zen (Esc para salir)"
+                title={t("app.rail.zen")}
                 onClick={() => {
                   setZen(true);
                   void window.catrip.setZenMode(true);
@@ -1090,7 +1081,7 @@ export default function App() {
         )}
 
         {accounts.length === 0 && !zen ? (
-          <div className="catrip-onboarding-wrap" role="region" aria-label="Bienvenida">
+          <div className="catrip-onboarding-wrap" role="region" aria-label={t("app.onboarding.aria")}>
             <div className="catrip-onboarding-card">
               <img
                 src={`${import.meta.env.BASE_URL}org.k3p.catrip-multichat.svg`}
@@ -1100,11 +1091,8 @@ export default function App() {
                 draggable={false}
                 className="catrip-onboarding-logo"
               />
-              <h1 className="catrip-onboarding-title">Bienvenido a Catrip Connect</h1>
-              <p className="catrip-onboarding-subtitle">
-                Cliente multicuenta de WhatsApp Web. Añade tu primera cuenta para empezar a chatear
-                desde el escritorio.
-              </p>
+              <h1 className="catrip-onboarding-title">{t("app.onboarding.title")}</h1>
+              <p className="catrip-onboarding-subtitle">{t("app.onboarding.subtitle")}</p>
               <button
                 type="button"
                 className="catrip-btn catrip-btn-accent"
@@ -1122,12 +1110,9 @@ export default function App() {
                   letterSpacing: "-0.005em",
                 }}
               >
-                Añadir tu primera cuenta
+                {t("app.onboarding.addFirst")}
               </button>
-              <p className="catrip-onboarding-hint">
-                También puedes pulsar el botón <strong>+</strong> del rail (lateral izquierdo,
-                parpadea en verde).
-              </p>
+              <p className="catrip-onboarding-hint">{t("app.onboarding.hint")}</p>
             </div>
           </div>
         ) : null}
@@ -1140,12 +1125,12 @@ export default function App() {
           }}
         >
           <div style={{ padding: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Paleta de comandos</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>{t("app.palette.title")}</div>
             <input
               ref={quickInputRef}
               value={quickQuery}
               onChange={(e) => setQuickQuery(e.target.value)}
-              placeholder="Buscar chats, cuentas o acciones…"
+              placeholder={t("app.palette.placeholder")}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
                   e.preventDefault();
@@ -1190,7 +1175,7 @@ export default function App() {
             <div ref={paletteListRef} style={{ marginTop: 10, maxHeight: 360, overflow: "auto" }}>
               {filteredCommands.length === 0 ? (
                 <div className="catrip-text-hint" style={{ padding: "10px 2px" }}>
-                  Sin resultados
+                  {t("common.noResults")}
                 </div>
               ) : (
                 (() => {
@@ -1202,7 +1187,7 @@ export default function App() {
                     if (items.length === 0) return null;
                     return (
                       <div key={group}>
-                        <div className="catrip-cmd-group-title">{group}</div>
+                        <div className="catrip-cmd-group-title">{commandGroupLabel(t, group)}</div>
                         {items.map((cmd) => {
                           const idx = indexByCmd.get(cmd.id) ?? 0;
                           const isActive = idx === paletteIndex;
@@ -1259,7 +1244,7 @@ export default function App() {
               )}
             </div>
             <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-              ↑ ↓ para navegar • Intro para ejecutar • Esc para cerrar
+              {t("app.palette.hint")}
             </div>
           </div>
         </Overlay>
@@ -1283,9 +1268,7 @@ export default function App() {
             activityByAccount={activityByAccount}
             onOpenChat={(accountId, chatName) => {
               setPendingInboxOpen(false);
-              setActiveId(accountId);
-              void window.catrip.setActiveAccount(accountId);
-              void window.catrip.openChatByName(accountId, chatName);
+              openChatFromPending(accountId, chatName);
             }}
           />
         </Overlay>
@@ -1302,16 +1285,16 @@ export default function App() {
           }}
         >
           <div style={{ padding: 12, minWidth: 320 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Abrir enlace de WhatsApp</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>{t("app.incomingLink.title")}</div>
             <div style={{ opacity: 0.85, fontSize: 13, marginBottom: 10 }}>
-              Destino: <strong>{incomingLinkPreview}</strong>
+              {t("app.incomingLink.destination")} <strong>{incomingLinkPreview}</strong>
               {incomingLinkHasText ? (
                 <span className="catrip-text-hint" style={{ display: "block", marginTop: 4 }}>
-                  Incluye mensaje precargado.
+                  {t("app.incomingLink.preloaded")}
                 </span>
               ) : null}
             </div>
-            <div style={{ fontSize: 13, marginBottom: 8 }}>Elige la cuenta:</div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>{t("app.incomingLink.chooseAccount")}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {accounts.map((a) => (
                 <button
@@ -1357,7 +1340,7 @@ export default function App() {
                   cursor: "pointer",
                 }}
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -1371,10 +1354,8 @@ export default function App() {
           }}
         >
           <div style={{ padding: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Enviar mensaje a…</div>
-            <div style={{ opacity: 0.8, fontSize: 13, marginBottom: 8 }}>
-              Introduzca el número de teléfono con código de país (ej.: +5511999999999):
-            </div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>{t("app.phone.title")}</div>
+            <div style={{ opacity: 0.8, fontSize: 13, marginBottom: 8 }}>{t("app.phone.hint")}</div>
             <input
               ref={phoneInputRef}
               value={phoneValue}
@@ -1410,7 +1391,7 @@ export default function App() {
                   cursor: "pointer",
                 }}
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -1428,11 +1409,11 @@ export default function App() {
                   cursor: "pointer",
                 }}
               >
-                Aceptar
+                {t("common.accept")}
               </button>
             </div>
             <div className="catrip-text-hint" style={{ marginTop: 8 }}>
-              Intro para abrir el chat • Esc para cerrar
+              {t("app.phone.footer")}
             </div>
           </div>
         </Overlay>

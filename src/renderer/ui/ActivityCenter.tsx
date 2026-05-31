@@ -1,6 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import AccountAvatar from "./AccountAvatar";
 import type { AccountSessionStatus } from "../../preload/preload";
+import { formatRelativeTimeI18n, sessionStatusLabel } from "../../shared/i18n/formatters";
 
 export type ActivityAccount = {
   id: string;
@@ -18,31 +20,12 @@ export type ActivitySnapshot = {
   unreadChats: Array<{ name: string; preview: string; unreadCount: number }>;
 };
 
-const STATUS_LABEL: Record<AccountSessionStatus, string> = {
-  loading: "Cargando…",
-  qr: "Esperando QR",
-  connected: "Conectada",
-  offline: "Sin red",
-};
-
 const STATUS_COLOR: Record<AccountSessionStatus, string> = {
   loading: "#9ca3af",
   qr: "#fbbf24",
   connected: "#34d399",
   offline: "#f87171",
 };
-
-function formatRelativeTime(ts: number | null): string {
-  if (!ts) return "—";
-  const diff = Date.now() - ts;
-  if (diff < 45_000) return "Ahora";
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 60) return `Hace ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Hace ${hours} h`;
-  const days = Math.floor(hours / 24);
-  return `Hace ${days} d`;
-}
 
 type Props = {
   accounts: ActivityAccount[];
@@ -57,6 +40,8 @@ export default function ActivityCenter({
   activityByAccount,
   onSelectAccount,
 }: Props) {
+  const { t } = useTranslation();
+
   const sorted = React.useMemo(() => {
     return accounts.slice().sort((a, b) => {
       const aa = activityByAccount[a.id];
@@ -88,10 +73,10 @@ export default function ActivityCenter({
       >
         <div>
           <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: "-0.02em" }}>
-            Centro de actividad
+            {t("activity.title")}
           </div>
           <p style={{ margin: "6px 0 0", fontSize: 13, color: "#b8c4c4", lineHeight: 1.5 }}>
-            Resumen de todas tus cuentas. Clic para abrir la conversación en esa cuenta.
+            {t("activity.subtitle")}
           </p>
         </div>
         {totalUnread > 0 ? (
@@ -107,14 +92,14 @@ export default function ActivityCenter({
               color: "#c8f5dc",
             }}
           >
-            {totalUnread > 99 ? "99+" : totalUnread} sin leer
+            {totalUnread > 99 ? "99+" : totalUnread} {t("common.unreadLabel")}
           </span>
         ) : null}
       </div>
 
       {sorted.length === 0 ? (
         <p className="catrip-text-hint" style={{ margin: 0 }}>
-          Añade una cuenta para ver actividad aquí.
+          {t("activity.empty")}
         </p>
       ) : (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -125,7 +110,7 @@ export default function ActivityCenter({
             const isActive = a.id === activeId;
             const preview =
               snap?.lastPreview ||
-              (unread > 0 ? "Tienes mensajes sin leer" : "Sin actividad reciente");
+              (unread > 0 ? t("activity.previewUnread") : t("activity.noRecentActivity"));
             const sender = snap?.lastSender;
             return (
               <li key={a.id}>
@@ -170,7 +155,7 @@ export default function ActivityCenter({
                             color: "#34d399",
                           }}
                         >
-                          Activa
+                          {t("activity.active")}
                         </span>
                       ) : null}
                       <span
@@ -180,59 +165,43 @@ export default function ActivityCenter({
                           color: STATUS_COLOR[status],
                         }}
                       >
-                        {STATUS_LABEL[status]}
+                        {sessionStatusLabel(t, status)}
                       </span>
-                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#9ca3af" }}>
-                        {formatRelativeTime(snap?.lastActivityAt ?? null)}
-                      </span>
+                      {unread > 0 ? (
+                        <span
+                          style={{
+                            marginLeft: "auto",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            background: "var(--catrip-accent-soft)",
+                            border: "1px solid var(--catrip-accent-border)",
+                            color: "#c8f5dc",
+                          }}
+                        >
+                          {unread > 99 ? "99+" : unread}
+                        </span>
+                      ) : null}
                     </div>
                     <div
                       style={{
                         fontSize: 13,
                         color: "#dce4e4",
-                        lineHeight: 1.45,
+                        whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
                       }}
                     >
-                      {sender ? (
-                        <>
-                          <span style={{ fontWeight: 600 }}>{sender}</span>
-                          {preview ? `: ${preview}` : ""}
-                        </>
-                      ) : (
-                        preview
-                      )}
+                      {sender ? `${sender}: ${preview}` : preview}
                     </div>
-                    {snap && snap.unreadChats.length > 1 ? (
-                      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                        {snap.unreadChats.slice(1, 4).map((chat) => (
-                          <div
-                            key={`${a.id}-${chat.name}`}
-                            style={{
-                              fontSize: 12,
-                              color: "#b8c4c4",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            · {chat.name}
-                            {chat.preview ? `: ${chat.preview}` : ""}
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
+                    <div
+                      className="catrip-text-hint"
+                      style={{ fontSize: 11, marginTop: 4 }}
+                    >
+                      {formatRelativeTimeI18n(t, snap?.lastActivityAt ?? null)}
+                    </div>
                   </div>
-                  {unread > 0 && a.notificationsEnabled !== false ? (
-                    <span
-                      className="catrip-unread-dot"
-                      data-count={unread > 99 ? "99+" : unread}
-                      aria-label={`${unread} sin leer`}
-                      style={{ position: "static", marginTop: 4 }}
-                    />
-                  ) : null}
                 </button>
               </li>
             );

@@ -1,5 +1,6 @@
 import { Notification } from "electron";
 import type { Settings } from "./settings";
+import { tMain } from "./i18n";
 
 export type NotificationAccount = {
   id: string;
@@ -51,10 +52,10 @@ function buildNotificationBody(
   }
   if (showPreview) {
     return payload.unread === 1
-      ? "Tienes 1 chat sin leer."
-      : `Tienes ${payload.unread} chats sin leer.`;
+      ? tMain("main.notifications.oneUnread")
+      : tMain("main.notifications.manyUnread", { count: payload.unread });
   }
-  return "Tienes chats sin leer.";
+  return tMain("main.notifications.generic");
 }
 
 /**

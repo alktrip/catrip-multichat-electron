@@ -11,6 +11,8 @@ import {
   releaseNotesGithubUrl,
 } from "./releaseNotesFormat";
 import { showUpdateDialogRequest, type UpdateDialogRequest } from "./updateDialogBridge";
+import { tMain } from "./i18n";
+
 type UpdateChannel = "stable" | "beta";
 
 const GITHUB_REPO = "alktrip/catrip-multichat-electron";
@@ -91,7 +93,12 @@ export function resolveDebSha512(info: UpdateInfo): string | undefined {
 async function downloadUrlToFile(url: string, destPath: string): Promise<void> {
   const res = await fetch(url, { redirect: "follow" });
   if (!res.ok || !res.body) {
-    throw new Error(`No se pudo descargar (${res.status} ${res.statusText})`);
+    throw new Error(
+      tMain("main.updates.downloadHttpError", {
+        status: res.status,
+        statusText: res.statusText,
+      }),
+    );
   }
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
   await pipeline(Readable.fromWeb(res.body as import("stream/web").ReadableStream), createWriteStream(destPath));
@@ -108,8 +115,8 @@ async function verifySha512(filePath: string, expected: string | undefined): Pro
     stream.on("error", reject);
   });
   const actual = hash.digest("base64");
-  if (actual === expected) return "\n\nIntegridad verificada (SHA-512).";
-  return "\n\n⚠ La suma SHA-512 no coincide con la publicada en GitHub.";
+  if (actual === expected) return `\n\n${tMain("main.updates.integrityOk")}`;
+  return `\n\n⚠ ${tMain("main.updates.integrityFail")}`;
 }
 
 async function promptDownloadToFolder(
@@ -120,50 +127,53 @@ async function promptDownloadToFolder(
   const parent = dialogParent();
   const dirPick = parent
     ? await dialog.showOpenDialog(parent, {
-        title: "Elegir carpeta para guardar el .deb",
+        title: tMain("main.updates.chooseDebFolder"),
         properties: ["openDirectory", "createDirectory"],
       })
     : await dialog.showOpenDialog({
-        title: "Elegir carpeta para guardar el .deb",
+        title: tMain("main.updates.chooseDebFolder"),
         properties: ["openDirectory", "createDirectory"],
       });
   if (dirPick.canceled || !dirPick.filePaths[0]) return;
 
   const plain = version.replace(/^v/i, "");
   const destPath = path.join(dirPick.filePaths[0], `catrip-connect_${plain}_amd64.deb`);
+  const basename = path.basename(destPath);
 
   try {
     await downloadUrlToFile(debUrl, destPath);
     const integrity = await verifySha512(destPath, sha512);
     const done = await showMessageBox({
       type: "info",
-      title: "Descarga completada",
-      message: "Paquete .deb guardado",
-      detail: `${destPath}${integrity}\n\nInstálalo con:\nsudo apt install ./${path.basename(destPath)}`,
-      buttons: parent ? ["Abrir carpeta", "Entendido"] : ["Entendido"],
+      title: tMain("main.updates.downloadComplete"),
+      message: tMain("main.updates.downloadCompleteMessage"),
+      detail: `${destPath}${integrity}\n\n${tMain("main.updates.debInstallHint", { filename: basename })}`,
+      buttons: parent
+        ? [tMain("main.updates.openFolder"), tMain("main.updates.understood")]
+        : [tMain("main.updates.understood")],
     });
     if (done.response === 0 && parent) void shell.showItemInFolder(destPath);
   } catch (err) {
     await showMessageBox({
       type: "error",
-      title: "Error al descargar",
-      message: "No se pudo guardar el .deb",
+      title: tMain("main.updates.downloadFailed"),
+      message: tMain("main.updates.downloadFailedMessage"),
       detail: err instanceof Error ? err.message : String(err),
-      buttons: ["Entendido"],
+      buttons: [tMain("main.updates.understood")],
     });
   }
 }
 
 async function showManualDownloadUrl(version: string, debUrl: string, changelog: string): Promise<void> {
   const action = await askUpdateDialog({
-    title: "Descarga manual",
+    title: tMain("main.updates.manualDownload"),
     message: `Catrip Connect ${version}`,
     releaseNotes: changelog,
-    footerHint: `Descarga el instalador .deb desde:\n${debUrl}\n\nLuego instálalo con apt o tu gestor de paquetes.`,
+    footerHint: tMain("main.updates.debManualFooterHint", { debUrl }),
     releaseUrl: releaseNotesGithubUrl(version),
     buttons: [
-      { id: "open-browser", label: "Abrir enlace en el navegador", primary: true },
-      { id: "ack", label: "Entendido" },
+      { id: "open-browser", label: tMain("main.updates.openBrowser"), primary: true },
+      { id: "ack", label: tMain("main.updates.understood") },
     ],
   });
   if (action === "open-browser" || action === "open-release-url") {
@@ -188,16 +198,15 @@ export async function handleDebUpdateAvailable(
   const debUrl = resolveDebDownloadUrl(info);
   const sha512 = resolveDebSha512(info);
   const action = await askUpdateDialog({
-    title: "Nueva versión disponible",
-    message: `Hay una actualización: Catrip Connect ${version}`,
+    title: tMain("main.updates.newVersion"),
+    message: tMain("main.updates.newVersionMessage", { version }),
     releaseNotes: changelogPlain,
-    footerHint:
-      "¿Quieres descargar el paquete .deb a una carpeta de tu elección?\n(Si prefieres no descargar desde la app, podrás abrir el enlace de GitHub.)",
+    footerHint: tMain("main.updates.debPromptHint"),
     releaseUrl: releaseNotesGithubUrl(version),
     buttons: [
-      { id: "download", label: "Descargar…", primary: true },
-      { id: "link", label: "Solo enlace de descarga" },
-      { id: "later", label: "Más tarde" },
+      { id: "download", label: tMain("main.updates.download"), primary: true },
+      { id: "link", label: tMain("main.updates.downloadLinkOnly") },
+      { id: "later", label: tMain("main.updates.later") },
     ],
   });
 
