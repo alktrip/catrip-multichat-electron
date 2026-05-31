@@ -205,7 +205,7 @@ node _scripts/build-locale-files.mjs
 node _scripts/build-manual-locale-files.mjs
 ```
 
-Cada push a `master` ejecuta el workflow **CI** (lint, formato, typecheck, build, tests y empaquetado de verificación). Ver [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Cada push a `master` ejecuta el workflow **CI** (lint, formato, typecheck, build, tests y empaquetado de verificación). Ver [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Guía para publicar versiones: **[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ### Variables de entorno (resumen)
 
