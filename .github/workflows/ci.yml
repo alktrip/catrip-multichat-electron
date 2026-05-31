@@ -66,7 +66,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends dpkg fakeroot python3-pil
 
       - name: Build AppImage
-        run: npm run dist:appimage
+        run: npm run build && node _scripts/generate-app-icons.mjs && npx electron-builder --linux AppImage --publish never
 
       - name: Verificar artefactos de actualización
         run: |
