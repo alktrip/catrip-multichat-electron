@@ -216,7 +216,9 @@ export function normalizeWhatsAppActivityRaw(raw: unknown): WhatsAppActivityRaw 
         .slice(0, 5)
     : [];
   const lastSender =
-    typeof o.lastSender === "string" && o.lastSender.trim() ? o.lastSender.trim().slice(0, 80) : null;
+    typeof o.lastSender === "string" && o.lastSender.trim()
+      ? o.lastSender.trim().slice(0, 80)
+      : null;
   const lastPreview =
     typeof o.lastPreview === "string" && o.lastPreview.trim()
       ? o.lastPreview.trim().slice(0, 160)

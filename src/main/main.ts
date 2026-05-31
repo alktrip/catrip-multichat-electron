@@ -33,12 +33,14 @@ import { loadSettings, saveSettings, type Settings } from "./settings";
 import { applyTrayGreenTint, trayModeForPlatform, trayNativeImage } from "./trayIcon";
 import { createLinuxSniTray, type LinuxSniTrayHandle } from "./linuxSniTray";
 import { setupAutoUpdater, refreshUpdaterChannel } from "./autoUpdater";
-import { initUpdateDialogBridge, setUpdateDialogShellTarget, setUpdateDialogWindowFocus, showUpdateDialogRequest } from "./updateDialogBridge";
-import { formatReleaseNotesForUpdateDialog, releaseNotesGithubUrl } from "./releaseNotesFormat";
 import {
-  WHATSAPP_SESSION_STATUS_JS,
-  type AccountSessionStatus,
-} from "./accountSessionStatus";
+  initUpdateDialogBridge,
+  setUpdateDialogShellTarget,
+  setUpdateDialogWindowFocus,
+  showUpdateDialogRequest,
+} from "./updateDialogBridge";
+import { formatReleaseNotesForUpdateDialog, releaseNotesGithubUrl } from "./releaseNotesFormat";
+import { WHATSAPP_SESSION_STATUS_JS, type AccountSessionStatus } from "./accountSessionStatus";
 import { initMainI18n, changeMainLanguage, tMain } from "./i18n";
 import { initNotificationHub, maybeNotifyActivityIncrease } from "./notificationHub";
 import {
@@ -50,10 +52,7 @@ import {
 } from "./desktopIntegration";
 import { parseLaunchAction, type CatripLaunchAction } from "./launchActions";
 import { raiseMainWindow } from "./windowFocus";
-import {
-  buildSuspendedMap,
-  shouldSuspendAccount,
-} from "./accountSuspension";
+import { buildSuspendedMap, shouldSuspendAccount } from "./accountSuspension";
 import {
   applySavedWindowBounds,
   captureWindowBounds,
@@ -616,7 +615,14 @@ function integrateAppImageDesktop() {
   const sizes = [16, 32, 48, 64, 128, 256, 512];
   for (const size of sizes) {
     const src = path.join(iconDir, `${size}x${size}.png`);
-    const dest = path.join(dataHome, "icons", "hicolor", `${size}x${size}`, "apps", "catrip-connect.png");
+    const dest = path.join(
+      dataHome,
+      "icons",
+      "hicolor",
+      `${size}x${size}`,
+      "apps",
+      "catrip-connect.png",
+    );
     try {
       if (!fs.existsSync(src)) continue;
       fs.mkdirSync(path.dirname(dest), { recursive: true });
@@ -656,7 +662,8 @@ function registerWhatsAppProtocolLinux(userDesktopPath?: string, execPath?: stri
   if (process.platform !== "linux" || E2E_MODE) return;
   try {
     const { execSync } = require("node:child_process");
-    const dataHome = process.env.XDG_DATA_HOME?.trim() || path.join(os.homedir(), ".local", "share");
+    const dataHome =
+      process.env.XDG_DATA_HOME?.trim() || path.join(os.homedir(), ".local", "share");
     const appsDir = path.join(dataHome, "applications");
     const desktopPath = userDesktopPath || path.join(appsDir, "catrip-connect.desktop");
     const bin =
@@ -670,10 +677,13 @@ function registerWhatsAppProtocolLinux(userDesktopPath?: string, execPath?: stri
       timeout: 8000,
       stdio: "ignore",
     });
-    execSync("xdg-mime default catrip-connect.desktop x-scheme-handler/whatsapp 2>/dev/null || true", {
-      timeout: 5000,
-      stdio: "ignore",
-    });
+    execSync(
+      "xdg-mime default catrip-connect.desktop x-scheme-handler/whatsapp 2>/dev/null || true",
+      {
+        timeout: 5000,
+        stdio: "ignore",
+      },
+    );
     execSync("gio mime x-scheme-handler/whatsapp catrip-connect.desktop 2>/dev/null || true", {
       timeout: 5000,
       stdio: "ignore",
@@ -1171,8 +1181,7 @@ async function evalActivityForAccount(id: string): Promise<AccountActivitySnapsh
   if (!url.includes("web.whatsapp.com")) return null;
   try {
     const raw = await view.webContents.executeJavaScript(WHATSAPP_ACTIVITY_JS, true);
-    const status =
-      (await evalAccountSessionStatus(id)) ?? st.accountStatusById[id] ?? "loading";
+    const status = (await evalAccountSessionStatus(id)) ?? st.accountStatusById[id] ?? "loading";
     const snapshot = buildActivitySnapshot(raw, status, st.activityByAccount[id]);
     return { ...snapshot, unread: clampTrayBadge(snapshot.unread) };
   } catch {
@@ -1882,7 +1891,11 @@ function buildAppMenu() {
           click: () => inBrowser() && openShellPanelFromMenu("ui:openQuickSwitcher"),
         },
         { type: "separator" },
-        { label: tMain("main.menus.fullscreen"), accelerator: "F11", click: () => toggleFullscreen() },
+        {
+          label: tMain("main.menus.fullscreen"),
+          accelerator: "F11",
+          click: () => toggleFullscreen(),
+        },
         {
           label: tMain("main.menus.zenMode"),
           accelerator: "Ctrl+Shift+Z",
@@ -2115,10 +2128,10 @@ function resolveIncomingLinkAccountId(st: {
   if (g.incomingLinkMode === "fixed") {
     const id = g.incomingLinkFixedAccountId;
     if (id && st.accounts.some((a) => a.id === id)) return id;
-    return st.activeId ?? (st.accounts[0]?.id ?? null);
+    return st.activeId ?? st.accounts[0]?.id ?? null;
   }
   if (g.incomingLinkMode === "active") {
-    return st.activeId ?? (st.accounts[0]?.id ?? null);
+    return st.activeId ?? st.accounts[0]?.id ?? null;
   }
   if (st.accounts.length === 1) return st.accounts[0].id;
   if (st.accounts.length > 1) return "pick";
@@ -2195,9 +2208,7 @@ function registerWhatsAppProtocolClient() {
   try {
     if (process.defaultApp) {
       if (process.argv.length >= 2) {
-        app.setAsDefaultProtocolClient(scheme, process.execPath, [
-          path.resolve(process.argv[1]),
-        ]);
+        app.setAsDefaultProtocolClient(scheme, process.execPath, [path.resolve(process.argv[1])]);
         return;
       }
     }
@@ -2259,7 +2270,8 @@ function createTray() {
         // Si por cualquier motivo el SVG->PNG falla, usar el icono principal como fallback.
         if (!img.isEmpty()) return img;
         const appIcon = getAppIconNativeImage();
-        if (!appIcon.isEmpty()) return applyTrayGreenTint(appIcon.resize({ width: 128, height: 128 }));
+        if (!appIcon.isEmpty())
+          return applyTrayGreenTint(appIcon.resize({ width: 128, height: 128 }));
         // Fallback ultra seguro: PNG 1x1 (evita IconPixmap vacío).
         try {
           return nativeImage.createFromDataURL(

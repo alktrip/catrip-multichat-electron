@@ -151,11 +151,7 @@
       "steps": null,
       "note": null,
       "table": {
-        "headers": [
-          "Outil",
-          "Quand l'utiliser",
-          "Comment l'ouvrir"
-        ],
+        "headers": ["Outil", "Quand l'utiliser", "Comment l'ouvrir"],
         "rows": [
           [
             "⚡ Tout de suite",
@@ -172,11 +168,7 @@
             "Liste complète de tous les chats non lus",
             "Bouton ✉ ou Ctrl+K → « en attente »"
           ],
-          [
-            "Ctrl+K → Discussions",
-            "Trouver un contact par nom ou texte",
-            "Ctrl+K et tapez le nom"
-          ]
+          ["Ctrl+K → Discussions", "Trouver un contact par nom ou texte", "Ctrl+K et tapez le nom"]
         ]
       }
     },
@@ -402,63 +394,21 @@
       "steps": null,
       "note": "Liste rapide aussi dans Aide → Raccourcis clavier et manuel complet dans Aide → Manuel utilisateur.",
       "table": {
-        "headers": [
-          "Raccourci",
-          "Action"
-        ],
+        "headers": ["Raccourci", "Action"],
         "rows": [
-          [
-            "Ctrl+K",
-            "Ouvrir la recherche (chats non lus, comptes et actions)"
-          ],
-          [
-            "Ctrl+P",
-            "Ouvrir Paramètres"
-          ],
-          [
-            "Ctrl+1 … Ctrl+9",
-            "Aller au compte 1, 2, 3… (jusqu'à 9)"
-          ],
-          [
-            "Ctrl+N",
-            "Nouveau chat dans WhatsApp Web"
-          ],
-          [
-            "Ctrl+M",
-            "Chat par numéro de téléphone"
-          ],
-          [
-            "Ctrl+U",
-            "Nouveau compte"
-          ],
-          [
-            "Ctrl+Shift+A",
-            "Ouvrir ou fermer Tout de suite (top 3 urgents)"
-          ],
-          [
-            "Ctrl+Shift+Z",
-            "Activer ou désactiver le mode Zen"
-          ],
-          [
-            "Échap",
-            "Fermer Tout de suite, quitter le mode Zen ou fermer la palette"
-          ],
-          [
-            "Ctrl+W",
-            "Masquer la fenêtre"
-          ],
-          [
-            "Ctrl+Q",
-            "Quitter l'application"
-          ],
-          [
-            "F5",
-            "Recharger WhatsApp Web"
-          ],
-          [
-            "F11",
-            "Plein écran"
-          ]
+          ["Ctrl+K", "Ouvrir la recherche (chats non lus, comptes et actions)"],
+          ["Ctrl+P", "Ouvrir Paramètres"],
+          ["Ctrl+1 … Ctrl+9", "Aller au compte 1, 2, 3… (jusqu'à 9)"],
+          ["Ctrl+N", "Nouveau chat dans WhatsApp Web"],
+          ["Ctrl+M", "Chat par numéro de téléphone"],
+          ["Ctrl+U", "Nouveau compte"],
+          ["Ctrl+Shift+A", "Ouvrir ou fermer Tout de suite (top 3 urgents)"],
+          ["Ctrl+Shift+Z", "Activer ou désactiver le mode Zen"],
+          ["Échap", "Fermer Tout de suite, quitter le mode Zen ou fermer la palette"],
+          ["Ctrl+W", "Masquer la fenêtre"],
+          ["Ctrl+Q", "Quitter l'application"],
+          ["F5", "Recharger WhatsApp Web"],
+          ["F11", "Plein écran"]
         ]
       }
     },

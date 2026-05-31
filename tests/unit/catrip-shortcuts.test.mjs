@@ -36,14 +36,12 @@ test("matchCatripShortcut reconoce Meta en macOS", () => {
 });
 
 test("matchCatripShortcut reconoce combinaciones con Shift", () => {
-  assert.deepEqual(
-    matchCatripShortcut(keyDown({ key: "z", control: true, shift: true })),
-    { type: "toggleZen" },
-  );
-  assert.deepEqual(
-    matchCatripShortcut(keyDown({ key: "A", control: true, shift: true })),
-    { type: "urgentNow" },
-  );
+  assert.deepEqual(matchCatripShortcut(keyDown({ key: "z", control: true, shift: true })), {
+    type: "toggleZen",
+  });
+  assert.deepEqual(matchCatripShortcut(keyDown({ key: "A", control: true, shift: true })), {
+    type: "urgentNow",
+  });
 });
 
 test("matchCatripShortcut reconoce F5 y F11 sin modificador", () => {

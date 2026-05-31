@@ -10,9 +10,7 @@ test.describe("enlaces WhatsApp entrantes", () => {
         timeout: 15_000,
       });
       const parsed = await shell.evaluate(async () => {
-        return window.catrip.e2eParseWhatsAppUrl(
-          "whatsapp://send?phone=34600111222&text=Hola",
-        );
+        return window.catrip.e2eParseWhatsAppUrl("whatsapp://send?phone=34600111222&text=Hola");
       });
       expect(parsed).toMatchObject({
         kind: "phone",
@@ -42,8 +40,7 @@ test.describe("enlaces WhatsApp entrantes", () => {
       });
       await expect
         .poll(
-          async () =>
-            shell.evaluate(async () => window.catrip.e2eGetLastIncomingNavigation()),
+          async () => shell.evaluate(async () => window.catrip.e2eGetLastIncomingNavigation()),
           { timeout: 10_000 },
         )
         .toMatchObject({
@@ -67,9 +64,7 @@ test.describe("enlaces WhatsApp entrantes", () => {
         timeout: 15_000,
       });
       await shell.evaluate(async () => {
-        await window.catrip.e2eSimulateIncomingUrl(
-          "https://chat.whatsapp.com/InviteE2EGroup99",
-        );
+        await window.catrip.e2eSimulateIncomingUrl("https://chat.whatsapp.com/InviteE2EGroup99");
       });
       await expect
         .poll(

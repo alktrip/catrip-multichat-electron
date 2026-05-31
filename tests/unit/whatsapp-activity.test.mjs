@@ -4,10 +4,7 @@ import {
   WHATSAPP_ACTIVITY_JS,
   normalizeWhatsAppActivityRaw,
 } from "../../dist/main/whatsappActivity.js";
-import {
-  buildActivitySnapshot,
-  activityMapsEqual,
-} from "../../dist/main/accountActivity.js";
+import { buildActivitySnapshot, activityMapsEqual } from "../../dist/main/accountActivity.js";
 
 test("normalizeWhatsAppActivityRaw sanea datos crudos", () => {
   const out = normalizeWhatsAppActivityRaw({

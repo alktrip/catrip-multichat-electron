@@ -577,9 +577,7 @@ body {
 }
 
 /* Sin soporte de blur (GPUs/drivers antiguos): velo opaco equivalente */
-@supports not (
-  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
-) {
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .catrip-overlay-veil {
     background: rgba(0, 0, 0, 0.55);
   }
@@ -1497,7 +1495,11 @@ body {
 .catrip-cmd-row.is-active .catrip-cmd-kbd {
   color: #f3f6f6;
   border-color: rgb(var(--catrip-accent-rgb) / 0.28);
-  background: linear-gradient(180deg, rgb(var(--catrip-accent-rgb) / 0.14) 0%, rgb(var(--catrip-accent-rgb) / 0.05) 100%);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--catrip-accent-rgb) / 0.14) 0%,
+    rgb(var(--catrip-accent-rgb) / 0.05) 100%
+  );
 }
 
 /* -----------------------------------------------------------------------

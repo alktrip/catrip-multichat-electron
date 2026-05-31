@@ -261,7 +261,9 @@ export default function SettingsView({
           >
             {t("common.back")}
           </button>
-          <div style={{ fontSize: 12, opacity: 0.7, padding: "0 15px 10px" }}>{t("settings.title")}</div>
+          <div style={{ fontSize: 12, opacity: 0.7, padding: "0 15px 10px" }}>
+            {t("settings.title")}
+          </div>
           <div className="catrip-gradient-divider" style={{ margin: "6px 0 10px" }} />
           <SidebarButton
             ref={(el) => {
@@ -279,7 +281,9 @@ export default function SettingsView({
             label={t("settings.pages.accounts")}
             onClick={() => setPage("accounts")}
           />
-          <div style={{ fontSize: 12, opacity: 0.7, padding: "14px 15px 6px" }}>{t("settings.tools")}</div>
+          <div style={{ fontSize: 12, opacity: 0.7, padding: "14px 15px 6px" }}>
+            {t("settings.tools")}
+          </div>
           <div className="catrip-gradient-divider" style={{ margin: "6px 0 10px" }} />
           <SidebarButton
             ref={(el) => {
@@ -685,7 +689,9 @@ export default function SettingsView({
                     {t("settings.language.hint")}
                   </div>
                   <div className="catrip-gradient-divider" style={{ margin: "10px 0" }} />
-                  <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>{t("settings.scale.title")}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, margin: "8px 0 6px" }}>
+                    {t("settings.scale.title")}
+                  </div>
                   <select
                     className="catrip-select"
                     value={String(settings.general.uiScale ?? 1)}
@@ -824,10 +830,7 @@ export default function SettingsView({
                       {t("settings.general.registerProtocol")}
                     </button>
                   </div>
-                  <div
-                    className="catrip-text-hint"
-                    style={{ marginBottom: 10, lineHeight: 1.5 }}
-                  >
+                  <div className="catrip-text-hint" style={{ marginBottom: 10, lineHeight: 1.5 }}>
                     {t("settings.general.registerProtocolHint")}
                     <br />
                     <strong>{t("settings.general.waylandBrowserTitle")}</strong> —{" "}
@@ -1198,11 +1201,21 @@ export default function SettingsView({
                       })
                     }
                   >
-                    <option value="5">{t("settings.performance.minutesOption", { count: 5 })}</option>
-                    <option value="10">{t("settings.performance.minutesOption", { count: 10 })}</option>
-                    <option value="15">{t("settings.performance.minutesOption", { count: 15 })}</option>
-                    <option value="30">{t("settings.performance.minutesOption", { count: 30 })}</option>
-                    <option value="60">{t("settings.performance.minutesOption", { count: 60 })}</option>
+                    <option value="5">
+                      {t("settings.performance.minutesOption", { count: 5 })}
+                    </option>
+                    <option value="10">
+                      {t("settings.performance.minutesOption", { count: 10 })}
+                    </option>
+                    <option value="15">
+                      {t("settings.performance.minutesOption", { count: 15 })}
+                    </option>
+                    <option value="30">
+                      {t("settings.performance.minutesOption", { count: 30 })}
+                    </option>
+                    <option value="60">
+                      {t("settings.performance.minutesOption", { count: 60 })}
+                    </option>
                   </select>
                   <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
                     {t("settings.performance.suspendHint")}

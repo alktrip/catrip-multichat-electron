@@ -124,7 +124,7 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 - **Notificaciones**: avisos cuando suben no leídos en **cualquier cuenta** (throttle por cuenta); clic enfoca la ventana y **activa esa cuenta**; opciones **No molestar** y **sonido** en Ajustes.
 - **Estado de sesión por cuenta** (conectada / QR / sin red) en tooltips del rail, menú de bandeja y tooltip SNI.
 - **Actualizaciones**: canal **estable / beta**, changelog resumido en el diálogo de actualización y verificación **SHA-512** del `.deb` descargado.
-- **Linux / Wayland**: **Desktop Actions** en el lanzador (*Abrir*, *Enfocar ventana*, *Nueva cuenta*); botón **Registrar protocolo WhatsApp** en Ajustes; guía ampliada para enlaces `https://wa.me` en el navegador.
+- **Linux / Wayland**: **Desktop Actions** en el lanzador (_Abrir_, _Enfocar ventana_, _Nueva cuenta_); botón **Registrar protocolo WhatsApp** en Ajustes; guía ampliada para enlaces `https://wa.me` en el navegador.
 - **Rendimiento**: flags Chromium al arranque (`chromiumLaunch.ts`) — rasterización GPU, VA-API en Linux, límite de procesos del renderer aplicado desde Ajustes; toggle **Refuerzo GPU** y **Evitar suspensión durante videollamada** (`powerSaveBlocker`).
 - **Descargas**: abrir archivos completados con la app predeterminada del sistema (`xdg-open` / portal).
 - **UI**: verde de marca unificado (`#25D366`), `:focus-visible`, switches y campos de formulario, toasts con iconos SVG, blur en overlays; menú contextual del `<select>` legible en tema oscuro (`color-scheme: dark`).
@@ -155,13 +155,13 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ### Corregido
 
-- **Salir desde el icono de bandeja (SNI / D-Bus)**: al elegir «Salir» ya no aparece el diálogo *Cannot send message, stream is closed*; el tray D-Bus se cierra de forma ordenada antes de terminar el proceso.
+- **Salir desde el icono de bandeja (SNI / D-Bus)**: al elegir «Salir» ya no aparece el diálogo _Cannot send message, stream is closed_; el tray D-Bus se cierra de forma ordenada antes de terminar el proceso.
 
 ## [1.3.1] — 2026-05-21
 
 ### Corregido
 
-- **Enlaces `whatsapp://` en GNOME**: el sistema mostraba *«No hay aplicaciones disponibles»* porque faltaba indexar el lanzador (`update-desktop-database`). Nuevo script `register-whatsapp-protocol.sh`, postinst del `.deb` que crea el `.desktop` en `~/.local/share/applications` del usuario, registro al arrancar la app y `npm run register:whatsapp`.
+- **Enlaces `whatsapp://` en GNOME**: el sistema mostraba _«No hay aplicaciones disponibles»_ porque faltaba indexar el lanzador (`update-desktop-database`). Nuevo script `register-whatsapp-protocol.sh`, postinst del `.deb` que crea el `.desktop` en `~/.local/share/applications` del usuario, registro al arrancar la app y `npm run register:whatsapp`.
 
 ## [1.3.0] — 2026-05-21
 

@@ -110,7 +110,10 @@ function resizeTrayIcon(img: Electron.NativeImage): Electron.NativeImage {
 }
 
 /** Compone badge sobre la base verde pregenerada. */
-function composeTrayWithBadge(base: Electron.NativeImage, badgeCount: number): Electron.NativeImage {
+function composeTrayWithBadge(
+  base: Electron.NativeImage,
+  badgeCount: number,
+): Electron.NativeImage {
   const notify = badgeSvg(badgeCount);
   if (!notify) return resizeTrayIcon(base);
 

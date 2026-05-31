@@ -1,9 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import {
-  MANUAL_ILLUSTRATIONS,
-  type ManualIllustrationKey,
-} from "./manualIllustrations";
+import { MANUAL_ILLUSTRATIONS, type ManualIllustrationKey } from "./manualIllustrations";
 
 export type ManualTable = { headers: string[]; rows: string[][] };
 

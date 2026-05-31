@@ -38,11 +38,15 @@ export function initUpdateDialogBridge() {
     const buttonId =
       typeof action === "string"
         ? action
-        : action && typeof action === "object" && typeof (action as { buttonId?: string }).buttonId === "string"
+        : action &&
+            typeof action === "object" &&
+            typeof (action as { buttonId?: string }).buttonId === "string"
           ? (action as { buttonId: string }).buttonId
           : null;
     const releaseUrl =
-      action && typeof action === "object" && typeof (action as { releaseUrl?: string }).releaseUrl === "string"
+      action &&
+      typeof action === "object" &&
+      typeof (action as { releaseUrl?: string }).releaseUrl === "string"
         ? (action as { releaseUrl: string }).releaseUrl
         : "";
 

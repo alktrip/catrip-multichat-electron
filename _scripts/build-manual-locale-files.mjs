@@ -262,10 +262,26 @@ const manualEs = [
     table: {
       headers: ["Herramienta", "Cuándo usarla", "Cómo abrirla"],
       rows: [
-        ["⚡ Ahora mismo", "Vistazo rápido: top 3 urgentes sin tapar la pantalla", "Botón ⚡, Ctrl+Shift+A, Ver → Ahora mismo"],
-        ["▤ Centro de actividad", "Resumen por cuenta: quién escribió y vista previa", "Botón ▤ o Ctrl+K → «actividad»"],
-        ["✉ Acciones pendientes", "Lista completa de todos los chats sin leer", "Botón ✉ o Ctrl+K → «pendientes»"],
-        ["Ctrl+K → Chats", "Buscar un contacto concreto por nombre o texto", "Ctrl+K y escribe el nombre"],
+        [
+          "⚡ Ahora mismo",
+          "Vistazo rápido: top 3 urgentes sin tapar la pantalla",
+          "Botón ⚡, Ctrl+Shift+A, Ver → Ahora mismo",
+        ],
+        [
+          "▤ Centro de actividad",
+          "Resumen por cuenta: quién escribió y vista previa",
+          "Botón ▤ o Ctrl+K → «actividad»",
+        ],
+        [
+          "✉ Acciones pendientes",
+          "Lista completa de todos los chats sin leer",
+          "Botón ✉ o Ctrl+K → «pendientes»",
+        ],
+        [
+          "Ctrl+K → Chats",
+          "Buscar un contacto concreto por nombre o texto",
+          "Ctrl+K y escribe el nombre",
+        ],
       ],
     },
     bullets: [

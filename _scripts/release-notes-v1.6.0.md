@@ -32,11 +32,11 @@ sudo apt install ./catrip-connect_1.6.0_amd64.deb
 
 ### Archivos de esta release
 
-| Archivo | Uso |
-|---------|-----|
-| `catrip-connect_1.6.0_amd64.deb` | Instalación en Debian/Ubuntu (`sudo apt install ./…`) |
-| `catrip-connect_1.6.0_x86_64.AppImage` | Ejecutable portable (`chmod +x` y ejecutar) |
-| `latest-linux.yml` | Metadatos para actualización automática (AppImage) |
+| Archivo                                | Uso                                                   |
+| -------------------------------------- | ----------------------------------------------------- |
+| `catrip-connect_1.6.0_amd64.deb`       | Instalación en Debian/Ubuntu (`sudo apt install ./…`) |
+| `catrip-connect_1.6.0_x86_64.AppImage` | Ejecutable portable (`chmod +x` y ejecutar)           |
+| `latest-linux.yml`                     | Metadatos para actualización automática (AppImage)    |
 
 ### Requisitos habituales
 

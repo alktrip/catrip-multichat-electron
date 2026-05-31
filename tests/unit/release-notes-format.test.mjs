@@ -26,9 +26,8 @@ test("releaseNotesToPlainText limpia markdown básico", () => {
 });
 
 test("formatReleaseNotesForUpdateDialog no trunca notas largas por defecto", async () => {
-  const { formatReleaseNotesForUpdateDialog, formatReleaseNotesBrief } = await import(
-    "../../dist/main/releaseNotesFormat.js"
-  );
+  const { formatReleaseNotesForUpdateDialog, formatReleaseNotesBrief } =
+    await import("../../dist/main/releaseNotesFormat.js");
   const long = "• ".repeat(400) + "punto final";
   const full = formatReleaseNotesForUpdateDialog(long);
   const brief = formatReleaseNotesBrief(long);

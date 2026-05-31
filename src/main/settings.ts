@@ -81,7 +81,13 @@ export type Settings = {
 
 const DEFAULTS: Settings = {
   version: 1,
-  performance: { rendererProcessLimit: 3, gpuBoost: false, inhibitSleepDuringCall: true, suspendInactiveAccounts: true, suspendAfterMinutes: 15 },
+  performance: {
+    rendererProcessLimit: 3,
+    gpuBoost: false,
+    inhibitSleepDuringCall: true,
+    suspendInactiveAccounts: true,
+    suspendAfterMinutes: 15,
+  },
   network: { proxyEnabled: false, proxyRules: "" },
   general: {
     startMinimized: false,
@@ -240,8 +246,7 @@ export function loadSettings(): Settings {
           typeof (parsed.general as any)?.checkForUpdates === "boolean"
             ? (parsed.general as any).checkForUpdates
             : DEFAULTS.general.checkForUpdates,
-        updateChannel:
-          (parsed.general as any)?.updateChannel === "beta" ? "beta" : "stable",
+        updateChannel: (parsed.general as any)?.updateChannel === "beta" ? "beta" : "stable",
         openDownloadsWithDefaultApp:
           typeof (parsed.general as any)?.openDownloadsWithDefaultApp === "boolean"
             ? (parsed.general as any).openDownloadsWithDefaultApp

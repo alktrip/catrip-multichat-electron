@@ -8,13 +8,13 @@ Cliente de escritorio para **WhatsApp Web** con **varias cuentas** en paralelo. 
 
 ## 1. Conceptos básicos
 
-| Concepto | Descripción |
-|----------|-------------|
-| **Cuenta** | Perfil de WhatsApp Web identificado por un nombre visible y un avatar generado por la aplicación. |
-| **Cuenta activa** | La sesión cuyo chat se muestra en el área principal. |
-| **Rail (barra lateral)** | Columna izquierda con avatares de cuentas, accesos rápidos y estado de no leídos. |
-| **Modo navegador** | Vista principal con WhatsApp Web y rail (salvo modo Zen u opción de ocultar barra). |
-| **Modo ajustes** | Pantalla de preferencias con menú lateral por secciones. |
+| Concepto                 | Descripción                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| **Cuenta**               | Perfil de WhatsApp Web identificado por un nombre visible y un avatar generado por la aplicación. |
+| **Cuenta activa**        | La sesión cuyo chat se muestra en el área principal.                                              |
+| **Rail (barra lateral)** | Columna izquierda con avatares de cuentas, accesos rápidos y estado de no leídos.                 |
+| **Modo navegador**       | Vista principal con WhatsApp Web y rail (salvo modo Zen u opción de ocultar barra).               |
+| **Modo ajustes**         | Pantalla de preferencias con menú lateral por secciones.                                          |
 
 Los datos de la aplicación en Linux se guardan bajo `~/.config/catrip_multichat_electron/` (identificador técnico histórico).
 
@@ -92,21 +92,21 @@ Incluye (entre otras): cambiar de cuenta por nombre, **Nueva cuenta**, **Nuevo c
 
 En Linux y Windows se usa **Ctrl**; en macOS suele usarse **Cmd** donde el sistema lo mapea desde el menú nativo.
 
-| Atajo | Acción |
-|-------|--------|
-| `Ctrl+K` | Abrir paleta de comandos |
-| `Ctrl+P` | Abrir Ajustes (General) |
+| Atajo               | Acción                                                    |
+| ------------------- | --------------------------------------------------------- |
+| `Ctrl+K`            | Abrir paleta de comandos                                  |
+| `Ctrl+P`            | Abrir Ajustes (General)                                   |
 | `Ctrl+1` … `Ctrl+9` | Cambiar a la cuenta en esa posición en la lista (hasta 9) |
-| `Ctrl+N` | Nuevo chat (WhatsApp Web) |
-| `Ctrl+M` | Diálogo “Chat por número de teléfono” |
-| `Ctrl+U` | Nueva cuenta |
-| `Ctrl+Shift+A` | Panel «Ahora mismo» (top 3 chats urgentes) |
-| `Ctrl+Shift+Z` | Alternar modo Zen |
-| `Escape` | Cerrar «Ahora mismo», salir del modo Zen o cerrar paleta |
-| `Ctrl+W` | Ocultar ventana |
-| `Ctrl+Q` | Salir de la aplicación |
-| `F5` | Recargar la vista de WhatsApp Web |
-| `F11` | Pantalla completa |
+| `Ctrl+N`            | Nuevo chat (WhatsApp Web)                                 |
+| `Ctrl+M`            | Diálogo “Chat por número de teléfono”                     |
+| `Ctrl+U`            | Nueva cuenta                                              |
+| `Ctrl+Shift+A`      | Panel «Ahora mismo» (top 3 chats urgentes)                |
+| `Ctrl+Shift+Z`      | Alternar modo Zen                                         |
+| `Escape`            | Cerrar «Ahora mismo», salir del modo Zen o cerrar paleta  |
+| `Ctrl+W`            | Ocultar ventana                                           |
+| `Ctrl+Q`            | Salir de la aplicación                                    |
+| `F5`                | Recargar la vista de WhatsApp Web                         |
+| `F11`               | Pantalla completa                                         |
 
 Los mismos atajos aparecen reflejados en el **menú nativo** de la ventana (Archivo, Ver, Chat, Cuentas, Ayuda).
 
@@ -146,7 +146,7 @@ Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o u
    ```bash
    _scripts/install-appimage.sh /ruta/a/catrip-connect_*.AppImage
    ```
-2. Si el navegador muestra *«No hay aplicaciones disponibles»*, usa **Ajustes → General → Registrar como app predeterminada (whatsapp://)** o ejecuta:
+2. Si el navegador muestra _«No hay aplicaciones disponibles»_, usa **Ajustes → General → Registrar como app predeterminada (whatsapp://)** o ejecuta:
    ```bash
    npm run register:whatsapp
    # o: bash _scripts/register-whatsapp-protocol.sh
@@ -183,10 +183,10 @@ Los enlaces pueden incluir **mensaje precargado** (`?text=…` en `wa.me` o `wha
 
 Activa **Buscar actualizaciones al iniciar** y elige canal **estable** (releases) o **beta** (pre-releases). El changelog se muestra en **texto plano** dentro de un panel con **desplazamiento vertical** (sin agrandar la ventana); cabecera y botones permanecen visibles. Enlace opcional **Ver release completa en GitHub** al pie del panel.
 
-| Forma de instalación | Comportamiento al haber una versión nueva |
-|----------------------|-------------------------------------------|
+| Forma de instalación                                     | Comportamiento al haber una versión nueva                                                                                                                                                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **`.deb`** (instalado con apt en `/opt/Catrip Connect/`) | Diálogo con el changelog y tres opciones: **Descargar…** (eliges carpeta y se guarda el `.deb`; opcional verificación SHA-512), **Solo enlace de descarga** (URL de GitHub y abrir en el navegador) o **Más tarde**. La app **no** reinicia ni instala sola. |
-| **AppImage** | Descarga automática en segundo plano; al terminar, **Reiniciar ahora** o **Más tarde** para aplicar la actualización. |
+| **AppImage**                                             | Descarga automática en segundo plano; al terminar, **Reiniciar ahora** o **Más tarde** para aplicar la actualización.                                                                                                                                        |
 
 Tras descargar un `.deb` manualmente:
 
@@ -237,7 +237,7 @@ Los cambios se guardan en el almacenamiento local de la aplicación.
 - El **rail** muestra en el tooltip de cada cuenta el estado de sesión y los no leídos.
 - En algunos entornos Wayland el backend puede ser SNI/AppIndicator; el clic en el icono sigue permitiendo **restaurar** la ventana.
 - Clic en una **notificación** del sistema: enfoca la ventana y activa la cuenta (con pulso always-on-top en Wayland).
-- En GNOME/KDE, el menú del **lanzador** puede mostrar acciones: *Abrir*, *Enfocar ventana*, *Nueva cuenta* (tras `npm run register:whatsapp` o reinstalar el `.desktop`).
+- En GNOME/KDE, el menú del **lanzador** puede mostrar acciones: _Abrir_, _Enfocar ventana_, _Nueva cuenta_ (tras `npm run register:whatsapp` o reinstalar el `.desktop`).
 
 ---
 
@@ -263,14 +263,14 @@ Para probar sesiones reales de WhatsApp, usa la ventana Electron que `npm run de
 
 ## 12. Variables de entorno (referencia)
 
-| Variable | Efecto |
-|----------|--------|
-| `CATRIP_DISABLE_GPU=1` | Desactiva aceleración por GPU antes del arranque (útil si la vista embebida sale en negro en algunos controladores Linux/Wayland). |
-| `CATRIP_GPU_BOOST=1` | Activa flags GPU extra (VA-API, zero-copy); también en **Ajustes → Rendimiento**. |
-| `CATRIP_OZONE_PLATFORM=wayland\|x11` | Backend gráfico de Chromium (prueba si el compositor va lento). |
-| `CATRIP_TRANSPARENT_WINDOW=0\|1` | Fuerza ventana opaca o transparente. |
-| `CATRIP_DEBUG_EMBED=0\|1` | Logs de diagnóstico del embebido (en desarrollo suele estar activo salvo `0`). |
-| `CATRIP_E2E=1` | Modo pruebas automatizadas (no usar en uso normal). |
+| Variable                             | Efecto                                                                                                                             |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `CATRIP_DISABLE_GPU=1`               | Desactiva aceleración por GPU antes del arranque (útil si la vista embebida sale en negro en algunos controladores Linux/Wayland). |
+| `CATRIP_GPU_BOOST=1`                 | Activa flags GPU extra (VA-API, zero-copy); también en **Ajustes → Rendimiento**.                                                  |
+| `CATRIP_OZONE_PLATFORM=wayland\|x11` | Backend gráfico de Chromium (prueba si el compositor va lento).                                                                    |
+| `CATRIP_TRANSPARENT_WINDOW=0\|1`     | Fuerza ventana opaca o transparente.                                                                                               |
+| `CATRIP_DEBUG_EMBED=0\|1`            | Logs de diagnóstico del embebido (en desarrollo suele estar activo salvo `0`).                                                     |
+| `CATRIP_E2E=1`                       | Modo pruebas automatizadas (no usar en uso normal).                                                                                |
 
 ---
 

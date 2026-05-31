@@ -151,11 +151,7 @@
       "steps": null,
       "note": null,
       "table": {
-        "headers": [
-          "Herramienta",
-          "Cuándo usarla",
-          "Cómo abrirla"
-        ],
+        "headers": ["Herramienta", "Cuándo usarla", "Cómo abrirla"],
         "rows": [
           [
             "⚡ Ahora mismo",
@@ -403,63 +399,21 @@
       "steps": null,
       "note": "También puedes ver una lista rápida en Ayuda → Atajos de teclado y el manual completo en Ayuda → Manual de usuario.",
       "table": {
-        "headers": [
-          "Atajo",
-          "Qué hace"
-        ],
+        "headers": ["Atajo", "Qué hace"],
         "rows": [
-          [
-            "Ctrl+K",
-            "Abrir buscador (chats sin leer, cuentas y acciones)"
-          ],
-          [
-            "Ctrl+P",
-            "Abrir Ajustes"
-          ],
-          [
-            "Ctrl+1 … Ctrl+9",
-            "Ir a la cuenta 1, 2, 3… (hasta 9)"
-          ],
-          [
-            "Ctrl+N",
-            "Nuevo chat en WhatsApp Web"
-          ],
-          [
-            "Ctrl+M",
-            "Chat por número de teléfono"
-          ],
-          [
-            "Ctrl+U",
-            "Nueva cuenta"
-          ],
-          [
-            "Ctrl+Shift+A",
-            "Abrir o cerrar «Ahora mismo» (top 3 urgentes)"
-          ],
-          [
-            "Ctrl+Shift+Z",
-            "Activar o desactivar modo Zen"
-          ],
-          [
-            "Escape",
-            "Cerrar «Ahora mismo», salir del modo Zen o cerrar paleta"
-          ],
-          [
-            "Ctrl+W",
-            "Ocultar ventana"
-          ],
-          [
-            "Ctrl+Q",
-            "Salir de la aplicación"
-          ],
-          [
-            "F5",
-            "Recargar WhatsApp Web"
-          ],
-          [
-            "F11",
-            "Pantalla completa"
-          ]
+          ["Ctrl+K", "Abrir buscador (chats sin leer, cuentas y acciones)"],
+          ["Ctrl+P", "Abrir Ajustes"],
+          ["Ctrl+1 … Ctrl+9", "Ir a la cuenta 1, 2, 3… (hasta 9)"],
+          ["Ctrl+N", "Nuevo chat en WhatsApp Web"],
+          ["Ctrl+M", "Chat por número de teléfono"],
+          ["Ctrl+U", "Nueva cuenta"],
+          ["Ctrl+Shift+A", "Abrir o cerrar «Ahora mismo» (top 3 urgentes)"],
+          ["Ctrl+Shift+Z", "Activar o desactivar modo Zen"],
+          ["Escape", "Cerrar «Ahora mismo», salir del modo Zen o cerrar paleta"],
+          ["Ctrl+W", "Ocultar ventana"],
+          ["Ctrl+Q", "Salir de la aplicación"],
+          ["F5", "Recargar WhatsApp Web"],
+          ["F11", "Pantalla completa"]
         ]
       }
     },

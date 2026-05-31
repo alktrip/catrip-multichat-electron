@@ -8,14 +8,15 @@ declare global {
       listAccounts?: () => Promise<Array<{ id: string; label: string }>>;
       getActiveAccountId?: () => Promise<string | null>;
       onActiveAccountChanged?: (cb: (id: string | null) => void) => () => void;
-      onAccountsListChanged?: (cb: (accounts: Array<{ id: string; label: string }>) => void) => () => void;
+      onAccountsListChanged?: (
+        cb: (accounts: Array<{ id: string; label: string }>) => void,
+      ) => () => void;
       previewUpdateDialog?: () => Promise<boolean>;
     };
   }
 }
 
-const APP_VERSION =
-  typeof __CATRIP_APP_VERSION__ === "string" ? __CATRIP_APP_VERSION__ : "0.0.0";
+const APP_VERSION = typeof __CATRIP_APP_VERSION__ === "string" ? __CATRIP_APP_VERSION__ : "0.0.0";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -155,14 +156,18 @@ export default function DevBanner() {
             <Row
               label="Atajos UI"
               value={
-                <code>Ctrl+K paleta · Ctrl+P ajustes · Ctrl+Shift+Z zen · ▤ centro de actividad</code>
+                <code>
+                  Ctrl+K paleta · Ctrl+P ajustes · Ctrl+Shift+Z zen · ▤ centro de actividad
+                </code>
               }
             />
           </dl>
 
           {bridgeReady && ctx && Object.keys(ctx.catripEnv).length > 0 ? (
             <div className="catrip-dev-banner-env">
-              <div className="catrip-dev-banner-env-title">Variables de entorno (CATRIP_* / Vite)</div>
+              <div className="catrip-dev-banner-env-title">
+                Variables de entorno (CATRIP_* / Vite)
+              </div>
               <dl className="catrip-dev-banner-grid">
                 {Object.entries(ctx.catripEnv)
                   .sort(([a], [b]) => a.localeCompare(b))

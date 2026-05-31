@@ -57,10 +57,17 @@ async function askUpdateDialog(req: UpdateDialogRequest): Promise<string> {
       message: req.message,
       detail,
       buttons: labels,
-      defaultId: Math.max(0, req.buttons.findIndex((b) => b.primary)),
-      cancelId: Math.max(0, req.buttons.findIndex((b) => b.id === "later")),
+      defaultId: Math.max(
+        0,
+        req.buttons.findIndex((b) => b.primary),
+      ),
+      cancelId: Math.max(
+        0,
+        req.buttons.findIndex((b) => b.id === "later"),
+      ),
     });
-    const picked = req.buttons[r.response]?.id ?? req.buttons[req.buttons.length - 1]?.id ?? "later";
+    const picked =
+      req.buttons[r.response]?.id ?? req.buttons[req.buttons.length - 1]?.id ?? "later";
     if (picked === "open-release-url" && req.releaseUrl) {
       void shell.openExternal(req.releaseUrl);
     }
@@ -101,7 +108,10 @@ async function downloadUrlToFile(url: string, destPath: string): Promise<void> {
     );
   }
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
-  await pipeline(Readable.fromWeb(res.body as import("stream/web").ReadableStream), createWriteStream(destPath));
+  await pipeline(
+    Readable.fromWeb(res.body as import("stream/web").ReadableStream),
+    createWriteStream(destPath),
+  );
 }
 
 async function verifySha512(filePath: string, expected: string | undefined): Promise<string> {
@@ -164,7 +174,11 @@ async function promptDownloadToFolder(
   }
 }
 
-async function showManualDownloadUrl(version: string, debUrl: string, changelog: string): Promise<void> {
+async function showManualDownloadUrl(
+  version: string,
+  debUrl: string,
+  changelog: string,
+): Promise<void> {
   const action = await askUpdateDialog({
     title: tMain("main.updates.manualDownload"),
     message: `Catrip Connect ${version}`,

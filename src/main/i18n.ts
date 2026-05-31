@@ -20,10 +20,7 @@ export async function initMainI18n(
   languageSetting: string | undefined,
   osLocale?: string,
 ): Promise<AppLocale> {
-  const locale = resolveLocale(
-    languageSetting as Parameters<typeof resolveLocale>[0],
-    osLocale,
-  );
+  const locale = resolveLocale(languageSetting as Parameters<typeof resolveLocale>[0], osLocale);
   const resources = buildMainResources(locale);
 
   if (!initialized) {

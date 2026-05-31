@@ -277,8 +277,7 @@ const PATCHES = {
       "인터페이스 언어: 스페인어, 영어, 포르투갈어, 프랑스어, 독일어, 한국어, 일본어, 이탈리아어, 중국어 간체 또는 시스템 언어(이 매뉴얼의 인터페이스 언어 섹션 참고).",
     paletaBullet:
       "언어 변경: Ctrl+K에서 language, idioma 또는 settings를 검색해 설정 → 일반으로 이동.",
-    ayudaBullet:
-      "사용자 매뉴얼: 선택한 언어로 된 전체 색인 가이드(언어 섹션 포함).",
+    ayudaBullet: "사용자 매뉴얼: 선택한 언어로 된 전체 색인 가이드(언어 섹션 포함).",
     problemaBullet:
       "인터페이스와 WhatsApp 언어가 다름: 정상입니다. Catrip Connect와 WhatsApp Web은 별도 언어 설정을 사용합니다. 설정 → 일반 → 인터페이스 언어에서 변경하세요.",
   },
@@ -287,10 +286,8 @@ const PATCHES = {
       " 設定 → 一般からインターフェース全体の言語（メニュー、マニュアル、通知）も変更できます",
     ajustesBullet:
       "インターフェース言語：スペイン語、英語、ポルトガル語、フランス語、ドイツ語、韓国語、日本語、イタリア語、簡体字中国語、またはシステム言語（本マニュアルのインターフェース言語の章を参照）。",
-    paletaBullet:
-      "言語変更：Ctrl+K で language、idioma、settings と入力し、設定 → 一般を開く。",
-    ayudaBullet:
-      "ユーザーマニュアル：選択した言語の完全な索引付きガイド（言語の章を含む）。",
+    paletaBullet: "言語変更：Ctrl+K で language、idioma、settings と入力し、設定 → 一般を開く。",
+    ayudaBullet: "ユーザーマニュアル：選択した言語の完全な索引付きガイド（言語の章を含む）。",
     problemaBullet:
       "インターフェースと WhatsApp の言語が異なる：正常です。Catrip Connect と WhatsApp Web は別の言語設定です。設定 → 一般 → インターフェース言語で変更してください。",
   },
@@ -332,10 +329,7 @@ export function applyManualIdiomaPatch(sections, locale) {
       if (!/idioma|language|langue|sprache|言語|语言|lingua|interface/i.test(p1)) {
         return {
           ...section,
-          paragraphs: [
-            section.paragraphs[0],
-            `${p1}${patch.bienvenidaExtra}.`,
-          ],
+          paragraphs: [section.paragraphs[0], `${p1}${patch.bienvenidaExtra}.`],
         };
       }
     }

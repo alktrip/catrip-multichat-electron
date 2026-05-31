@@ -126,8 +126,7 @@ const catalog = {
         closeToTray: "Al cerrar, minimizar a la bandeja (tray)",
         autoStart: "Iniciar automáticamente con el sistema",
         incomingLinks: "Enlaces WhatsApp entrantes",
-        incomingLinksHint:
-          "Al abrir whatsapp:// o wa.me desde el sistema.",
+        incomingLinksHint: "Al abrir whatsapp:// o wa.me desde el sistema.",
         incomingLinkAuto: "Preguntar si hay varias cuentas",
         incomingLinkActive: "Siempre la cuenta activa",
         incomingLinkFixed: "Cuenta fija",
@@ -231,7 +230,7 @@ const catalog = {
       network: {
         proxy: "Proxy de red",
         proxyRules: "Reglas de proxy",
-        proxyHint: 'Ej.: http=host:8080;https=host:8080',
+        proxyHint: "Ej.: http=host:8080;https=host:8080",
         proxyRulesLabel: "Reglas del proxy",
         applyOnSaveHint: "Se aplica al guardar (no hay botón Apply aún).",
         proxyPlaceholder: 'Ej: "http=127.0.0.1:8080;https=127.0.0.1:8080"',
@@ -291,8 +290,7 @@ const catalog = {
         title: "Acerca de Catrip Connect",
         description:
           "Cliente de escritorio para WhatsApp Web con varias cuentas y sesiones aisladas.",
-        electronNote:
-          "Electron + Chromium embebido para reproducir audio y vídeo de forma fiable.",
+        electronNote: "Electron + Chromium embebido para reproducir audio y vídeo de forma fiable.",
         inspired:
           "Inspirado en ideas del proyecto ZapZap (PyQt6 + WebEngine). Implementación independiente en Electron.",
       },
@@ -448,10 +446,10 @@ const catalog = {
         actionNewAccount: "Nueva cuenta",
       },
     },
-      toasts: {
-        close: "Cerrar",
-        closeNotification: "Cerrar notificación",
-      },
+    toasts: {
+      close: "Cerrar",
+      closeNotification: "Cerrar notificación",
+    },
   },
 };
 
@@ -736,8 +734,7 @@ function deepAssignEn() {
     waylandBrowserTitle: "https://wa.me in the browser",
     waylandBrowserIntro:
       "On Wayland/Linux, browsers do not hand off HTTPS links to arbitrary apps. Practical options:",
-    waylandOption1:
-      "Use links that redirect to whatsapp:// (e.g. from another app or a bookmark).",
+    waylandOption1: "Use links that redirect to whatsapp:// (e.g. from another app or a bookmark).",
     waylandOption2:
       "In the browser: link menu → Open with… → Catrip Connect (if listed after registering).",
     waylandOption3:
@@ -760,8 +757,7 @@ function deepAssignEn() {
     deleteConfirm: "Delete account «{{name}}»?",
     deleteWarning:
       "The entire WhatsApp Web session will be permanently deleted (cookies, local storage, IndexedDB, Service Workers and HTTP cache). This cannot be undone.",
-    deleteHint:
-      "To stop notifications only, disable them on the card without losing the session.",
+    deleteHint: "To stop notifications only, disable them on the card without losing the session.",
     deleted: "Account «{{name}}» deleted.",
     deleteFailed: "Could not delete «{{name}}».",
     deleteError: "Error deleting «{{name}}». Check the console.",
@@ -997,8 +993,7 @@ function deepAssignEn() {
       "Download the .deb installer from:\n{{debUrl}}\n\nThen install it with apt or your package manager.",
     debInstallHint: "Install with:\nsudo apt install ./{{filename}}",
     restartFooterHint: "The app will restart to apply the update.{{integrityLine}}",
-    previewFooterHint:
-      "Update dialog preview (development). Scroll to read all release notes.",
+    previewFooterHint: "Update dialog preview (development). Scroll to read all release notes.",
     downloadHttpError: "Could not download ({{status}} {{statusText}})",
     openRelease: "View full release on GitHub",
   });

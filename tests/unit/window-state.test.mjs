@@ -56,11 +56,7 @@ test("applySavedWindowBounds restaura posición y tamaño al mostrar", () => {
     visible: false,
     bounds: { x: 0, y: 0, width: 640, height: 480 },
   });
-  applySavedWindowBounds(
-    win,
-    { x: 240, y: 120, width: 1180, height: 760 },
-    false,
-  );
+  applySavedWindowBounds(win, { x: 240, y: 120, width: 1180, height: 760 }, false);
   assert.deepEqual(win.getBounds(), { x: 240, y: 120, width: 1180, height: 760 });
 });
 
@@ -68,13 +64,6 @@ test("applySavedWindowBounds restaura estado maximizado", () => {
   const win = mockWindow({
     bounds: { x: 0, y: 0, width: 640, height: 480 },
   });
-  applySavedWindowBounds(
-    win,
-    { x: 100, y: 80, width: 1180, height: 760 },
-    true,
-  );
-  assert.deepEqual(win.calls, [
-    "setBounds:1180x760@100,80",
-    "maximize",
-  ]);
+  applySavedWindowBounds(win, { x: 100, y: 80, width: 1180, height: 760 }, true);
+  assert.deepEqual(win.calls, ["setBounds:1180x760@100,80", "maximize"]);
 });

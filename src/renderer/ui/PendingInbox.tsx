@@ -65,7 +65,16 @@ export default function PendingInbox({ accounts, activityByAccount, onOpenChat }
           {t("pending.empty")}
         </p>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <ul
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
           {items.map((item) => (
             <li key={`${item.accountId}:${item.chatName}`}>
               <button
@@ -85,7 +94,11 @@ export default function PendingInbox({ accounts, activityByAccount, onOpenChat }
                   alignItems: "flex-start",
                 }}
               >
-                <AccountAvatar icon={item.accountIcon} labelFallback={item.accountLabel} size={40} />
+                <AccountAvatar
+                  icon={item.accountIcon}
+                  labelFallback={item.accountLabel}
+                  size={40}
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{item.chatName}</span>

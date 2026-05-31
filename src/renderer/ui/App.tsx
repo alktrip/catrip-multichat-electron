@@ -15,7 +15,12 @@ import {
   type CommandIcon,
 } from "./commands";
 import { filterChatSearchItems } from "../../main/chatSearchModel";
-import type { AccountSessionStatus, AppApi, AccountActivityMap, UpdateDialogPayload } from "../../preload/preload";
+import type {
+  AccountSessionStatus,
+  AppApi,
+  AccountActivityMap,
+  UpdateDialogPayload,
+} from "../../preload/preload";
 import ActivityCenter from "./ActivityCenter";
 import PendingInbox from "./PendingInbox";
 import UpdateDialog from "./UpdateDialog";
@@ -1081,7 +1086,11 @@ export default function App() {
         )}
 
         {accounts.length === 0 && !zen ? (
-          <div className="catrip-onboarding-wrap" role="region" aria-label={t("app.onboarding.aria")}>
+          <div
+            className="catrip-onboarding-wrap"
+            role="region"
+            aria-label={t("app.onboarding.aria")}
+          >
             <div className="catrip-onboarding-card">
               <img
                 src={`${import.meta.env.BASE_URL}org.k3p.catrip-multichat.svg`}
@@ -1294,7 +1303,9 @@ export default function App() {
                 </span>
               ) : null}
             </div>
-            <div style={{ fontSize: 13, marginBottom: 8 }}>{t("app.incomingLink.chooseAccount")}</div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>
+              {t("app.incomingLink.chooseAccount")}
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {accounts.map((a) => (
                 <button

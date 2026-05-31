@@ -42,9 +42,7 @@ export function parseWhatsAppIncomingUrl(raw: string): WhatsAppIncomingLink | nu
       return { kind: "groupInvite", url: buildGroupInviteWebUrl(inviteCode) };
     }
     const phone =
-      url.searchParams.get("phone") ||
-      url.pathname.replace(/^\/+/, "").split("/")[0] ||
-      "";
+      url.searchParams.get("phone") || url.pathname.replace(/^\/+/, "").split("/")[0] || "";
     const digits = normalizeE164Digits(phone);
     if (digits) return { kind: "phone", digits, text: textParam };
     return null;

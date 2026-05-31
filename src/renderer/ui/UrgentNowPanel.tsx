@@ -59,7 +59,11 @@ export default function UrgentNowPanel({
                   onClose();
                 }}
               >
-                <AccountAvatar icon={item.accountIcon} labelFallback={item.accountLabel} size={36} />
+                <AccountAvatar
+                  icon={item.accountIcon}
+                  labelFallback={item.accountLabel}
+                  size={36}
+                />
                 <div className="catrip-urgent-panel-row-body">
                   <div className="catrip-urgent-panel-row-top">
                     <div className="catrip-urgent-panel-row-title">{item.chatName}</div>

@@ -8,9 +8,7 @@ import {
 } from "../../dist/main/whatsappLinks.js";
 
 test("parse whatsapp:// con teléfono y texto", () => {
-  const link = parseWhatsAppIncomingUrl(
-    "whatsapp://send?phone=34600111222&text=Hola%20mundo",
-  );
+  const link = parseWhatsAppIncomingUrl("whatsapp://send?phone=34600111222&text=Hola%20mundo");
   assert.equal(link?.kind, "phone");
   if (link?.kind === "phone") {
     assert.equal(link.digits, "34600111222");
@@ -48,9 +46,7 @@ test("parse chat.whatsapp.com como invitación a grupo", () => {
 });
 
 test("parse web.whatsapp.com/accept?code=", () => {
-  const link = parseWhatsAppIncomingUrl(
-    "https://web.whatsapp.com/accept?code=InviteCode123",
-  );
+  const link = parseWhatsAppIncomingUrl("https://web.whatsapp.com/accept?code=InviteCode123");
   assert.equal(link?.kind, "groupInvite");
 });
 

@@ -89,11 +89,7 @@ test("no duplica badges dentro de la misma fila de chat", () => {
   });
   badge.parent = chatList;
 
-  assert.equal(
-    runUnreadScript({ title: "", chatList }),
-    4,
-    "un solo badge debe contarse una vez",
-  );
+  assert.equal(runUnreadScript({ title: "", chatList }), 4, "un solo badge debe contarse una vez");
 });
 
 test("no infla con aria-labels globales fuera de badges", () => {

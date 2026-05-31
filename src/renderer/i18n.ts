@@ -32,14 +32,8 @@ function buildResources(): Record<string, { translation: Record<string, unknown>
 let initPromise: Promise<AppLocale> | null = null;
 
 /** Inicialización síncrona para montar React de inmediato (como en v1.6.0 remota). */
-export function initRendererI18nSync(
-  languageSetting?: string,
-  osLocale?: string,
-): AppLocale {
-  const locale = resolveLocale(
-    languageSetting as Parameters<typeof resolveLocale>[0],
-    osLocale,
-  );
+export function initRendererI18nSync(languageSetting?: string, osLocale?: string): AppLocale {
+  const locale = resolveLocale(languageSetting as Parameters<typeof resolveLocale>[0], osLocale);
   if (!i18next.isInitialized) {
     i18next.use(initReactI18next).init({
       lng: locale,
@@ -61,10 +55,7 @@ export async function initRendererI18n(
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    const locale = resolveLocale(
-      languageSetting as Parameters<typeof resolveLocale>[0],
-      osLocale,
-    );
+    const locale = resolveLocale(languageSetting as Parameters<typeof resolveLocale>[0], osLocale);
     await i18next.use(initReactI18next).init({
       lng: locale,
       fallbackLng: [FALLBACK_LOCALE],
@@ -83,10 +74,7 @@ export async function changeRendererLanguage(
   languageSetting: string | undefined,
   osLocale?: string,
 ): Promise<AppLocale> {
-  const locale = resolveLocale(
-    languageSetting as Parameters<typeof resolveLocale>[0],
-    osLocale,
-  );
+  const locale = resolveLocale(languageSetting as Parameters<typeof resolveLocale>[0], osLocale);
   await i18next.changeLanguage(locale);
   document.documentElement.lang = locale;
   return locale;

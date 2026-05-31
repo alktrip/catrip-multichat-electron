@@ -2,11 +2,11 @@
 
 Cliente de escritorio (**Electron**) para WhatsApp Web con **varias cuentas** y sesiones aisladas.
 
-| Documentación | Contenido |
-|---------------|-----------|
-| **[USAGE.md](USAGE.md)** | Guía detallada de uso: interfaz, atajos, ajustes, bandeja, enlaces `whatsapp://` y consejos. |
-| **Ayuda → Manual de usuario** (en la app) | Manual integrado para usuarios finales, con ilustraciones e índice (**9 idiomas**). |
-| **[CHANGELOG.md](CHANGELOG.md)** | Historial de versiones y cambios destacados. |
+| Documentación                             | Contenido                                                                                    |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **[USAGE.md](USAGE.md)**                  | Guía detallada de uso: interfaz, atajos, ajustes, bandeja, enlaces `whatsapp://` y consejos. |
+| **Ayuda → Manual de usuario** (en la app) | Manual integrado para usuarios finales, con ilustraciones e índice (**9 idiomas**).          |
+| **[CHANGELOG.md](CHANGELOG.md)**          | Historial de versiones y cambios destacados.                                                 |
 
 **Versión actual:** **1.7.0** — **internacionalización** (9 idiomas + idioma del sistema), manual multilingüe, **atajos de teclado con foco en WhatsApp Web** y mejoras de «Ahora mismo»; incluye 1.6.x (Ahora mismo, búsqueda `Ctrl+K`, reposo de cuentas).
 
@@ -29,17 +29,17 @@ Este proyecto toma **ideas y enfoque** del cliente [**ZapZap**](https://github.c
 
 ![Selector de idioma y alcance de las traducciones](docs/images/catrip-i18n-languages.png)
 
-| Idioma | Código |
-|--------|--------|
-| Español | `es` |
-| English | `en` |
-| Português | `pt` |
-| Français | `fr` |
-| Deutsch | `de` |
-| 한국어 | `ko` |
-| 日本語 | `ja` |
-| Italiano | `it` |
-| 中文（简体） | `zh` |
+| Idioma       | Código |
+| ------------ | ------ |
+| Español      | `es`   |
+| English      | `en`   |
+| Português    | `pt`   |
+| Français     | `fr`   |
+| Deutsch      | `de`   |
+| 한국어       | `ko`   |
+| 日本語       | `ja`   |
+| Italiano     | `it`   |
+| 中文（简体） | `zh`   |
 
 - **Por defecto:** idioma del **sistema operativo**; si no está soportado → **inglés**.
 - **Ajustes → General → Idioma de la interfaz** (o **Idioma del sistema**).
@@ -90,12 +90,12 @@ En la máquina que **construye** los paquetes:
 sudo apt install dpkg fakeroot
 ```
 
-| Comando | Salida |
-|---------|--------|
-| `npm run dist:deb` | Solo `.deb` |
-| `npm run dist:appimage` | Solo `.AppImage` |
-| `npm run dist:linux` | Ambos |
-| `npm run dist` | Todos los targets definidos en `package.json` → `build` |
+| Comando                 | Salida                                                  |
+| ----------------------- | ------------------------------------------------------- |
+| `npm run dist:deb`      | Solo `.deb`                                             |
+| `npm run dist:appimage` | Solo `.AppImage`                                        |
+| `npm run dist:linux`    | Ambos                                                   |
+| `npm run dist`          | Todos los targets definidos en `package.json` → `build` |
 
 Artefactos en **`release/`** (versión actual en `package.json`, **1.7.0**):
 
@@ -156,13 +156,13 @@ En sistemas recientes, si el AppImage no monta (error `libfuse.so.2`), instala *
 
 ### Variables de entorno (resumen)
 
-| Variable | Uso |
-|----------|-----|
-| `CATRIP_DISABLE_GPU=1` | Evita aceleración GPU si la vista embebida falla (p. ej. negro en Wayland). |
-| `CATRIP_GPU_BOOST=1` | Fuerza flags GPU extra al arrancar (equivalente al toggle en Ajustes → Rendimiento). |
-| `CATRIP_OZONE_PLATFORM=wayland\|x11` | Fija el backend gráfico de Chromium (solo si el escritorio lo requiere). |
-| `CATRIP_TRANSPARENT_WINDOW=0\|1` | Fuerza ventana opaca o transparente. |
-| `CATRIP_DEBUG_EMBED=0\|1` | Logs de diagnóstico del contenido embebido. |
+| Variable                             | Uso                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `CATRIP_DISABLE_GPU=1`               | Evita aceleración GPU si la vista embebida falla (p. ej. negro en Wayland).          |
+| `CATRIP_GPU_BOOST=1`                 | Fuerza flags GPU extra al arrancar (equivalente al toggle en Ajustes → Rendimiento). |
+| `CATRIP_OZONE_PLATFORM=wayland\|x11` | Fija el backend gráfico de Chromium (solo si el escritorio lo requiere).             |
+| `CATRIP_TRANSPARENT_WINDOW=0\|1`     | Fuerza ventana opaca o transparente.                                                 |
+| `CATRIP_DEBUG_EMBED=0\|1`            | Logs de diagnóstico del contenido embebido.                                          |
 
 Más detalle en **[USAGE.md](USAGE.md)**.
 

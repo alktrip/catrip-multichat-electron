@@ -116,7 +116,11 @@ export default function UpdateDialog({
           </div>
         </div>
 
-        <div className="catrip-update-dialog-notes" role="region" aria-label={t("app.updateDialog.releaseNotesAria")}>
+        <div
+          className="catrip-update-dialog-notes"
+          role="region"
+          aria-label={t("app.updateDialog.releaseNotesAria")}
+        >
           {renderReleaseNotes(payload.releaseNotes)}
         </div>
 

@@ -102,7 +102,16 @@ export default function ActivityCenter({
           {t("activity.empty")}
         </p>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <ul
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
           {sorted.map((a) => {
             const snap = activityByAccount[a.id];
             const unread = snap?.unread ?? 0;
@@ -195,10 +204,7 @@ export default function ActivityCenter({
                     >
                       {sender ? `${sender}: ${preview}` : preview}
                     </div>
-                    <div
-                      className="catrip-text-hint"
-                      style={{ fontSize: 11, marginTop: 4 }}
-                    >
+                    <div className="catrip-text-hint" style={{ fontSize: 11, marginTop: 4 }}>
                       {formatRelativeTimeI18n(t, snap?.lastActivityAt ?? null)}
                     </div>
                   </div>

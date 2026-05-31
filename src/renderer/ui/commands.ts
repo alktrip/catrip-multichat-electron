@@ -246,9 +246,7 @@ export function buildCommands(ctx: CommandContext): Command[] {
     const notifEnabled = s.notifications?.enabled !== false;
     cmds.push({
       id: "toggle:notifications",
-      label: notifEnabled
-        ? t("commands.disableNotifications")
-        : t("commands.enableNotifications"),
+      label: notifEnabled ? t("commands.disableNotifications") : t("commands.enableNotifications"),
       group: "appearance",
       keywords: ["notifications", "alertas", "silencio", "mute"],
       icon: { kind: "symbol", char: "♪" },
@@ -287,9 +285,7 @@ export function buildChatSearchCommands(
 ): Command[] {
   return items.map((item) => {
     const unreadPart =
-      item.unreadCount > 0
-        ? t("commands.unreadSuffix", { count: item.unreadCount })
-        : "";
+      item.unreadCount > 0 ? t("commands.unreadSuffix", { count: item.unreadCount }) : "";
     const previewPart = item.preview ? ` · ${item.preview}` : "";
     return {
       id: `chat:${item.accountId}:${encodeURIComponent(item.chatName)}`,

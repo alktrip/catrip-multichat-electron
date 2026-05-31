@@ -165,7 +165,8 @@ export function registerWhatsAppProtocolForUser(): { ok: boolean; message: strin
   }
 
   try {
-    const dataHome = process.env.XDG_DATA_HOME?.trim() || path.join(os.homedir(), ".local", "share");
+    const dataHome =
+      process.env.XDG_DATA_HOME?.trim() || path.join(os.homedir(), ".local", "share");
     const appsDir = path.join(dataHome, "applications");
     const desktopPath = path.join(appsDir, DESKTOP_NAME);
     writeDesktopFile(desktopPath, execPath);
@@ -212,7 +213,10 @@ export async function runBundledRegisterScript(): Promise<{ ok: boolean; message
   try {
     const { stdout, stderr } = await execFileAsync("bash", [script], {
       timeout: 25_000,
-      env: { ...process.env, APPIMAGE: process.env.APPIMAGE || resolveLinuxLaunchExecutable() || "" },
+      env: {
+        ...process.env,
+        APPIMAGE: process.env.APPIMAGE || resolveLinuxLaunchExecutable() || "",
+      },
     });
     const out = (stdout || stderr || "").trim();
     return { ok: true, message: out || tMain("main.integrations.protocolRegisteredShort") };

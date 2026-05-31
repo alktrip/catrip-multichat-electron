@@ -11,8 +11,7 @@ import "./ui/theme.css";
 
 initRendererI18nSync(undefined, navigator.language);
 
-const appVersion =
-  typeof __CATRIP_APP_VERSION__ === "string" ? __CATRIP_APP_VERSION__ : "0.0.0";
+const appVersion = typeof __CATRIP_APP_VERSION__ === "string" ? __CATRIP_APP_VERSION__ : "0.0.0";
 const isBrowserPreview = installBrowserPreviewIfNeeded(appVersion);
 
 function LanguageFromSettings() {

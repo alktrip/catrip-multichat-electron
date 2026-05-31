@@ -180,8 +180,7 @@ const api: AppApi = {
     ipcRenderer.on("accounts:unreadChanged", listener);
     return () => ipcRenderer.removeListener("accounts:unreadChanged", listener);
   },
-  getAccountsStatus: () =>
-    ipcRenderer.invoke("accounts:getStatus") as Promise<AccountStatusMap>,
+  getAccountsStatus: () => ipcRenderer.invoke("accounts:getStatus") as Promise<AccountStatusMap>,
   onAccountsStatusChanged: (cb) => {
     const listener = (_evt: unknown, map: AccountStatusMap) => cb(map ?? {});
     ipcRenderer.on("accounts:statusChanged", listener);
@@ -291,8 +290,7 @@ const api: AppApi = {
   },
   respondUpdateDialog: (buttonId, releaseUrl) =>
     ipcRenderer.invoke("updater:dialogResponse", { buttonId, releaseUrl }),
-  previewUpdateDialog: () =>
-    ipcRenderer.invoke("updater:previewUpdateDialog") as Promise<boolean>,
+  previewUpdateDialog: () => ipcRenderer.invoke("updater:previewUpdateDialog") as Promise<boolean>,
 };
 
 contextBridge.exposeInMainWorld("catrip", api);

@@ -32,10 +32,7 @@ function mergeDeep(base: Record<string, unknown>, overlay: Record<string, unknow
 }
 
 /** Carga translation.json + manual.json desde disco (proceso main). */
-export function loadLocaleResourcesFromDir(
-  localesRoot: string,
-  locale: AppLocale,
-): LocaleBundle {
+export function loadLocaleResourcesFromDir(localesRoot: string, locale: AppLocale): LocaleBundle {
   let merged: Record<string, unknown> = {};
   // Fallbacks primero; el locale objetivo al final para que prevalezca sobre los demás.
   const chain = localeFallbackChain(locale);

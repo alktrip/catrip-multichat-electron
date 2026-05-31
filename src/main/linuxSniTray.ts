@@ -30,7 +30,10 @@ function premultiplyBgra(bitmap: Buffer): void {
   }
 }
 
-function pixmapFromImage(img: Electron.NativeImage, size: number): [number, number, Uint8Array] | null {
+function pixmapFromImage(
+  img: Electron.NativeImage,
+  size: number,
+): [number, number, Uint8Array] | null {
   const resized = img.resize({ width: size, height: size });
   const source = resized.isEmpty() ? img : resized;
   const w = Math.max(1, source.getSize().width | 0);

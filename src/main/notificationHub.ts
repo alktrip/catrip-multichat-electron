@@ -41,10 +41,7 @@ export function resetNotificationHub() {
   lastNotifiedCountByAccount.clear();
 }
 
-function buildNotificationBody(
-  settings: Settings,
-  payload: ActivityNotifyPayload,
-): string {
+function buildNotificationBody(settings: Settings, payload: ActivityNotifyPayload): string {
   const showPreview = settings.notifications.showPreview !== false;
   if (showPreview && payload.lastPreview) {
     if (payload.lastSender) return `${payload.lastSender}: ${payload.lastPreview}`;

@@ -56,7 +56,9 @@ function ManualSectionBlock({ section }: { section: ManualSection }) {
           ))}
         </ul>
       ) : null}
-      {section.table ? <ManualTable headers={section.table.headers} rows={section.table.rows} /> : null}
+      {section.table ? (
+        <ManualTable headers={section.table.headers} rows={section.table.rows} />
+      ) : null}
       {section.note ? <p className="catrip-manual-note">{section.note}</p> : null}
     </section>
   );
@@ -102,7 +104,10 @@ export default function UserManual({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="catrip-overlay-panel catrip-manual-panel" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="catrip-overlay-panel catrip-manual-panel"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <header className="catrip-manual-header">
           <div>
             <h1 id="catrip-manual-title" className="catrip-manual-title">
@@ -111,7 +116,12 @@ export default function UserManual({ onClose }: { onClose: () => void }) {
             <p className="catrip-manual-subtitle">{intro.subtitle}</p>
             <p className="catrip-manual-version">{intro.versionNote}</p>
           </div>
-          <button type="button" className="catrip-btn" onClick={onClose} aria-label={intro.closeAria}>
+          <button
+            type="button"
+            className="catrip-btn"
+            onClick={onClose}
+            aria-label={intro.closeAria}
+          >
             {t("common.close")}
           </button>
         </header>

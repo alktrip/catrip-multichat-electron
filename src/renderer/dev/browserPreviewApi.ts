@@ -192,7 +192,9 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
     createAccountV2: async (payload) => api.createAccount(payload?.label),
     regenerateAccountIcon: async (id) => accounts.find((a) => a.id === id) ?? null,
     renameAccount: async (id, nextLabel) => {
-      accounts = accounts.map((a) => (a.id === id ? { ...a, label: nextLabel.trim() || a.label } : a));
+      accounts = accounts.map((a) =>
+        a.id === id ? { ...a, label: nextLabel.trim() || a.label } : a,
+      );
       bus.emit("accounts:listChanged", accounts);
       return accounts.find((a) => a.id === id) ?? null;
     },
@@ -237,8 +239,7 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
     },
     confirmIncomingLinkAccount: ok,
     cancelIncomingLink: ok,
-    onPickAccountForIncomingLink: (cb) =>
-      bus.on("ui:pickAccountForIncomingLink", cb as Listener),
+    onPickAccountForIncomingLink: (cb) => bus.on("ui:pickAccountForIncomingLink", cb as Listener),
     e2eGetLastIncomingNavigation: nullOk,
     e2eParseWhatsAppUrl: async () => null,
     e2eSimulateIncomingUrl: ok,

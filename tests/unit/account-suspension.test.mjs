@@ -31,10 +31,7 @@ test("shouldSuspendAccount respeta cuenta activa, llamada y umbral", () => {
   assert.equal(shouldSuspendAccount({ ...base, accountId: "a1", activeAccountId: "a1" }), false);
   assert.equal(shouldSuspendAccount({ ...base, callActive: true }), false);
   assert.equal(shouldSuspendAccount({ ...base, hasLiveView: false }), false);
-  assert.equal(
-    shouldSuspendAccount({ ...base, lastActiveAtMs: now - 5 * 60 * 1000 }),
-    false,
-  );
+  assert.equal(shouldSuspendAccount({ ...base, lastActiveAtMs: now - 5 * 60 * 1000 }), false);
   assert.equal(shouldSuspendAccount({ ...base, enabled: false }), false);
 });
 

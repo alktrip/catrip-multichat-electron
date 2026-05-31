@@ -118,8 +118,16 @@ export const manualEn = [
     table: {
       headers: ["Tool", "When to use it", "How to open it"],
       rows: [
-        ["⚡ Right now", "Quick glance: top 3 urgent without covering the screen", "⚡ button, Ctrl+Shift+A, View → Right now"],
-        ["▤ Activity center", "Per-account summary: who wrote and preview", "▤ button or Ctrl+K → activity"],
+        [
+          "⚡ Right now",
+          "Quick glance: top 3 urgent without covering the screen",
+          "⚡ button, Ctrl+Shift+A, View → Right now",
+        ],
+        [
+          "▤ Activity center",
+          "Per-account summary: who wrote and preview",
+          "▤ button or Ctrl+K → activity",
+        ],
         ["✉ Pending actions", "Full list of all unread chats", "✉ button or Ctrl+K → pending"],
         ["Ctrl+K → Chats", "Find a specific contact by name or text", "Ctrl+K and type the name"],
       ],
@@ -428,9 +436,21 @@ export const manualPt = [
     table: {
       headers: ["Ferramenta", "Quando usar", "Como abrir"],
       rows: [
-        ["⚡ Agora", "Olhar rápido: top 3 urgentes sem tapar o ecrã", "Botão ⚡, Ctrl+Shift+A, Ver → Agora"],
-        ["▤ Centro de atividade", "Resumo por conta: quem escreveu e pré-visualização", "Botão ▤ ou Ctrl+K → «atividade»"],
-        ["✉ Ações pendentes", "Lista completa de todas as conversas por ler", "Botão ✉ ou Ctrl+K → «pendentes»"],
+        [
+          "⚡ Agora",
+          "Olhar rápido: top 3 urgentes sem tapar o ecrã",
+          "Botão ⚡, Ctrl+Shift+A, Ver → Agora",
+        ],
+        [
+          "▤ Centro de atividade",
+          "Resumo por conta: quem escreveu e pré-visualização",
+          "Botão ▤ ou Ctrl+K → «atividade»",
+        ],
+        [
+          "✉ Ações pendentes",
+          "Lista completa de todas as conversas por ler",
+          "Botão ✉ ou Ctrl+K → «pendentes»",
+        ],
         ["Ctrl+K → Conversas", "Procurar um contacto por nome ou texto", "Ctrl+K e escreva o nome"],
       ],
     },
@@ -738,9 +758,21 @@ export const manualFr = [
     table: {
       headers: ["Outil", "Quand l'utiliser", "Comment l'ouvrir"],
       rows: [
-        ["⚡ Tout de suite", "Coup d'œil rapide : top 3 urgents sans couvrir l'écran", "Bouton ⚡, Ctrl+Shift+A, Affichage → Tout de suite"],
-        ["▤ Centre d'activité", "Résumé par compte : qui a écrit et aperçu", "Bouton ▤ ou Ctrl+K → « activité »"],
-        ["✉ Actions en attente", "Liste complète de tous les chats non lus", "Bouton ✉ ou Ctrl+K → « en attente »"],
+        [
+          "⚡ Tout de suite",
+          "Coup d'œil rapide : top 3 urgents sans couvrir l'écran",
+          "Bouton ⚡, Ctrl+Shift+A, Affichage → Tout de suite",
+        ],
+        [
+          "▤ Centre d'activité",
+          "Résumé par compte : qui a écrit et aperçu",
+          "Bouton ▤ ou Ctrl+K → « activité »",
+        ],
+        [
+          "✉ Actions en attente",
+          "Liste complète de tous les chats non lus",
+          "Bouton ✉ ou Ctrl+K → « en attente »",
+        ],
         ["Ctrl+K → Discussions", "Trouver un contact par nom ou texte", "Ctrl+K et tapez le nom"],
       ],
     },
@@ -1048,9 +1080,21 @@ export const manualDe = [
     table: {
       headers: ["Werkzeug", "Wann nutzen", "So öffnen"],
       rows: [
-        ["⚡ Jetzt", "Schneller Blick: Top 3 dringend ohne Bildschirm zu verdecken", "⚡-Button, Ctrl+Shift+A, Ansicht → Jetzt"],
-        ["▤ Aktivitätszentrum", "Zusammenfassung pro Konto: wer schrieb und Vorschau", "▤-Button oder Ctrl+K → „Aktivität“"],
-        ["✉ Ausstehende Aktionen", "Vollständige Liste aller ungelesenen Chats", "✉-Button oder Ctrl+K → „ausstehend“"],
+        [
+          "⚡ Jetzt",
+          "Schneller Blick: Top 3 dringend ohne Bildschirm zu verdecken",
+          "⚡-Button, Ctrl+Shift+A, Ansicht → Jetzt",
+        ],
+        [
+          "▤ Aktivitätszentrum",
+          "Zusammenfassung pro Konto: wer schrieb und Vorschau",
+          "▤-Button oder Ctrl+K → „Aktivität“",
+        ],
+        [
+          "✉ Ausstehende Aktionen",
+          "Vollständige Liste aller ungelesenen Chats",
+          "✉-Button oder Ctrl+K → „ausstehend“",
+        ],
         ["Ctrl+K → Chats", "Kontakt per Name oder Text finden", "Ctrl+K und Namen eingeben"],
       ],
     },
@@ -1352,13 +1396,15 @@ export const manualKo = [
   {
     id: "actividad",
     title: "활동 센터와 대기 작업",
-    paragraphs: [
-      "지금 외에도 차분히 전체를 검토할 때 쓰는 두 가지 넓은 보기가 있습니다.",
-    ],
+    paragraphs: ["지금 외에도 차분히 전체를 검토할 때 쓰는 두 가지 넓은 보기가 있습니다."],
     table: {
       headers: ["도구", "사용 시점", "여는 방법"],
       rows: [
-        ["⚡ 지금", "빠른 확인: 화면을 가리지 않는 상위 3개 긴급", "⚡ 버튼, Ctrl+Shift+A, 보기 → 지금"],
+        [
+          "⚡ 지금",
+          "빠른 확인: 화면을 가리지 않는 상위 3개 긴급",
+          "⚡ 버튼, Ctrl+Shift+A, 보기 → 지금",
+        ],
         ["▤ 활동 센터", "계정별 요약: 누가 썼는지와 미리보기", "▤ 버튼 또는 Ctrl+K → 「활동」"],
         ["✉ 대기 작업", "읽지 않은 모든 채팅 전체 목록", "✉ 버튼 또는 Ctrl+K → 「대기」"],
         ["Ctrl+K → 채팅", "이름이나 텍스트로 연락처 찾기", "Ctrl+K 후 이름 입력"],
@@ -1413,9 +1459,7 @@ export const manualKo = [
   {
     id: "ajustes-general",
     title: "설정 — 일반",
-    paragraphs: [
-      "Ctrl+P 또는 파일 메뉴로 설정을 엽니다. 일반은 앱의 일상 동작을 제어합니다.",
-    ],
+    paragraphs: ["Ctrl+P 또는 파일 메뉴로 설정을 엽니다. 일반은 앱의 일상 동작을 제어합니다."],
     bullets: [
       "최소화 상태로 시작: 창 없이 트레이에서 시작.",
       "사이드바 rail 표시: 계정 열 표시/숨김(⚡, ✉, ▤에 필요).",
@@ -1460,9 +1504,7 @@ export const manualKo = [
   {
     id: "ajustes-rendimiento",
     title: "설정 — 성능",
-    paragraphs: [
-      "여러 계정을 동시에 쓸 때 유창성, 메모리, 안정성의 균형을 맞추는 섹션입니다.",
-    ],
+    paragraphs: ["여러 계정을 동시에 쓸 때 유창성, 메모리, 안정성의 균형을 맞추는 섹션입니다."],
     bullets: [
       "비활성 계정 일시 중지: 잠시 선택하지 않은 계정의 WhatsApp 화면을 닫아 RAM 확보. 세션은 디스크에 유지.",
       "일시 중지까지(분): 휴면 전 비사용 시간(5~60분).",
@@ -1662,14 +1704,20 @@ export const manualJa = [
   {
     id: "actividad",
     title: "アクティビティセンターと保留アクション",
-    paragraphs: [
-      "今すぐのほかに、落ち着いて全体を確認するときの 2 つの広いビューがあります。",
-    ],
+    paragraphs: ["今すぐのほかに、落ち着いて全体を確認するときの 2 つの広いビューがあります。"],
     table: {
       headers: ["ツール", "使うタイミング", "開き方"],
       rows: [
-        ["⚡ 今すぐ", "素早い確認：画面を覆わない上位 3 件の急ぎ", "⚡ ボタン、Ctrl+Shift+A、表示 → 今すぐ"],
-        ["▤ アクティビティセンター", "アカウント別の要約：誰が書いたかとプレビュー", "▤ ボタンまたは Ctrl+K →「アクティビティ」"],
+        [
+          "⚡ 今すぐ",
+          "素早い確認：画面を覆わない上位 3 件の急ぎ",
+          "⚡ ボタン、Ctrl+Shift+A、表示 → 今すぐ",
+        ],
+        [
+          "▤ アクティビティセンター",
+          "アカウント別の要約：誰が書いたかとプレビュー",
+          "▤ ボタンまたは Ctrl+K →「アクティビティ」",
+        ],
         ["✉ 保留アクション", "未読チャットの完全な一覧", "✉ ボタンまたは Ctrl+K →「保留」"],
         ["Ctrl+K → チャット", "名前やテキストで連絡先を検索", "Ctrl+K で名前を入力"],
       ],
@@ -1972,15 +2020,25 @@ export const manualIt = [
   {
     id: "actividad",
     title: "Centro attività e azioni in sospeso",
-    paragraphs: [
-      "Oltre ad Adesso, hai due viste più ampie quando devi rivedere tutto con calma.",
-    ],
+    paragraphs: ["Oltre ad Adesso, hai due viste più ampie quando devi rivedere tutto con calma."],
     table: {
       headers: ["Strumento", "Quando usarlo", "Come aprirlo"],
       rows: [
-        ["⚡ Adesso", "Sguardo rapido: top 3 urgenti senza coprire lo schermo", "Pulsante ⚡, Ctrl+Shift+A, Visualizza → Adesso"],
-        ["▤ Centro attività", "Riepilogo per account: chi ha scritto e anteprima", "Pulsante ▤ o Ctrl+K → «attività»"],
-        ["✉ Azioni in sospeso", "Elenco completo di tutte le chat non lette", "Pulsante ✉ o Ctrl+K → «in sospeso»"],
+        [
+          "⚡ Adesso",
+          "Sguardo rapido: top 3 urgenti senza coprire lo schermo",
+          "Pulsante ⚡, Ctrl+Shift+A, Visualizza → Adesso",
+        ],
+        [
+          "▤ Centro attività",
+          "Riepilogo per account: chi ha scritto e anteprima",
+          "Pulsante ▤ o Ctrl+K → «attività»",
+        ],
+        [
+          "✉ Azioni in sospeso",
+          "Elenco completo di tutte le chat non lette",
+          "Pulsante ✉ o Ctrl+K → «in sospeso»",
+        ],
         ["Ctrl+K → Chat", "Trovare un contatto per nome o testo", "Ctrl+K e digita il nome"],
       ],
     },
@@ -2249,9 +2307,7 @@ export const manualZh = [
   {
     id: "zen",
     title: "Zen 模式（仅聊天）",
-    paragraphs: [
-      "Zen 模式隐藏侧边栏 rail，让 WhatsApp 占满整个窗口。适合专注于某次对话时使用。",
-    ],
+    paragraphs: ["Zen 模式隐藏侧边栏 rail，让 WhatsApp 占满整个窗口。适合专注于某次对话时使用。"],
     bullets: [
       "通过查看 → Zen 模式、Ctrl+Shift+Z 或在命令面板（Ctrl+K）中搜索「Zen」开启。",
       "要恢复正常视图，按 Escape 或再次使用同一快捷键。",
@@ -2282,9 +2338,7 @@ export const manualZh = [
   {
     id: "actividad",
     title: "活动中心与待处理操作",
-    paragraphs: [
-      "除此刻外，还有两个更宽的视图，供您从容查看全部内容。",
-    ],
+    paragraphs: ["除此刻外，还有两个更宽的视图，供您从容查看全部内容。"],
     table: {
       headers: ["工具", "何时使用", "如何打开"],
       rows: [
@@ -2343,9 +2397,7 @@ export const manualZh = [
   {
     id: "ajustes-general",
     title: "设置 — 常规",
-    paragraphs: [
-      "用 Ctrl+P 或文件菜单打开设置。常规部分控制应用的日常使用行为。",
-    ],
+    paragraphs: ["用 Ctrl+P 或文件菜单打开设置。常规部分控制应用的日常使用行为。"],
     bullets: [
       "最小化启动：应用启动时进入托盘且不显示窗口。",
       "显示侧边栏 rail：隐藏或显示账户列（⚡、✉、▤ 需要）。",
@@ -2390,9 +2442,7 @@ export const manualZh = [
   {
     id: "ajustes-rendimiento",
     title: "设置 — 性能",
-    paragraphs: [
-      "此部分帮助在同时使用多个账户时平衡流畅度、内存占用和稳定性。",
-    ],
+    paragraphs: ["此部分帮助在同时使用多个账户时平衡流畅度、内存占用和稳定性。"],
     bullets: [
       "暂停非活跃账户：关闭一段时间未选中的账户的 WhatsApp 视图以释放内存。会话仍保存在磁盘。",
       "暂停前等待（分钟）：账户进入休眠前的未使用时间（5 至 60 分钟）。",
@@ -2406,9 +2456,7 @@ export const manualZh = [
   {
     id: "bandeja",
     title: "系统托盘图标",
-    paragraphs: [
-      "桌面时钟旁（Linux）会显示 Catrip Connect 图标。可从中恢复窗口或完全退出。",
-    ],
+    paragraphs: ["桌面时钟旁（Linux）会显示 Catrip Connect 图标。可从中恢复窗口或完全退出。"],
     bullets: [
       "点击图标：显示或隐藏主窗口。",
       "上下文菜单：列出账户及状态和未读数；也可退出。",
@@ -2419,9 +2467,7 @@ export const manualZh = [
   {
     id: "actualizaciones",
     title: "更新应用",
-    paragraphs: [
-      "启用「启动时检查更新」后，Catrip Connect 会在线检查新版本。",
-    ],
+    paragraphs: ["启用「启动时检查更新」后，Catrip Connect 会在线检查新版本。"],
     bullets: [
       "若安装了 .deb 包：应用会显示更新说明，可将安装程序下载到您选择的文件夹，或在浏览器中打开链接。安装时间由您决定。",
       "若使用 AppImage：下载可能自动进行；准备好后点击「立即重启」。",
