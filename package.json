@@ -9,7 +9,7 @@
   "license": "MIT",
   "author": {
     "name": "Catrip",
-    "email": "noreply@catrip.local"
+    "email": "28909768+alktrip@users.noreply.github.com"
   },
   "main": "dist/main/bootstrap.js",
   "scripts": {
@@ -117,7 +117,7 @@
       "icon": "assets/icons",
       "synopsis": "Cliente multi-cuenta de WhatsApp Web",
       "description": "Catrip Connect: ejecuta múltiples sesiones de WhatsApp Web aisladas en una sola aplicación de escritorio, con bandeja del sistema, atajos globales y notificaciones nativas.",
-      "maintainer": "Catrip <noreply@catrip.local>",
+      "maintainer": "alktrip <28909768+alktrip@users.noreply.github.com>",
       "vendor": "Catrip",
       "desktop": {
         "entry": {

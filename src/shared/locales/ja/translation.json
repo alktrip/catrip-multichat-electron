@@ -243,6 +243,11 @@
     "about": {
       "title": "Catrip Connect について",
       "description": "複数の独立アカウント向け WhatsApp Web デスクトップクライアント。",
+      "developerHeading": "開発",
+      "author": "作者",
+      "authorLink": "GitHub の alktrip",
+      "copyright": "© 2025–2026 Catrip · MIT ライセンス",
+      "projectLink": "このアプリのリポジトリ",
       "electronNote": "信頼性の高い再生のための Electron + Chromium。",
       "inspired": "ZapZap 由来。独立した Electron 実装。"
     },

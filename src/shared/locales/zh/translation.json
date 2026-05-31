@@ -243,6 +243,11 @@
     "about": {
       "title": "关于 Catrip Connect",
       "description": "多账户隔离的 WhatsApp Web 桌面客户端。",
+      "developerHeading": "开发",
+      "author": "作者",
+      "authorLink": "GitHub：alktrip",
+      "copyright": "© 2025–2026 Catrip · MIT 许可证",
+      "projectLink": "本应用仓库",
       "electronNote": "Electron + 内嵌 Chromium，可靠播放音视频。",
       "inspired": "灵感来自 ZapZap。独立 Electron 实现。"
     },

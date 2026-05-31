@@ -243,6 +243,11 @@
     "about": {
       "title": "Informazioni su Catrip Connect",
       "description": "Client desktop WhatsApp Web con account isolati.",
+      "developerHeading": "Sviluppo",
+      "author": "Autore",
+      "authorLink": "alktrip su GitHub",
+      "copyright": "© 2025–2026 Catrip · Licenza MIT",
+      "projectLink": "Repository di questa applicazione",
       "electronNote": "Electron + Chromium integrato per audio/video affidabili.",
       "inspired": "Ispirato a ZapZap. Implementazione Electron indipendente."
     },

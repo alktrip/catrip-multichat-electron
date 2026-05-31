@@ -243,6 +243,11 @@
     "about": {
       "title": "Über Catrip Connect",
       "description": "Desktop-Client für WhatsApp Web mit isolierten Konten.",
+      "developerHeading": "Entwicklung",
+      "author": "Autor",
+      "authorLink": "alktrip auf GitHub",
+      "copyright": "© 2025–2026 Catrip · MIT-Lizenz",
+      "projectLink": "Repository dieser Anwendung",
       "electronNote": "Electron + eingebettetes Chromium für zuverlässige Wiedergabe.",
       "inspired": "Inspiriert von ZapZap (PyQt6 + WebEngine). Unabhängige Electron-Implementierung."
     },

@@ -243,6 +243,11 @@
     "about": {
       "title": "Catrip Connect 정보",
       "description": "여러 격리 계정의 WhatsApp Web 데스크톱 클라이언트.",
+      "developerHeading": "개발",
+      "author": "제작자",
+      "authorLink": "GitHub의 alktrip",
+      "copyright": "© 2025–2026 Catrip · MIT 라이선스",
+      "projectLink": "이 앱 저장소",
       "electronNote": "안정적인 오디오/비디오를 위한 Electron + Chromium.",
       "inspired": "ZapZap(PyQt6+WebEngine)에서 영감. 독립 Electron 구현."
     },

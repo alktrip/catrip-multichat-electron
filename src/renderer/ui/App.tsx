@@ -767,6 +767,57 @@ export default function App() {
           >
             {t("common.version")} <span style={{ color: "#ffffff" }}>{version || "…"}</span>
           </div>
+          <div
+            style={{
+              marginTop: 18,
+              padding: "12px 14px",
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--catrip-text-hint)",
+                marginBottom: 10,
+              }}
+            >
+              {t("app.about.developerHeading")}
+            </div>
+            <p style={{ margin: "0 0 6px", fontSize: 13, color: "#dce4e4", lineHeight: 1.5 }}>
+              {t("app.about.author")}:{" "}
+              <a
+                href="https://github.com/alktrip"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#7dd3a8", textDecoration: "underline" }}
+              >
+                {t("app.about.authorLink")}
+              </a>
+            </p>
+            <p
+              style={{
+                margin: "0 0 8px",
+                fontSize: 12,
+                color: "var(--catrip-text-hint)",
+                lineHeight: 1.5,
+              }}
+            >
+              {t("app.about.copyright")}
+            </p>
+            <a
+              href="https://github.com/alktrip/catrip-multichat-electron"
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: 12, color: "#7dd3a8", textDecoration: "underline" }}
+            >
+              {t("app.about.projectLink")}
+            </a>
+          </div>
           <p className="catrip-text-hint" style={{ margin: "18px 0 0", lineHeight: 1.55 }}>
             {t("app.about.electronNote")}
           </p>
