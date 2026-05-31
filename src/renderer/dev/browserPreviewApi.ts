@@ -223,6 +223,7 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
       activeId = id;
       bus.emit("accounts:activeChanged", id);
     },
+    prewarmAccount: async () => {},
     reorderAccounts: async (orderedIds) => {
       const map = new Map(accounts.map((a) => [a.id, a]));
       const next = orderedIds.map((id) => map.get(id)).filter(Boolean) as AccountDto[];
@@ -275,10 +276,16 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
     onOpenShortcutsHelp: (cb) => bus.on("ui:openShortcutsHelp", cb as Listener),
     onOpenAbout: (cb) => bus.on("ui:openAbout", cb as Listener),
     onOpenUserManual: (cb) => bus.on("ui:openUserManual", cb as Listener),
+    onWhatsAppLoadState: (cb) => bus.on("ui:whatsappLoadState", cb as Listener),
     runWhatsAppMediaDiagnostics: async (): Promise<WhatsAppMediaDiagnosticsResult> => ({
       ok: false,
       code: "preview",
       message: "Diagnóstico de medios no disponible en modo preview del navegador.",
+    }),
+    runPerformanceDiagnostics: async () => ({
+      ok: false,
+      code: "preview",
+      message: "Diagnóstico de rendimiento no disponible en modo preview del navegador.",
     }),
     selectDownloadsDirectory: nullOk,
     clearHttpCacheAllAccounts: ok,

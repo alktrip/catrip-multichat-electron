@@ -54,9 +54,9 @@ Sustituye `<versión>` por la nueva (SemVer, p. ej. `1.8.0`).
 | Archivo / lugar                          | Acción                                                                                                                                   |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `package.json`                           | Campo `"version"` (y `npm install` actualizará `package-lock.json` si aplica)                                                            |
-| `CHANGELOG.md`                           | Sección `## [<versión>] — YYYY-MM-DD` bajo `[Unreleased]`; enlace al final `[<versión>]: https://github.com/.../releases/tag/v<versión>` |
-| `USAGE.md`                               | Línea **Versión de esta guía** y ejemplos `catrip-connect_<versión>_…` si cambian                                                        |
-| `README.md`                              | Badge/enlaces de versión actual, ejemplos de instalación                                                                                 |
+| `CHANGELOG.md`                           | Entradas en `[Unreleased]` durante el desarrollo; al publicar, mover a `## [<versión>] — YYYY-MM-DD` y vaciar `[Unreleased]`; enlace al final `[<versión>]: https://github.com/.../releases/tag/v<versión>` |
+| `USAGE.md`                               | Línea **Versión de esta guía** y ejemplos `catrip-connect_<versión>_…` si cambian; nuevas opciones de Ajustes (p. ej. Rendimiento)       |
+| `README.md`                              | Badge/enlaces de versión actual, ejemplos de instalación; funciones destacadas si el release lo amerita                                    |
 | `_scripts/build-manual-locale-files.mjs` | Constante `MANUAL_VERSION`                                                                                                               |
 | `_scripts/release-notes-v<versión>.md`   | **Nuevo** archivo con notas para GitHub (plantilla: copiar el de la versión anterior)                                                    |
 
@@ -68,6 +68,17 @@ node _scripts/build-manual-locale-files.mjs
 ```
 
 Incluye los JSON generados en el commit si forman parte del release.
+
+### Rama `feature/performance-electron-optimizations` (pendiente de release)
+
+Antes de etiquetar la próxima versión (p. ej. **1.8.0**), comprueba que `[Unreleased]` en **CHANGELOG.md** refleje al menos:
+
+- Heartbeat unificado, User-Agent dinámico, perfiles Chromium y backend Wayland/X11.
+- Diagnóstico de rendimiento, límite `maxLiveAccounts`, precalentado en el rail.
+- Throttling de frames, fondo oscuro de vistas, caché V8 y placeholder de carga.
+- Tests `performance-optimizations` y `account-live-view-policy`.
+
+**USAGE.md** y **README.md** deben documentar las mismas opciones en §Rendimiento / multi-cuenta.
 
 ---
 

@@ -6,6 +6,30 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
+### Añadido
+
+- **Heartbeat unificado de WhatsApp Web** (`whatsappHeartbeat.ts`): un solo temporizador por cuenta sustituye los pollings separados de no leídos, estado de sesión y detección de videollamada; reduce `executeJavaScript` duplicados.
+- **User-Agent dinámico** (`chromiumUserAgent.ts`): alinea la cadena con la versión real de Chromium/Electron en cada build.
+- **Perfiles Chromium al arrancar** (**Ajustes → Rendimiento**): equilibrado, conservador o agresivo; flags de rasterización, VA-API y vídeo según perfil (`chromiumLaunch.ts`). «Refuerzo GPU» eleva a agresivo si el perfil sigue en equilibrado.
+- **Backend gráfico Linux** (**Ajustes → Rendimiento**): selector automático / Wayland / X11 (`ozonePlatform`); complementa `CATRIP_OZONE_PLATFORM`.
+- **Diagnóstico de rendimiento** (**Ajustes → Rendimiento → Generar informe ahora**): memoria, procesos Chromium, cuentas vivas/suspendidas, perfil GPU efectivo, estadísticas del heartbeat e IPC `diagnostics:performance`.
+- **Límite de cuentas cargadas** (`maxLiveAccounts`): suspende las vistas menos recientes aunque no hayan cumplido el tiempo de reposo (0 = sin límite).
+- **Precalentado en el rail** (`prewarmOnHover`): tras 300 ms con el ratón sobre un avatar, carga WhatsApp Web en segundo plano para un cambio más rápido (IPC `accounts:prewarm`).
+- **Placeholder de carga** al reactivar una cuenta suspendida (`ui:whatsappLoadState` en el shell React).
+- **Caché de código V8 por sesión** (`ensureSessionCodeCache`) para acelerar la recarga tras suspensión.
+- Tests unitarios: `performance-optimizations`, `account-live-view-policy`.
+
+### Cambiado
+
+- **Throttling de frames por vista**: cuenta activa ~60 fps; cuentas en segundo plano ~4 fps; modo Zen con cuenta inactiva ~1 fps (`whatsappViewRuntime.ts`, `syncAllWhatsAppViewThrottles`).
+- **Fondo de vistas WhatsApp** fijado a `#111b21` (modo oscuro nativo) para evitar destellos blancos al cargar.
+- **`webPreferences` de WhatsApp Web**: `spellcheck: false`, `backgroundThrottling: true`, `enableWebSQL: false` vía `buildWhatsAppWebPreferences()`.
+- Refactor del proceso principal: heartbeat, política de vistas vivas y diagnósticos extraídos a módulos dedicados.
+
+### Documentación
+
+- **README.md**, **USAGE.md** y **docs/RELEASING.md** actualizados con las optimizaciones de rendimiento de la rama `feature/performance-electron-optimizations`.
+
 ## [1.7.0] — 2026-05-31
 
 ### Añadido

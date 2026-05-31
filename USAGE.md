@@ -35,6 +35,7 @@ Los datos de la aplicación en Linux se guardan bajo `~/.config/catrip_multichat
 - **Orden**: arrastra un avatar verticalmente para **reordenar** las cuentas (el orden define también `Ctrl+1` … `Ctrl+9`).
 - **Indicador de no leídos**: punto o número cuando hay mensajes pendientes en esa cuenta (según datos que expone WhatsApp Web).
 - **Cuenta en reposo**: si no usas una cuenta durante un rato (configurable en Ajustes → Rendimiento), su avatar se ve **atenuado**; la sesión sigue guardada y un clic la reactiva.
+- **Precalentado al pasar el ratón** (activo por defecto): si mantienes el cursor **300 ms** sobre un avatar sin hacer clic, la app carga WhatsApp Web de esa cuenta en segundo plano; el cambio posterior suele ser más rápido. Desactivable en **Ajustes → Rendimiento**.
 - **Botón «Ahora mismo»** (icono rayo): abre la **bandeja de acciones pendientes** con los chats más urgentes; atajo `Ctrl+Shift+A` o **Ver → Ahora mismo**.
 - **Centro de actividad** (▤): resumen de todas las cuentas con no leídos, último remitente y vista previa.
 - **Acciones pendientes** (✉): bandeja unificada de chats sin leer ordenados por urgencia; al pulsar una fila se abre ese chat en la cuenta correspondiente.
@@ -63,14 +64,17 @@ Con varias cuentas, cada sesión de WhatsApp Web consume RAM. **Ajustes → Rend
 - También se reactiva al abrir un chat desde ✉ pendientes, `Ctrl+K` o un enlace `wa.me` dirigido a esa cuenta.
 - **No se suspende** la cuenta activa ni una cuenta con videollamada en curso.
 - Mientras está en reposo, los **avisos y contadores** de esa cuenta pueden no actualizarse hasta que la abras.
+- **Máximo de cuentas cargadas a la vez** (opcional): si visitas muchas cuentas en poco tiempo, puedes limitar cuántas vistas permanecen vivas (p. ej. **2** = cuenta activa + una en segundo plano). Las menos recientes se suspenden aunque no hayan pasado los minutos de reposo.
 
 ---
 
 ## 4. Vista de WhatsApp Web
 
 - El comportamiento es el de **WhatsApp Web oficial** (chats, llamadas según soporte del navegador embebido, archivos, etc.).
-- **Tema**: se usa el **modo oscuro nativo** de WhatsApp Web; no se inyecta CSS de terceros para forzar tema.
+- **Tema**: se usa el **modo oscuro nativo** de WhatsApp Web; no se inyecta CSS de terceros para forzar tema. El fondo de la vista embebida coincide con el oscuro de WhatsApp (`#111b21`) para reducir destellos al cargar.
 - **Recarga**: `F5` o menú **Chat → Recargar**.
+- **Reactivación tras reposo**: al volver a una cuenta suspendida puede mostrarse un **indicador de carga** breve en el shell mientras se restaura la vista; la sesión (sin QR) se conserva gracias a la partición Electron y a la caché de código V8 por cuenta.
+- **Rendimiento en segundo plano**: la cuenta activa renderiza a ~60 fps; las demás cuentas vivas a ~4 fps; en **modo Zen**, la cuenta no visible puede bajar a ~1 fps.
 
 ---
 
@@ -220,9 +224,14 @@ sudo apt install ./catrip-connect_1.7.0_amd64.deb
 
 - **Suspender cuentas inactivas**: libera RAM cerrando la vista de WhatsApp de cuentas no usadas; la sesión permanece en disco (véase §3c).
 - **Suspender tras (minutos)**: 5, 10, 15, 30 o 60 minutos sin seleccionar la cuenta (por defecto 15).
+- **Máximo de cuentas cargadas a la vez**: 0 (sin límite), 1, 2, 3, 4 o 6 vistas vivas; suspende las menos recientes al superar el tope (véase §3c).
+- **Precalentar al pasar el ratón (rail)**: carga en segundo plano tras 300 ms de hover sobre un avatar (véase §3).
 - **Refuerzo GPU al arrancar** (experimental): VA-API para vídeo en Linux, rasterización y zero-copy. Requiere **reiniciar** la app.
+- **Perfil Chromium al arrancar**: equilibrado (predeterminado), conservador (menos GPU) o agresivo (más aceleración). «Refuerzo GPU» eleva a agresivo si el perfil sigue en equilibrado. Requiere reinicio.
+- **Backend gráfico (Linux)**: automático (detecta Wayland/X11), Wayland o X11. Equivalente a `CATRIP_OZONE_PLATFORM`. Requiere reinicio.
 - **Límite de procesos del renderer** (0 = predeterminado de Electron; 3–6 útil con varias cuentas). También requiere reinicio.
 - **Evitar suspensión durante videollamada** (bloqueo de energía del **sistema** mientras WhatsApp Web detecta una llamada; distinto del reposo de cuentas).
+- **Diagnóstico de rendimiento** (**Generar informe ahora**): JSON con memoria, procesos, cuentas vivas/suspendidas, perfil Chromium efectivo, backend gráfico resuelto y estadísticas del heartbeat unificado.
 - Limpieza de caché HTTP y diagnósticos de medios (códecs WhatsApp Web).
 
 Los cambios se guardan en el almacenamiento local de la aplicación.

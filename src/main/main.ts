@@ -40,7 +40,15 @@ import {
   showUpdateDialogRequest,
 } from "./updateDialogBridge";
 import { formatReleaseNotesForUpdateDialog, releaseNotesGithubUrl } from "./releaseNotesFormat";
-import { WHATSAPP_SESSION_STATUS_JS, type AccountSessionStatus } from "./accountSessionStatus";
+import { type AccountSessionStatus } from "./accountSessionStatus";
+import { buildWhatsAppWebUserAgent, WHATSAPP_VIEW_BG } from "./chromiumUserAgent";
+import { collectPerformanceDiagnostics } from "./performanceDiagnostics";
+import {
+  normalizeWhatsAppHeartbeatRaw,
+  WHATSAPP_HEARTBEAT_FULL_JS,
+  WHATSAPP_HEARTBEAT_LIGHT_JS,
+  type WhatsAppHeartbeatMode,
+} from "./whatsappHeartbeat";
 import { initMainI18n, changeMainLanguage, tMain } from "./i18n";
 import { initNotificationHub, maybeNotifyActivityIncrease } from "./notificationHub";
 import {
@@ -53,16 +61,13 @@ import {
 import { parseLaunchAction, type CatripLaunchAction } from "./launchActions";
 import { raiseMainWindow } from "./windowFocus";
 import { buildSuspendedMap, shouldSuspendAccount } from "./accountSuspension";
+import { accountsToSuspendForLiveLimit } from "./accountLiveViewPolicy";
 import {
   applySavedWindowBounds,
   captureWindowBounds,
   shouldPersistWindowBounds,
 } from "./windowState";
-import {
-  startCallSessionGuard,
-  stopCallSessionGuard,
-  WHATSAPP_CALL_ACTIVE_JS,
-} from "./whatsappCallDetect";
+import { startCallSessionGuard, stopCallSessionGuard } from "./whatsappCallDetect";
 import {
   buildWhatsAppSendUrl,
   extractWhatsAppUrlFromArgv,
@@ -72,7 +77,11 @@ import {
   type WhatsAppIncomingLink,
 } from "./whatsappLinks";
 import { buildDevContext } from "./devContext";
-import { WHATSAPP_ACTIVITY_JS } from "./whatsappActivity";
+import {
+  applyWhatsAppViewThrottle,
+  buildWhatsAppWebPreferences,
+  resolveBackgroundThrottleTier,
+} from "./whatsappViewRuntime";
 import { buildWhatsAppOpenChatByNameJs } from "./whatsappOpenChat";
 import { matchCatripShortcut, type CatripShortcutAction } from "./catripShortcuts";
 import {
@@ -565,8 +574,7 @@ async function applySettingsToRuntime(s: Settings) {
     }
   }
 
-  restartUnreadPolling();
-  restartAccountStatusPolling();
+  restartBackgroundHeartbeat();
   restartAccountSuspensionTimer();
   refreshTrayIcon();
   applyAutostartSettings(s);
@@ -799,19 +807,36 @@ function applyLaunchAction(action: CatripLaunchAction | null) {
   }
 }
 
-async function evalCallActiveForAccount(id: string): Promise<boolean> {
-  const st = viewState;
-  if (!st || E2E_MODE) return false;
+function recordHeartbeatExecution() {
+  heartbeatExecutionCount += 1;
+  heartbeatLastExecutionAt = Date.now();
+}
+
+function heartbeatScriptForMode(mode: WhatsAppHeartbeatMode): string {
+  return mode === "full" ? WHATSAPP_HEARTBEAT_FULL_JS : WHATSAPP_HEARTBEAT_LIGHT_JS;
+}
+
+async function evalWhatsAppHeartbeat(
+  id: string,
+  mode: WhatsAppHeartbeatMode,
+): Promise<ReturnType<typeof normalizeWhatsAppHeartbeatRaw>> {
+  const st = ensureState();
   const view = st.viewsById.get(id);
-  if (!view || view.webContents.isDestroyed()) return false;
+  if (!view || view.webContents.isDestroyed()) return null;
   try {
     const url = view.webContents.getURL();
-    if (!url.includes("web.whatsapp.com")) return false;
-    const active = await view.webContents.executeJavaScript(WHATSAPP_CALL_ACTIVE_JS, true);
-    return active === true;
+    if (!url.includes("web.whatsapp.com")) return null;
+    const raw = await view.webContents.executeJavaScript(heartbeatScriptForMode(mode), true);
+    recordHeartbeatExecution();
+    return normalizeWhatsAppHeartbeatRaw(raw);
   } catch {
-    return false;
+    return null;
   }
+}
+
+async function evalCallActiveForAccount(id: string): Promise<boolean> {
+  const hb = await evalWhatsAppHeartbeat(id, "light");
+  return hb?.callActive === true;
 }
 
 function getSuspendedMapForState(st: ViewState): Record<string, boolean> {
@@ -884,6 +909,54 @@ async function suspendAccount(id: string) {
   dbgEmbed("suspendAccount", { accountId: id });
 }
 
+async function collectCallActiveIds(accountIds: readonly string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (const id of accountIds) {
+    if (await evalCallActiveForAccount(id)) out.add(id);
+  }
+  return out;
+}
+
+async function enforceMaxLiveAccounts() {
+  const st = viewState;
+  if (!st || E2E_MODE) return;
+  const limit = st.settings.performance.maxLiveAccounts;
+  if (!Number.isFinite(limit) || limit <= 0) return;
+
+  for (let guard = 0; guard < 12; guard++) {
+    const liveIds = [...st.viewsById.keys()];
+    if (liveIds.length <= limit) return;
+
+    const callActiveIds = await collectCallActiveIds(liveIds);
+    const toSuspend = accountsToSuspendForLiveLimit({
+      maxLiveAccounts: limit,
+      activeAccountId: st.activeId,
+      liveAccountIds: liveIds,
+      lastActiveAtMs: st.accountLastActiveAt,
+      callActiveIds,
+    });
+    if (toSuspend.length === 0) return;
+
+    for (const id of toSuspend) {
+      await suspendAccount(id);
+    }
+  }
+}
+
+function prewarmAccountView(id: string) {
+  const st = viewState;
+  if (!st || E2E_MODE) return;
+  if (!st.settings.performance.prewarmOnHover) return;
+  if (!st.accounts.some((a) => a.id === id)) return;
+  if (id === st.activeId) return;
+  if (st.viewsById.has(id)) return;
+  if (st.whatsappLoadOverlay?.accountId === id) return;
+
+  dbgEmbed("prewarmAccountView", { accountId: id });
+  ensureViewForAccount(id);
+  void enforceMaxLiveAccounts();
+}
+
 async function tickAccountSuspension() {
   const st = viewState;
   if (!st || E2E_MODE) return;
@@ -930,16 +1003,10 @@ function restartAccountSuspensionTimer() {
 async function evalAnyWhatsAppCallActive(): Promise<boolean> {
   const st = viewState;
   if (!st || E2E_MODE) return false;
-  for (const view of st.viewsById.values()) {
-    if (view.webContents.isDestroyed()) continue;
-    try {
-      const url = view.webContents.getURL();
-      if (!url.includes("web.whatsapp.com")) continue;
-      const active = await view.webContents.executeJavaScript(WHATSAPP_CALL_ACTIVE_JS, true);
-      if (active === true) return true;
-    } catch {
-      // ignore
-    }
+  for (const a of st.accounts) {
+    if (!st.viewsById.has(a.id)) continue;
+    const hb = await evalWhatsAppHeartbeat(a.id, "light");
+    if (hb?.callActive === true) return true;
   }
   return false;
 }
@@ -976,6 +1043,8 @@ type ViewState = {
   accountLastActiveAt: Record<string, number>;
   /** Cuentas cuya WebContentsView fue destruida para ahorrar RAM. */
   suspendedAccountIds: Set<string>;
+  /** Overlay del shell mientras WhatsApp recarga tras suspensión. */
+  whatsappLoadOverlay: { accountId: string; label: string } | null;
 };
 
 type TrayBackend =
@@ -995,14 +1064,18 @@ let viewState: ViewState | null = null;
 let rendererModalOpen = false;
 
 /** DarkReader eliminado: WhatsApp usa modo oscuro nativo. */
-let unreadPollTimer: ReturnType<typeof setInterval> | null = null;
-let unreadInactivePollTimer: ReturnType<typeof setInterval> | null = null;
+let heartbeatActiveTimer: ReturnType<typeof setInterval> | null = null;
+let heartbeatInactiveTimer: ReturnType<typeof setInterval> | null = null;
 let unreadTitleDebounce: NodeJS.Timeout | null = null;
 const downloadSessionsHooked = new WeakSet<Electron.Session>();
 const permissionSessionsHooked = new WeakSet<Electron.Session>();
-let accountStatusPollTimer: ReturnType<typeof setInterval> | null = null;
 let accountSuspensionTimer: ReturnType<typeof setInterval> | null = null;
 const ACCOUNT_SUSPENSION_TICK_MS = 30_000;
+const HEARTBEAT_ACTIVE_MS = 10_000;
+const HEARTBEAT_INACTIVE_MS = 30_000;
+let heartbeatExecutionCount = 0;
+let heartbeatLastExecutionAt: number | null = null;
+const whatsappLoadCompletionHooked = new WeakSet<Electron.WebContents>();
 
 const STATUS_SHORT: Record<AccountSessionStatus, string> = {
   loading: "…",
@@ -1063,26 +1136,123 @@ function schedulePollUnreadFromTitle() {
   if (unreadTitleDebounce) clearTimeout(unreadTitleDebounce);
   unreadTitleDebounce = setTimeout(() => {
     unreadTitleDebounce = null;
-    void pollTrayUnreadFromActiveView();
+    void tickActiveAccountHeartbeat();
   }, 600);
 }
 
-/** Evalúa el contador de no leídos en la WebContentsView de una cuenta.
- * Devuelve null si la cuenta no tiene vista, está destruida, o no está en
- * WhatsApp Web (no logueada / página de QR). */
-async function evalAccountSessionStatus(id: string): Promise<AccountSessionStatus | null> {
+async function applyHeartbeatResult(
+  id: string,
+  hb: NonNullable<ReturnType<typeof normalizeWhatsAppHeartbeatRaw>>,
+  notify: boolean,
+) {
   const st = ensureState();
-  const view = st.viewsById.get(id);
-  if (!view || view.webContents.isDestroyed()) return null;
-  try {
-    const raw = await view.webContents.executeJavaScript(WHATSAPP_SESSION_STATUS_JS, true);
-    if (raw === "qr" || raw === "connected" || raw === "offline" || raw === "loading") {
-      return raw;
-    }
-  } catch {
-    // ignore
+  const g = st.settings.general;
+  const trackUnread = g.trayUnreadBadge && g.trayBadgeManual == null;
+  if (st.accountStatusById[id] !== hb.status) {
+    broadcastAccountStatusIfChanged({ ...st.accountStatusById, [id]: hb.status });
   }
-  return null;
+  if (!trackUnread) return;
+  const acc = st.accounts.find((a) => a.id === id) || null;
+  const perAccountNotifs = acc?.notificationsEnabled !== false;
+  const snapshot = buildActivitySnapshot(hb, hb.status, st.activityByAccount[id]);
+  applyAccountActivity(id, { ...snapshot, unread: clampTrayBadge(snapshot.unread) }, notify && perAccountNotifs);
+}
+
+async function tickActiveAccountHeartbeat() {
+  const st = ensureState();
+  if (st.chrome.mode !== "browser") return;
+  const id = st.activeId;
+  if (!id) return;
+  const hb = await evalWhatsAppHeartbeat(id, "full");
+  if (hb == null) return;
+  await applyHeartbeatResult(id, hb, true);
+}
+
+/** Heartbeat ligero en cuentas inactivas con vista viva (estado, badge, llamada). */
+async function tickInactiveAccountsHeartbeat() {
+  const st = viewState;
+  if (!st) return;
+  const activeId = st.activeId;
+  const trackUnread =
+    st.settings.general.trayUnreadBadge && st.settings.general.trayBadgeManual == null;
+  const nextActivity = { ...st.activityByAccount };
+  const nextUnread = { ...st.unreadByAccount };
+  const nextStatus = { ...st.accountStatusById };
+  let changedActivity = false;
+  let changedUnread = false;
+  let changedStatus = false;
+
+  for (const a of st.accounts) {
+    if (a.id === activeId) continue;
+    if (!st.viewsById.has(a.id)) continue;
+    const prevN = clampTrayBadge(nextUnread[a.id] ?? 0);
+    const hb = await evalWhatsAppHeartbeat(a.id, "light");
+    if (hb == null) {
+      if (trackUnread && (nextUnread[a.id] ?? 0) !== 0) {
+        nextUnread[a.id] = 0;
+        changedUnread = true;
+      }
+      if (trackUnread) {
+        const empty = emptyActivitySnapshot(st.accountStatusById[a.id] ?? "loading");
+        const prevSnap = nextActivity[a.id];
+        if (!prevSnap || !activityMapsEqual({ [a.id]: prevSnap }, { [a.id]: empty })) {
+          nextActivity[a.id] = empty;
+          changedActivity = true;
+        }
+      }
+      continue;
+    }
+    if (nextStatus[a.id] !== hb.status) {
+      nextStatus[a.id] = hb.status;
+      changedStatus = true;
+    }
+    if (!trackUnread) continue;
+    if ((nextUnread[a.id] ?? 0) !== hb.unread) {
+      nextUnread[a.id] = clampTrayBadge(hb.unread);
+      changedUnread = true;
+    }
+    const snapshot = buildActivitySnapshot(hb, hb.status, nextActivity[a.id]);
+    const prevSnap = nextActivity[a.id];
+    if (!prevSnap || !activityMapsEqual({ [a.id]: prevSnap }, { [a.id]: snapshot })) {
+      nextActivity[a.id] = { ...snapshot, unread: clampTrayBadge(snapshot.unread) };
+      changedActivity = true;
+    }
+    if (a.notificationsEnabled !== false && hb.unread > prevN) {
+      maybeNotifyActivityIncrease(a.id, prevN, {
+        unread: hb.unread,
+        lastSender: snapshot.lastSender,
+        lastPreview: snapshot.lastPreview,
+      });
+    }
+  }
+
+  if (changedStatus) broadcastAccountStatusIfChanged(nextStatus);
+  if (changedActivity) broadcastActivityIfChanged(nextActivity);
+  if (changedUnread) broadcastUnreadIfChanged(nextUnread);
+  else if (!changedActivity && !changedStatus && trackUnread) {
+    recomputeTrayUnreadTotal();
+    refreshTrayIcon();
+    refreshDockBadge();
+  }
+}
+
+function restartBackgroundHeartbeat() {
+  if (heartbeatActiveTimer != null) {
+    clearInterval(heartbeatActiveTimer);
+    heartbeatActiveTimer = null;
+  }
+  if (heartbeatInactiveTimer != null) {
+    clearInterval(heartbeatInactiveTimer);
+    heartbeatInactiveTimer = null;
+  }
+  if (!viewState) return;
+  heartbeatActiveTimer = setInterval(() => {
+    void tickActiveAccountHeartbeat();
+  }, HEARTBEAT_ACTIVE_MS);
+  heartbeatInactiveTimer = setInterval(() => {
+    void tickInactiveAccountsHeartbeat();
+  }, HEARTBEAT_INACTIVE_MS);
+  void tickInactiveAccountsHeartbeat();
 }
 
 function broadcastAccountStatusIfChanged(next: Record<string, AccountSessionStatus>) {
@@ -1117,34 +1287,6 @@ function broadcastAccountStatusIfChanged(next: Record<string, AccountSessionStat
   }
 }
 
-async function pollAccountSessionStatuses() {
-  const st = viewState;
-  if (!st) return;
-  const next: Record<string, AccountSessionStatus> = { ...st.accountStatusById };
-  let any = false;
-  for (const a of st.accounts) {
-    const s = await evalAccountSessionStatus(a.id);
-    if (s == null) continue;
-    if (next[a.id] !== s) {
-      next[a.id] = s;
-      any = true;
-    }
-  }
-  if (any) broadcastAccountStatusIfChanged(next);
-}
-
-function restartAccountStatusPolling() {
-  if (accountStatusPollTimer != null) {
-    clearInterval(accountStatusPollTimer);
-    accountStatusPollTimer = null;
-  }
-  if (!viewState) return;
-  accountStatusPollTimer = setInterval(() => {
-    void pollAccountSessionStatuses();
-  }, 25_000);
-  void pollAccountSessionStatuses();
-}
-
 function buildTrayTooltipSummary(): string {
   const st = ensureState();
   if (st.accounts.length === 0) return APP_NAME;
@@ -1166,27 +1308,6 @@ function trayAccountMenuLabel(a: Account): string {
   const unreadBit = unread > 0 ? tMain("main.accountMenu.unread", { count: unread }) : "";
   const activeBit = a.id === st.activeId ? tMain("main.accountMenu.active") : "";
   return `${a.label} (${statusLabel}${unreadBit})${activeBit}`;
-}
-
-async function evalActivityForAccount(id: string): Promise<AccountActivitySnapshot | null> {
-  const st = ensureState();
-  const view = st.viewsById.get(id);
-  if (!view || view.webContents.isDestroyed()) return null;
-  let url: string;
-  try {
-    url = view.webContents.getURL();
-  } catch {
-    return null;
-  }
-  if (!url.includes("web.whatsapp.com")) return null;
-  try {
-    const raw = await view.webContents.executeJavaScript(WHATSAPP_ACTIVITY_JS, true);
-    const status = (await evalAccountSessionStatus(id)) ?? st.accountStatusById[id] ?? "loading";
-    const snapshot = buildActivitySnapshot(raw, status, st.activityByAccount[id]);
-    return { ...snapshot, unread: clampTrayBadge(snapshot.unread) };
-  } catch {
-    return null;
-  }
 }
 
 function emptyActivitySnapshot(status: AccountSessionStatus = "loading"): AccountActivitySnapshot {
@@ -1251,106 +1372,6 @@ function broadcastUnreadIfChanged(next: Record<string, number>) {
   } catch {
     /* shellView puede no estar lista todavía en arranque */
   }
-}
-
-async function pollTrayUnreadFromActiveView() {
-  const st = ensureState();
-  if (st.chrome.mode !== "browser") return;
-  const g = st.settings.general;
-  if (!g.trayUnreadBadge) return;
-  if (g.trayBadgeManual != null) return;
-  const id = st.activeId;
-  if (!id) return;
-  const acc = st.accounts.find((a) => a.id === id) || null;
-  const perAccountNotifs = acc?.notificationsEnabled !== false;
-  try {
-    const snapshot = await evalActivityForAccount(id);
-    if (snapshot == null) return;
-    applyAccountActivity(id, snapshot, perAccountNotifs);
-  } catch {
-    // ignorar
-  }
-}
-
-/** Muestrea actividad en TODAS las cuentas no activas y emite un único
- * broadcast si el mapa cambia. La cuenta activa se cubre con el poll
- * principal (`pollTrayUnreadFromActiveView`). */
-async function pollUnreadInactiveAccounts() {
-  const st = viewState;
-  if (!st) return;
-  const activeId = st.activeId;
-  const nextActivity = { ...st.activityByAccount };
-  const nextUnread = { ...st.unreadByAccount };
-  let changedActivity = false;
-  let changedUnread = false;
-
-  for (const a of st.accounts) {
-    if (a.id === activeId) continue;
-    const prevN = clampTrayBadge(nextUnread[a.id] ?? 0);
-    const snapshot = await evalActivityForAccount(a.id);
-    if (snapshot == null) {
-      if ((nextUnread[a.id] ?? 0) !== 0) {
-        nextUnread[a.id] = 0;
-        changedUnread = true;
-      }
-      const empty = emptyActivitySnapshot(st.accountStatusById[a.id] ?? "loading");
-      const prevSnap = nextActivity[a.id];
-      if (!prevSnap || !activityMapsEqual({ [a.id]: prevSnap }, { [a.id]: empty })) {
-        nextActivity[a.id] = empty;
-        changedActivity = true;
-      }
-      continue;
-    }
-    if ((nextUnread[a.id] ?? 0) !== snapshot.unread) {
-      nextUnread[a.id] = snapshot.unread;
-      changedUnread = true;
-    }
-    const prevSnap = nextActivity[a.id];
-    if (!prevSnap || !activityMapsEqual({ [a.id]: prevSnap }, { [a.id]: snapshot })) {
-      nextActivity[a.id] = snapshot;
-      changedActivity = true;
-    }
-    if (a.notificationsEnabled !== false && snapshot.unread > prevN) {
-      maybeNotifyActivityIncrease(a.id, prevN, {
-        unread: snapshot.unread,
-        lastSender: snapshot.lastSender,
-        lastPreview: snapshot.lastPreview,
-      });
-    }
-  }
-
-  if (changedActivity) broadcastActivityIfChanged(nextActivity);
-  if (changedUnread) broadcastUnreadIfChanged(nextUnread);
-  else if (!changedActivity) {
-    recomputeTrayUnreadTotal();
-    refreshTrayIcon();
-    refreshDockBadge();
-  }
-}
-
-function restartUnreadPolling() {
-  if (unreadPollTimer != null) {
-    clearInterval(unreadPollTimer);
-    unreadPollTimer = null;
-  }
-  if (unreadInactivePollTimer != null) {
-    clearInterval(unreadInactivePollTimer);
-    unreadInactivePollTimer = null;
-  }
-  const st = viewState;
-  if (!st) return;
-  const g = st.settings.general;
-  if (!g.trayUnreadBadge || g.trayBadgeManual != null) return;
-  unreadPollTimer = setInterval(() => {
-    void pollTrayUnreadFromActiveView();
-  }, 10000);
-  // Las cuentas inactivas se muestrean con menor frecuencia para no
-  // martillar a Chromium con executeJavaScript en BrowserViews secundarias.
-  unreadInactivePollTimer = setInterval(() => {
-    void pollUnreadInactiveAccounts();
-  }, 20000);
-  // Lanzamiento inmediato (no esperar 30 s al arranque).
-  void pollUnreadInactiveAccounts();
 }
 
 function downloadsDirForSettings(st: ViewState): string {
@@ -1559,25 +1580,17 @@ function ensureViewForAccount(id: string): WebContentsView {
   const ses = ensureElectronSessionForAccount(id);
   attachDownloadHandlersOnce(ses);
   attachPermissionHandlersOnce(ses);
-  // Tema: solo modo oscuro nativo de WhatsApp (sin extensiones / CSS inyectado).
   const view = new WebContentsView({
-    webPreferences: {
-      session: ses,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+    webPreferences: buildWhatsAppWebPreferences(ses),
   });
-  view.setBackgroundColor("#ffffffff");
+  view.setBackgroundColor(WHATSAPP_VIEW_BG);
   try {
     const z = st.settings?.general?.uiScale ?? 1;
     if (Number.isFinite(z)) view.webContents.setZoomFactor(Math.max(0.75, Math.min(2, z)));
   } catch {
     // ignore
   }
-  view.webContents.setUserAgent(
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
-  );
+  view.webContents.setUserAgent(buildWhatsAppWebUserAgent());
   void view.webContents.loadURL(E2E_MODE ? "about:blank" : WHATSAPP_URL);
 
   // Enlaces / popups: mantener navegación dentro de WhatsApp; el resto al navegador del sistema.
@@ -1627,6 +1640,8 @@ function ensureViewForAccount(id: string): WebContentsView {
   dbgEmbed("ensureViewForAccount created WebContentsView (whatsapp)", { accountId: id });
 
   st.viewsById.set(id, view);
+  applyWhatsAppViewThrottle(view.webContents, resolveBackgroundThrottleTier(st.chrome.zen));
+  void enforceMaxLiveAccounts();
   return view;
 }
 
@@ -1729,6 +1744,7 @@ function toggleZenFromMain() {
   st.chrome.zen = !st.chrome.zen;
   void st.shellView.webContents.send("ui:zenChanged", st.chrome.zen);
   layoutActiveView();
+  syncAllWhatsAppViewThrottles();
   refreshMenus();
 }
 
@@ -1743,6 +1759,7 @@ function dispatchCatripShortcut(action: CatripShortcutAction): boolean {
       st.chrome.zen = false;
       void st.shellView.webContents.send("ui:zenChanged", false);
       layoutActiveView();
+      syncAllWhatsAppViewThrottles();
       refreshMenus();
       return true;
     case "settings":
@@ -1983,6 +2000,73 @@ function refreshMenus() {
   Menu.setApplicationMenu(buildAppMenu());
 }
 
+function broadcastWhatsAppLoadState() {
+  const st = viewState;
+  if (!st) return;
+  try {
+    void st.shellView.webContents.send("ui:whatsappLoadState", st.whatsappLoadOverlay);
+  } catch {
+    // ignore
+  }
+}
+
+function beginWhatsAppLoadOverlay(accountId: string) {
+  const st = ensureState();
+  const acc = st.accounts.find((a) => a.id === accountId);
+  st.whatsappLoadOverlay = { accountId, label: acc?.label ?? "WhatsApp" };
+  broadcastWhatsAppLoadState();
+}
+
+function endWhatsAppLoadOverlay(accountId: string) {
+  const st = viewState;
+  if (!st?.whatsappLoadOverlay || st.whatsappLoadOverlay.accountId !== accountId) return;
+  st.whatsappLoadOverlay = null;
+  broadcastWhatsAppLoadState();
+}
+
+function registerWhatsAppLoadCompletion(accountId: string, view: WebContentsView) {
+  const wc = view.webContents;
+  if (whatsappLoadCompletionHooked.has(wc)) return;
+  whatsappLoadCompletionHooked.add(wc);
+  let settled = false;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    onWhatsAppLoadSettled(accountId);
+  };
+  wc.once("did-finish-load", finish);
+  wc.once("did-fail-load", finish);
+  try {
+    if (!wc.isLoading()) finish();
+  } catch {
+    /* ignore */
+  }
+}
+
+function onWhatsAppLoadSettled(accountId: string) {
+  const st = viewState;
+  if (!st) return;
+  endWhatsAppLoadOverlay(accountId);
+  if (st.activeId === accountId && st.chrome.mode === "browser" && !rendererModalOpen) {
+    attachBrowserViewForAccount(accountId);
+  } else {
+    layoutActiveView();
+  }
+  syncAllWhatsAppViewThrottles();
+}
+
+function syncAllWhatsAppViewThrottles() {
+  const st = viewState;
+  if (!st || E2E_MODE) return;
+  const attachedId = st.attachedViewId;
+  const bgTier = resolveBackgroundThrottleTier(st.chrome.zen);
+  for (const [accountId, view] of st.viewsById) {
+    if (view.webContents.isDestroyed()) continue;
+    const tier = accountId === attachedId ? "active" : bgTier;
+    applyWhatsAppViewThrottle(view.webContents, tier);
+  }
+}
+
 function layoutActiveView() {
   const st = ensureState();
   const win = st.win;
@@ -1996,6 +2080,19 @@ function layoutActiveView() {
     return;
   }
 
+  const top = st.chrome.zen ? 0 : st.chrome.topHeight;
+  const innerH = Math.max(0, bounds.height - top);
+
+  // Reactivación tras suspensión: shell a pantalla completa con placeholder en el renderer.
+  if (st.whatsappLoadOverlay) {
+    st.shellView.setVisible(true);
+    st.shellView.setBounds({ x: 0, y: top, width: bounds.width, height: innerH });
+    raiseChildView(win, st.shellView);
+    const loadingView = st.viewsById.get(st.whatsappLoadOverlay.accountId);
+    if (loadingView) safeRemoveChildView(win, loadingView);
+    return;
+  }
+
   const aid = st.attachedViewId;
   if (!aid) {
     st.shellView.setVisible(true);
@@ -2006,8 +2103,6 @@ function layoutActiveView() {
 
   const view = ensureViewForAccount(aid);
   const sidebar = st.chrome.zen ? 0 : st.chrome.sidebarWidth;
-  const top = st.chrome.zen ? 0 : st.chrome.topHeight;
-  const innerH = Math.max(0, bounds.height - top);
 
   if (sidebar > 0) {
     st.shellView.setVisible(true);
@@ -2073,6 +2168,7 @@ function attachBrowserViewForAccount(id: string) {
   if (st.attachedViewId === id && win.contentView.children.includes(view)) {
     dbgEmbed("attachBrowserViewForAccount skip (already attached)", { id });
     layoutActiveView();
+    syncAllWhatsAppViewThrottles();
     return;
   }
   if (st.attachedViewId && st.attachedViewId !== id) {
@@ -2090,17 +2186,31 @@ function attachBrowserViewForAccount(id: string) {
     wcDestroyed: view.webContents.isDestroyed(),
   });
   layoutActiveView();
+  syncAllWhatsAppViewThrottles();
 }
 
 function setActiveAccount(id: string) {
   const st = ensureState();
   if (!st.accounts.find((a) => a.id === id)) return;
+  const wasSuspended = st.suspendedAccountIds.has(id);
   st.activeId = id;
   touchAccountActive(id);
   saveAccountsState({ version: 1, accounts: st.accounts, activeId: st.activeId });
 
   if (st.chrome.mode === "browser" && !rendererModalOpen) {
-    attachBrowserViewForAccount(id);
+    if (wasSuspended && !E2E_MODE) {
+      if (st.attachedViewId && st.attachedViewId !== id) {
+        const old = st.viewsById.get(st.attachedViewId);
+        if (old) safeRemoveChildView(st.win, old);
+        st.attachedViewId = null;
+      }
+      beginWhatsAppLoadOverlay(id);
+      const view = ensureViewForAccount(id);
+      registerWhatsAppLoadCompletion(id, view);
+      layoutActiveView();
+    } else {
+      attachBrowserViewForAccount(id);
+    }
   }
   dbgEmbed("setActiveAccount", {
     id,
@@ -2110,7 +2220,7 @@ function setActiveAccount(id: string) {
   });
   void st.shellView.webContents.send("accounts:activeChanged", st.activeId);
   refreshMenus();
-  void pollTrayUnreadFromActiveView();
+  void tickActiveAccountHeartbeat();
 }
 
 let pendingIncomingWhatsAppUrl: string | null = null;
@@ -2148,7 +2258,7 @@ function ensureBrowserModeFromMain(st: NonNullable<typeof viewState>) {
   if (st.activeId && !rendererModalOpen) attachBrowserViewForAccount(st.activeId);
   void st.shellView.webContents.send("ui:modeChanged", "browser");
   refreshMenus();
-  restartUnreadPolling();
+  restartBackgroundHeartbeat();
   layoutActiveView();
 }
 
@@ -2659,6 +2769,7 @@ app.whenReady().then(async () => {
     accountStatusById: {},
     accountLastActiveAt: {},
     suspendedAccountIds: new Set(),
+    whatsappLoadOverlay: null,
   };
 
   const { win, shellView } = createMainWindow();
@@ -2696,7 +2807,7 @@ app.whenReady().then(async () => {
     });
   }
 
-  restartAccountStatusPolling();
+  restartBackgroundHeartbeat();
 
   startCallSessionGuard({
     getEnabled: () => ensureState().settings.performance.inhibitSleepDuringCall !== false,
@@ -2773,6 +2884,32 @@ app.on("before-quit", (e) => {
   if (trayDisposed) return;
   e.preventDefault();
   void disposeTrayBackend().finally(() => app.quit());
+});
+
+ipcMain.handle("diagnostics:performance", async () => {
+  try {
+    const st = ensureState();
+    const data = collectPerformanceDiagnostics({
+      getSettings: () => st.settings,
+      getAppVersion: getApplicationVersionForDisplay,
+      getAccounts: () => st.accounts,
+      getActiveAccountId: () => st.activeId,
+      getAttachedViewId: () => st.attachedViewId,
+      getSuspendedIds: () => st.suspendedAccountIds,
+      getViewForAccount: (id) => st.viewsById.get(id),
+      getHeartbeatStats: () => ({
+        totalExecutions: heartbeatExecutionCount,
+        lastExecutionAt: heartbeatLastExecutionAt,
+      }),
+    });
+    return { ok: true as const, data };
+  } catch (e) {
+    return {
+      ok: false as const,
+      code: "exception",
+      message: e instanceof Error ? e.message : String(e),
+    };
+  }
 });
 
 ipcMain.handle("diagnostics:whatsappMedia", async () => {
@@ -2980,6 +3117,11 @@ ipcMain.handle("accounts:setNotificationsEnabled", (_evt, id: string, enabled: b
 
 ipcMain.handle("accounts:setActive", (_evt, id: string) => {
   setActiveAccount(id);
+});
+
+ipcMain.handle("accounts:prewarm", (_evt, id: unknown) => {
+  if (typeof id !== "string" || !id.trim()) return;
+  prewarmAccountView(id.trim());
 });
 
 ipcMain.handle("accounts:reorder", (_evt, orderedIds: unknown) => {
@@ -3227,6 +3369,7 @@ ipcMain.handle("ui:setZenMode", (_evt, enabled: boolean) => {
   st.settings = next;
   saveSettings(next);
   layoutActiveView();
+  syncAllWhatsAppViewThrottles();
   refreshMenus();
 });
 
@@ -3242,7 +3385,7 @@ ipcMain.handle("ui:setMode", (_evt, mode: "browser" | "settings") => {
     if (st.activeId && !rendererModalOpen) attachBrowserViewForAccount(st.activeId);
   }
   refreshMenus();
-  restartUnreadPolling();
-  if (next === "browser") void pollTrayUnreadFromActiveView();
+  restartBackgroundHeartbeat();
+  if (next === "browser") void tickActiveAccountHeartbeat();
   layoutActiveView();
 });

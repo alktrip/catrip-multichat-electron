@@ -2,6 +2,8 @@ import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { normalizeSuspendAfterMinutes } from "./accountSuspension";
+import { normalizeMaxLiveAccounts } from "./accountLiveViewPolicy";
+import type { ChromiumProfile, OzonePlatformSetting } from "./chromiumLaunch";
 import type { LanguageSetting } from "../shared/i18n/types";
 import { isAppLocale } from "../shared/i18n/localeMeta";
 
@@ -11,12 +13,20 @@ export type Settings = {
     rendererProcessLimit: number; // 0 = default Chromium; >0 requiere reinicio
     /** Flags extra de GPU al arrancar (VA-API, zero-copy). Requiere reinicio. */
     gpuBoost: boolean;
+    /** Perfil de flags Chromium al arrancar. Requiere reinicio. */
+    chromiumProfile: ChromiumProfile;
+    /** Backend gráfico Linux (`auto` detecta Wayland/X11). Requiere reinicio. */
+    ozonePlatform: OzonePlatformSetting;
     /** Evita suspensión del sistema durante videollamada (powerSaveBlocker / portal). */
     inhibitSleepDuringCall: boolean;
     /** Destruye WebContentsView de cuentas no usadas tras N minutos (sesión en disco). */
     suspendInactiveAccounts: boolean;
     /** Minutos sin seleccionar la cuenta antes de suspenderla. */
     suspendAfterMinutes: number;
+    /** Máx. vistas WhatsApp vivas; 0 = sin límite. */
+    maxLiveAccounts: number;
+    /** Precalienta la vista al pasar el ratón sobre una cuenta del rail. */
+    prewarmOnHover: boolean;
   };
   network: {
     proxyEnabled: boolean;
@@ -84,9 +94,13 @@ const DEFAULTS: Settings = {
   performance: {
     rendererProcessLimit: 3,
     gpuBoost: false,
+    chromiumProfile: "default",
+    ozonePlatform: "auto",
     inhibitSleepDuringCall: true,
     suspendInactiveAccounts: true,
     suspendAfterMinutes: 15,
+    maxLiveAccounts: 0,
+    prewarmOnHover: true,
   },
   network: { proxyEnabled: false, proxyRules: "" },
   general: {
@@ -142,6 +156,16 @@ export function loadSettings(): Settings {
           typeof (parsed.performance as { gpuBoost?: boolean })?.gpuBoost === "boolean"
             ? (parsed.performance as { gpuBoost: boolean }).gpuBoost
             : DEFAULTS.performance.gpuBoost,
+        chromiumProfile: (() => {
+          const raw = (parsed.performance as { chromiumProfile?: unknown })?.chromiumProfile;
+          if (raw === "conservative" || raw === "aggressive" || raw === "default") return raw;
+          return DEFAULTS.performance.chromiumProfile;
+        })(),
+        ozonePlatform: (() => {
+          const raw = (parsed.performance as { ozonePlatform?: unknown })?.ozonePlatform;
+          if (raw === "auto" || raw === "wayland" || raw === "x11") return raw;
+          return DEFAULTS.performance.ozonePlatform;
+        })(),
         inhibitSleepDuringCall:
           typeof (parsed.performance as { inhibitSleepDuringCall?: boolean })
             ?.inhibitSleepDuringCall === "boolean"
@@ -155,6 +179,13 @@ export function loadSettings(): Settings {
         suspendAfterMinutes: normalizeSuspendAfterMinutes(
           (parsed.performance as { suspendAfterMinutes?: unknown })?.suspendAfterMinutes,
         ),
+        maxLiveAccounts: normalizeMaxLiveAccounts(
+          (parsed.performance as { maxLiveAccounts?: unknown })?.maxLiveAccounts,
+        ),
+        prewarmOnHover:
+          typeof (parsed.performance as { prewarmOnHover?: boolean })?.prewarmOnHover === "boolean"
+            ? (parsed.performance as { prewarmOnHover: boolean }).prewarmOnHover
+            : DEFAULTS.performance.prewarmOnHover,
       },
       network: {
         proxyEnabled:
