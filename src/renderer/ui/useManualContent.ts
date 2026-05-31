@@ -1,4 +1,5 @@
 import React from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { MANUAL_ILLUSTRATIONS, type ManualIllustrationKey } from "./manualIllustrations";
 
@@ -79,7 +80,7 @@ export function useManualContent(): {
   }, [t, lang]);
 }
 
-function fallbackIntro(t: (key: string) => string): ManualIntro {
+function fallbackIntro(t: TFunction): ManualIntro {
   return {
     title: t("main.menus.userManual"),
     subtitle: "",

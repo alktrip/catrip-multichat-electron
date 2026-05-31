@@ -135,6 +135,7 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
     "preview-trabajo": "connected",
   };
   let activity = defaultActivity(now);
+  let suspended: Record<string, boolean> = {};
   let settings = defaultSettings();
   let zen = false;
   let mode: "browser" | "settings" = "browser";
@@ -174,6 +175,11 @@ export function createBrowserPreviewApi(appVersion: string): AppApi {
     onAccountsActivityChanged: (cb) => {
       const w = (m: AccountActivityMap) => cb(m);
       return bus.on("accounts:activityChanged", w as Listener);
+    },
+    getAccountsSuspended: async () => ({ ...suspended }),
+    onAccountsSuspendedChanged: (cb) => {
+      const w = (m: Record<string, boolean>) => cb(m);
+      return bus.on("accounts:suspendedChanged", w as Listener);
     },
     createAccount: async (label?: string) => {
       const acc: AccountDto = {

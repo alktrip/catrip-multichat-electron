@@ -1,4 +1,4 @@
-import i18next from "i18next";
+import i18next, { type InitOptions } from "i18next";
 import { initReactI18next } from "react-i18next";
 import type { AppLocale } from "../shared/i18n/types";
 import { APP_LOCALES, FALLBACK_LOCALE } from "../shared/i18n/types";
@@ -42,7 +42,7 @@ export function initRendererI18nSync(languageSetting?: string, osLocale?: string
       interpolation: { escapeValue: false },
       returnNull: false,
       initImmediate: false,
-    });
+    } as InitOptions);
     document.documentElement.lang = locale;
   }
   return locale;

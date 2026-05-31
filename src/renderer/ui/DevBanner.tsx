@@ -1,21 +1,6 @@
 import React from "react";
 import type { DevContextDto } from "../../preload/preload";
 
-declare global {
-  interface Window {
-    catrip?: {
-      getDevContext?: () => Promise<DevContextDto | null>;
-      listAccounts?: () => Promise<Array<{ id: string; label: string }>>;
-      getActiveAccountId?: () => Promise<string | null>;
-      onActiveAccountChanged?: (cb: (id: string | null) => void) => () => void;
-      onAccountsListChanged?: (
-        cb: (accounts: Array<{ id: string; label: string }>) => void,
-      ) => () => void;
-      previewUpdateDialog?: () => Promise<boolean>;
-    };
-  }
-}
-
 const APP_VERSION = typeof __CATRIP_APP_VERSION__ === "string" ? __CATRIP_APP_VERSION__ : "0.0.0";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
