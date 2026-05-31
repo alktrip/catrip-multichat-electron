@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.catrip.catrip-multichat-electron</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Catrip Connect</name>
+  <summary>Cliente multi-cuenta de WhatsApp Web</summary>
+  <description>
+    <p>
+      Catrip Connect ejecuta múltiples sesiones de WhatsApp Web aisladas en una
+      sola aplicación de escritorio, con bandeja del sistema, atajos globales
+      y notificaciones nativas.
+    </p>
+    <p>
+      Cada cuenta mantiene cookies y datos separados. La interfaz incluye un
+      rail de cuentas, paleta de comandos, vista de pendientes y soporte para
+      el protocolo whatsapp://.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.catrip.catrip-multichat-electron.desktop</launchable>
+  <url type="homepage">https://github.com/alktrip/catrip-multichat-electron</url>
+  <url type="bugtracker">https://github.com/alktrip/catrip-multichat-electron/issues</url>
+  <url type="vcs-browser">https://github.com/alktrip/catrip-multichat-electron</url>
+  <developer_name>Catrip</developer_name>
+  <content_rating type="oars-1.1" />
+  <categories>
+    <category>Network</category>
+    <category>Chat</category>
+  </categories>
+  <keywords>
+    <keyword>whatsapp</keyword>
+    <keyword>chat</keyword>
+    <keyword>mensajería</keyword>
+    <keyword>multi-cuenta</keyword>
+  </keywords>
+  <releases>
+    <release version="1.7.0" date="2026-05-31">
+      <description>
+        <p>Soporte inicial de empaquetado Flatpak.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -1,0 +1,71 @@
+# Manifest Flatpak — Catrip Connect (Electron)
+# Documentación: https://docs.flatpak.org/en/latest/electron.html
+app-id: com.catrip.catrip-multichat-electron
+runtime: org.freedesktop.Platform
+runtime-version: "24.08"
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: "24.08"
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+command: run.sh
+separate-locales: false
+finish-args:
+  # Ventana (X11 por defecto; Wayland nativo en Electron sigue experimental)
+  - --share=ipc
+  - --device=dri
+  - --socket=x11
+  # Audio (WhatsApp Web: notificaciones y llamadas)
+  - --socket=pulseaudio
+  # Red
+  - --share=network
+  # Integración de escritorio
+  - --env=ELECTRON_TRASH=gio
+  - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
+  # Bandeja del sistema (StatusNotifier / AppIndicator)
+  - --talk-name=org.kde.StatusNotifierWatcher
+  # Badge / barra de progreso en el icono (UnityLauncherAPI / KDE)
+  - --talk-name=com.canonical.Unity
+build-options:
+  append-path: /usr/lib/sdk/node22/bin
+  env:
+    NPM_CONFIG_LOGLEVEL: info
+modules:
+  - name: catrip-connect
+    buildsystem: simple
+    build-options:
+      env:
+        XDG_CACHE_HOME: /run/build/catrip-connect/flatpak-node/cache
+        npm_config_cache: /run/build/catrip-connect/flatpak-node/npm-cache
+        npm_config_offline: "true"
+    build-commands:
+      # electron-builder debe producir linux-unpacked, no deb/AppImage
+      - |
+        node -e "
+        const fs=require('fs');
+        const p='package.json';
+        const j=JSON.parse(fs.readFileSync(p,'utf8'));
+        j.build.linux.target=[{target:'dir',arch:['x64']}];
+        fs.writeFileSync(p, JSON.stringify(j,null,2)+'\n');
+        "
+      - npm install --offline
+      # Iconos PNG ya versionados en assets/icons; generate-app-icons requiere Pillow fuera del SDK.
+      - npm run build
+      - |
+        . flatpak-node/electron-builder-arch-args.sh
+        npx electron-builder --linux dir $ELECTRON_BUILDER_ARCH_ARGS
+      - cp -a release/linux*unpacked /app/main
+      - patch-desktop-filename /app/main/resources/app.asar com.catrip.catrip-multichat-electron.desktop
+      - install -Dm755 flatpak/run.sh /app/bin/run.sh
+      - install -Dm644 flatpak/com.catrip.catrip-multichat-electron.metainfo.xml /app/share/metainfo/com.catrip.catrip-multichat-electron.metainfo.xml
+      - install -Dm644 flatpak/com.catrip.catrip-multichat-electron.desktop /app/share/applications/com.catrip.catrip-multichat-electron.desktop
+      - |
+        for size in 16 32 48 64 128 256 512; do
+          install -Dm644 "assets/icons/${size}x${size}.png" \
+            "/app/share/icons/hicolor/${size}x${size}/apps/com.catrip.catrip-multichat-electron.png"
+        done
+      - install -Dm644 assets/icons/org.k3p.catrip-multichat.svg /app/share/icons/hicolor/scalable/apps/com.catrip.catrip-multichat-electron.svg
+    sources:
+      - type: dir
+        path: ..
+      - generated-sources.json
