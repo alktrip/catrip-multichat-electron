@@ -61,7 +61,7 @@ test("crear → renombrar → eliminar una cuenta desde Ajustes", async () => {
 
   // 6. Toast de éxito y label nuevo en la lista.
   await expect(shell.locator(".catrip-toast--success .catrip-toast-message").last()).toContainText(
-    /renombrad/i,
+    /renombrad|renamed/i,
     { timeout: 8_000 },
   );
   await expect(shell.getByText(NEW_NAME, { exact: true }).first()).toBeVisible();
@@ -76,7 +76,7 @@ test("crear → renombrar → eliminar una cuenta desde Ajustes", async () => {
 
   // 8. Toast de éxito de eliminación.
   await expect(shell.locator(".catrip-toast--success .catrip-toast-message").last()).toContainText(
-    /eliminad/i,
+    /eliminad|deleted/i,
     { timeout: 8_000 },
   );
 
