@@ -13,9 +13,9 @@ export function buildWhatsAppOpenChatByNameJs(chatName: string): string {
     function readRowName(row) {
       var aria = (row.getAttribute("aria-label") || "").trim();
       if (aria) {
-        var clean = aria.replace(/,?\s*\\d+\\s+unread\\b[^,]*/gi, "")
-          .replace(/,?\s*\\d+\\s+mensajes?\\s+no\\s+le[ií]dos?[^,]*/gi, "")
-          .replace(/,?\s*\\d{1,2}:\\d{2}[^,]*$/i, "")
+        var clean = aria.replace(/,?\\s*\\d+\\s+unread\\b[^,]*/gi, "")
+          .replace(/,?\\s*\\d+\\s+mensajes?\\s+no\\s+le[ií]dos?[^,]*/gi, "")
+          .replace(/,?\\s*\\d{1,2}:\\d{2}[^,]*$/i, "")
           .trim();
         var parts = clean.split(",").map(function (p) { return p.trim(); }).filter(Boolean);
         if (parts[0]) return norm(parts[0]);

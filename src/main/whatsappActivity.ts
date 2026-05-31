@@ -103,10 +103,10 @@ export const WHATSAPP_ACTIVITY_JS = `(() => {
 
   function parseAriaLabel(aria) {
     var clean = String(aria || "")
-      .replace(/,?\s*\d+\s+unread\b[^,]*/gi, "")
-      .replace(/,?\s*\d+\s+mensajes?\s+no\s+le[ií]dos?[^,]*/gi, "")
-      .replace(/,?\s*\d+\s+sin\s+leer[^,]*/gi, "")
-      .replace(/,?\s*\d{1,2}:\d{2}(\s*(AM|PM|a\\.\\s*m\\.\\s*|p\\.\\s*m\\.\\s*))?[^,]*$/i, "")
+      .replace(/,?\\s*\\d+\\s+unread\\b[^,]*/gi, "")
+      .replace(/,?\\s*\\d+\\s+mensajes?\\s+no\\s+le[ií]dos?[^,]*/gi, "")
+      .replace(/,?\\s*\\d+\\s+sin\\s+leer[^,]*/gi, "")
+      .replace(/,?\\s*\\d{1,2}:\\d{2}(\\s*(AM|PM|a\\.\\s*m\\.\\s*|p\\.\\s*m\\.\\s*))?[^,]*$/i, "")
       .trim();
     var parts = clean.split(",").map(function (s) {
       return s.trim();
