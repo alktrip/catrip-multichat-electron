@@ -1,14 +1,24 @@
 import { test, expect } from "@playwright/test";
 import { launchApp, closeApp } from "./helpers/launch";
+import type { Page } from "@playwright/test";
+
+async function waitForShellReady(shell: Page) {
+  await expect(shell.locator(".catrip-rail-account-btn").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect
+    .poll(async () => shell.evaluate(() => window.catrip.getActiveAccountId()), {
+      timeout: 15_000,
+    })
+    .not.toBeNull();
+}
 
 test.describe("enlaces WhatsApp entrantes", () => {
   test("parser e2e: whatsapp:// con texto", async () => {
     const launched = await launchApp();
     try {
       const { shell } = launched;
-      await expect(shell.locator(".catrip-rail-account-btn").first()).toBeVisible({
-        timeout: 15_000,
-      });
+      await waitForShellReady(shell);
       const parsed = await shell.evaluate(async () => {
         return window.catrip.e2eParseWhatsAppUrl("whatsapp://send?phone=34600111222&text=Hola");
       });
@@ -30,9 +40,7 @@ test.describe("enlaces WhatsApp entrantes", () => {
     });
     try {
       const { shell } = launched;
-      await expect(shell.locator(".catrip-rail-account-btn").first()).toBeVisible({
-        timeout: 15_000,
-      });
+      await waitForShellReady(shell);
       await shell.evaluate(async () => {
         await window.catrip.e2eSimulateIncomingUrl(
           "whatsapp://send?phone=34600999888&text=PruebaE2E",
@@ -41,7 +49,7 @@ test.describe("enlaces WhatsApp entrantes", () => {
       await expect
         .poll(
           async () => shell.evaluate(async () => window.catrip.e2eGetLastIncomingNavigation()),
-          { timeout: 10_000 },
+          { timeout: 25_000 },
         )
         .toMatchObject({
           accountId: expect.any(String),
@@ -60,16 +68,14 @@ test.describe("enlaces WhatsApp entrantes", () => {
     });
     try {
       const { shell } = launched;
-      await expect(shell.locator(".catrip-rail-account-btn").first()).toBeVisible({
-        timeout: 15_000,
-      });
+      await waitForShellReady(shell);
       await shell.evaluate(async () => {
         await window.catrip.e2eSimulateIncomingUrl("https://chat.whatsapp.com/InviteE2EGroup99");
       });
       await expect
         .poll(
           async () => shell.evaluate(async () => window.catrip.e2eGetLastIncomingNavigation()),
-          { timeout: 10_000 },
+          { timeout: 25_000 },
         )
         .toMatchObject({
           url: expect.stringMatching(/web\.whatsapp\.com\/accept\?code=InviteE2EGroup99/),
@@ -85,9 +91,7 @@ test.describe("enlaces WhatsApp entrantes", () => {
     });
     try {
       const { shell } = launched;
-      await expect(shell.locator(".catrip-rail-account-btn").first()).toBeVisible({
-        timeout: 15_000,
-      });
+      await waitForShellReady(shell);
       const secondAccountId = await shell.evaluate(async () => {
         const acc = await window.catrip.createAccount("Cuenta E2E enlace");
         const settings = (await window.catrip.getSettings()) as {

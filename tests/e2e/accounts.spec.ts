@@ -69,7 +69,7 @@ test("crear → renombrar → eliminar una cuenta desde Ajustes", async () => {
   // 7. Eliminar la cuenta renombrada → confirmar en el modal.
   const eliminarBtns = shell.getByRole("button", { name: /^(Eliminar|Delete)$/ });
   await eliminarBtns.last().click();
-  await expect(shell.getByText(new RegExp(`[«"]${NEW_NAME}[»"]`))).toBeVisible();
+  await expect(shell.locator(".catrip-overlay-panel").filter({ hasText: NEW_NAME })).toBeVisible();
   await shell
     .getByRole("button", { name: /^(Eliminar definitivamente|Delete permanently)$/ })
     .click();
