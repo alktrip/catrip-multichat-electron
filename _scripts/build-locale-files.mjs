@@ -290,6 +290,11 @@ const catalog = {
         title: "Acerca de Catrip Connect",
         description:
           "Cliente de escritorio para WhatsApp Web con varias cuentas y sesiones aisladas.",
+        developerHeading: "Desarrollo",
+        author: "Autor",
+        authorLink: "alktrip en GitHub",
+        copyright: "© 2025–2026 Catrip · Licencia MIT",
+        projectLink: "Repositorio de esta aplicación",
         electronNote: "Electron + Chromium embebido para reproducir audio y vídeo de forma fiable.",
         inspired:
           "Inspirado en ideas del proyecto ZapZap (PyQt6 + WebEngine). Implementación independiente en Electron.",
@@ -867,6 +872,11 @@ function deepAssignEn() {
   Object.assign(en.app.about, {
     title: "About Catrip Connect",
     description: "Desktop client for WhatsApp Web with multiple isolated accounts.",
+    developerHeading: "Development",
+    author: "Author",
+    authorLink: "alktrip on GitHub",
+    copyright: "© 2025–2026 Catrip · MIT License",
+    projectLink: "This application's repository",
     electronNote: "Electron + embedded Chromium for reliable audio and video playback.",
     inspired:
       "Inspired by ideas from the ZapZap project (PyQt6 + WebEngine). Independent Electron implementation.",

@@ -268,6 +268,11 @@ function assignPt(en) {
   Object.assign(en.app.about, {
     title: "Sobre o Catrip Connect",
     description: "Cliente de desktop para WhatsApp Web com várias contas isoladas.",
+    developerHeading: "Desenvolvimento",
+    author: "Autor",
+    authorLink: "alktrip no GitHub",
+    copyright: "© 2025–2026 Catrip · Licença MIT",
+    projectLink: "Repositório desta aplicação",
     electronNote: "Electron + Chromium embutido para áudio e vídeo confiáveis.",
     inspired:
       "Inspirado em ideias do projeto ZapZap (PyQt6 + WebEngine). Implementação independente em Electron.",
@@ -690,6 +695,11 @@ function assignFr(en) {
   Object.assign(en.app.about, {
     title: "À propos de Catrip Connect",
     description: "Client de bureau WhatsApp Web avec comptes isolés.",
+    developerHeading: "Développement",
+    author: "Auteur",
+    authorLink: "alktrip sur GitHub",
+    copyright: "© 2025–2026 Catrip · Licence MIT",
+    projectLink: "Dépôt de cette application",
     electronNote: "Electron + Chromium intégré pour audio/vidéo fiables.",
     inspired: "Inspiré de ZapZap (PyQt6 + WebEngine). Implémentation Electron indépendante.",
   });
@@ -1111,6 +1121,11 @@ function assignDe(en) {
   Object.assign(en.app.about, {
     title: "Über Catrip Connect",
     description: "Desktop-Client für WhatsApp Web mit isolierten Konten.",
+    developerHeading: "Entwicklung",
+    author: "Autor",
+    authorLink: "alktrip auf GitHub",
+    copyright: "© 2025–2026 Catrip · MIT-Lizenz",
+    projectLink: "Repository dieser Anwendung",
     electronNote: "Electron + eingebettetes Chromium für zuverlässige Wiedergabe.",
     inspired: "Inspiriert von ZapZap (PyQt6 + WebEngine). Unabhängige Electron-Implementierung.",
   });
@@ -1526,6 +1541,11 @@ function assignKo(en) {
   Object.assign(en.app.about, {
     title: "Catrip Connect 정보",
     description: "여러 격리 계정의 WhatsApp Web 데스크톱 클라이언트.",
+    developerHeading: "개발",
+    author: "제작자",
+    authorLink: "GitHub의 alktrip",
+    copyright: "© 2025–2026 Catrip · MIT 라이선스",
+    projectLink: "이 앱 저장소",
     electronNote: "안정적인 오디오/비디오를 위한 Electron + Chromium.",
     inspired: "ZapZap(PyQt6+WebEngine)에서 영감. 독립 Electron 구현.",
   });
@@ -1940,6 +1960,11 @@ function assignJa(en) {
   Object.assign(en.app.about, {
     title: "Catrip Connect について",
     description: "複数の独立アカウント向け WhatsApp Web デスクトップクライアント。",
+    developerHeading: "開発",
+    author: "作者",
+    authorLink: "GitHub の alktrip",
+    copyright: "© 2025–2026 Catrip · MIT ライセンス",
+    projectLink: "このアプリのリポジトリ",
     electronNote: "信頼性の高い再生のための Electron + Chromium。",
     inspired: "ZapZap 由来。独立した Electron 実装。",
   });
@@ -2357,6 +2382,11 @@ function assignIt(en) {
   Object.assign(en.app.about, {
     title: "Informazioni su Catrip Connect",
     description: "Client desktop WhatsApp Web con account isolati.",
+    developerHeading: "Sviluppo",
+    author: "Autore",
+    authorLink: "alktrip su GitHub",
+    copyright: "© 2025–2026 Catrip · Licenza MIT",
+    projectLink: "Repository di questa applicazione",
     electronNote: "Electron + Chromium integrato per audio/video affidabili.",
     inspired: "Ispirato a ZapZap. Implementazione Electron indipendente.",
   });
@@ -2769,6 +2799,11 @@ function assignZh(en) {
   Object.assign(en.app.about, {
     title: "关于 Catrip Connect",
     description: "多账户隔离的 WhatsApp Web 桌面客户端。",
+    developerHeading: "开发",
+    author: "作者",
+    authorLink: "GitHub：alktrip",
+    copyright: "© 2025–2026 Catrip · MIT 许可证",
+    projectLink: "本应用仓库",
     electronNote: "Electron + 内嵌 Chromium，可靠播放音视频。",
     inspired: "灵感来自 ZapZap。独立 Electron 实现。",
   });
