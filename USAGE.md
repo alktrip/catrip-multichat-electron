@@ -22,7 +22,7 @@ Los datos de la aplicación en Linux se guardan bajo `~/.config/catrip_multichat
 
 ## 2. Primer uso
 
-1. **Instala y lanza** la aplicación (menú de aplicaciones, `catrip-connect` en terminal o AppImage).
+1. **Instala y lanza** la aplicación (menú de aplicaciones, `catrip-connect` en terminal, AppImage o Flatpak — véase §14).
 2. Si no hay cuentas, la interfaz invita a **crear la primera cuenta**.
 3. Tras crear una cuenta, se carga **WhatsApp Web** en esa sesión: escanea el código QR con el teléfono como en el navegador.
 4. Para **otra cuenta**, usa **Nueva cuenta** (`Ctrl+U` o desde la paleta de comandos).
@@ -142,9 +142,11 @@ Catrip Connect puede abrir un chat en la **cuenta activa** cuando el sistema o u
 
 **Configuración en Linux (una vez por usuario):**
 
-1. Instala el **`.deb`** (el postinst registra `whatsapp://`) o integra el AppImage:
+1. Instala el **`.deb`** (el postinst registra `whatsapp://`), integra el AppImage o instala el **Flatpak** (registra el handler al exportar el `.desktop`):
    ```bash
    _scripts/install-appimage.sh /ruta/a/catrip-connect_*.AppImage
+   # Flatpak (cuando esté instalado):
+   flatpak run com.catrip.catrip-multichat-electron
    ```
 2. Si el navegador muestra _«No hay aplicaciones disponibles»_, usa **Ajustes → General → Registrar como app predeterminada (whatsapp://)** o ejecuta:
    ```bash
@@ -187,6 +189,7 @@ Activa **Buscar actualizaciones al iniciar** y elige canal **estable** (releases
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **`.deb`** (instalado con apt en `/opt/Catrip Connect/`) | Diálogo con el changelog y tres opciones: **Descargar…** (eliges carpeta y se guarda el `.deb`; opcional verificación SHA-512), **Solo enlace de descarga** (URL de GitHub y abrir en el navegador) o **Más tarde**. La app **no** reinicia ni instala sola. |
 | **AppImage**                                             | Descarga automática en segundo plano; al terminar, **Reiniciar ahora** o **Más tarde** para aplicar la actualización.                                                                                                                                        |
+| **Flatpak**                                              | Actualizaciones con **`flatpak update`** desde el repositorio configurado (Flathub u otro); el diálogo integrado de GitHub/`electron-updater` **no** aplica dentro del sandbox.                                                                              |
 
 Tras descargar un `.deb` manualmente:
 
@@ -284,10 +287,18 @@ Para instalación, paquetes y detalles del proyecto, consulta el **[README](READ
 
 ---
 
-## 14. Linux: AppImage, `.deb` y arranque
+## 14. Linux: AppImage, `.deb`, Flatpak y arranque
 
-- **Actualizaciones**: véase la tabla en **§9 General → Actualizaciones desde GitHub** (flujo distinto para `.deb` y AppImage).
+- **Actualizaciones**: véase la tabla en **§9 General → Actualizaciones desde GitHub** (flujo distinto para `.deb`, AppImage y Flatpak).
+- **No mezclar `.deb` y Flatpak** si quieres un solo icono en el menú: ambos registran Catrip Connect pero con IDs de escritorio distintos (`catrip-connect.desktop` vs `com.catrip.catrip-multichat-electron.desktop`). Los datos de cuenta siguen en `~/.config/catrip_multichat_electron/`.
 - **AppImage y FUSE**: muchos AppImage necesitan **libfuse2** en el sistema. Si ves `dlopen(): error loading libfuse.so.2`, instálala (p. ej. `sudo apt install libfuse2` o `libfuse2t64` en Ubuntu reciente). Como alternativa: `./MiApp.AppImage --appimage-extract-and-run`.
-- **Ejecutar desde terminal**: usa la ruta del binario o del fichero `.AppImage`. El sufijo **`%U`** solo pertenece al campo **`Exec=`** del fichero `.desktop`, no lo escribas al lanzar a mano.
-- **Enlaces WhatsApp (desde 1.2.0, cuenta destino y texto en 1.3.0)**: tras instalar el `.deb` o integrar el AppImage, configura **Catrip Connect** para `whatsapp://` (véase §8). Los `https://wa.me/…` en el navegador no delegan solos a la app.
-- **Sandbox Chromium**: en **1.1.1** y posteriores (**1.3.0**, etc.), los switches (`disable-setuid-sandbox`, clase X11) se aplican en `bootstrap.ts` **antes** de cargar el resto del proceso principal; en **1.1.0** el switch en `main.ts` podía aplicarse demasiado tarde (después de los `import`), de modo que el arranque no reflejaba el cambio.
+- **Flatpak (build local)**: requiere `flatpak-builder`, runtime Freedesktop 24.08, Electron BaseApp y extensión Node 22. Guía completa en **[docs/FLATPAK.md](docs/FLATPAK.md)**. Antes del build, **no** debe existir `node_modules` en el árbol del proyecto.
+  ```bash
+  rm -rf node_modules
+  npm run flatpak:build
+  flatpak run com.catrip.catrip-multichat-electron
+  ```
+  Desinstalar: `flatpak uninstall --user com.catrip.catrip-multichat-electron`.
+- **Ejecutar desde terminal**: `.deb` → `catrip-connect`; AppImage → ruta al fichero; Flatpak → `flatpak run com.catrip.catrip-multichat-electron`. El sufijo **`%U`** solo pertenece al campo **`Exec=`** del fichero `.desktop`, no lo escribas al lanzar a mano.
+- **Enlaces WhatsApp (desde 1.2.0, cuenta destino y texto en 1.3.0)**: tras instalar el `.deb`, integrar el AppImage o instalar el Flatpak, configura **Catrip Connect** para `whatsapp://` (véase §8). Los `https://wa.me/…` en el navegador no delegan solos a la app.
+- **Sandbox Chromium**: en **1.1.1** y posteriores (**1.3.0**, etc.), los switches (`disable-setuid-sandbox`, clase X11) se aplican en `bootstrap.ts` **antes** de cargar el resto del proceso principal; en Flatpak el arranque adicional pasa por **zypak** (`flatpak/run.sh`).

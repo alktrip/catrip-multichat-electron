@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Catrip Connect
+GenericName=Mensajería
+Comment=Cliente multi-cuenta de WhatsApp Web
+Exec=run.sh %U
+Terminal=false
+Icon=com.catrip.catrip-multichat-electron
+StartupWMClass=catrip-connect
+Categories=Network;Chat;InstantMessaging;
+Keywords=whatsapp;chat;mensajería;multi-cuenta;catrip;
+MimeType=x-scheme-handler/whatsapp;
+StartupNotify=true

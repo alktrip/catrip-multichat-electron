@@ -25,6 +25,8 @@
   ·
   <a href="USAGE.md">Guía de uso</a>
   ·
+  <a href="docs/FLATPAK.md">Flatpak</a>
+  ·
   <a href="CHANGELOG.md">Novedades</a>
 </p>
 
@@ -39,7 +41,7 @@ No sustituye a WhatsApp: embebe **WhatsApp Web oficial** con las garantías de s
 | Para quién                   | Qué obtienes                                                                 |
 | ---------------------------- | ---------------------------------------------------------------------------- |
 | **Profesional multi-cuenta** | Rail de avatares, `Ctrl+1`–`9`, reposo de cuentas inactivas para ahorrar RAM |
-| **Equipos en Linux**         | `.deb` e **AppImage**, protocolo `whatsapp://`, bandeja del sistema          |
+| **Equipos en Linux**         | `.deb`, **AppImage** y **Flatpak** (build local / Flathub pendiente), protocolo `whatsapp://`, bandeja del sistema |
 | **Usuarios internacionales** | Interfaz en **9 idiomas** + idioma del sistema; manual integrado traducido   |
 | **Flujo intensivo**          | Paleta `Ctrl+K`, «Ahora mismo», acciones pendientes, modo Zen                |
 
@@ -111,6 +113,9 @@ Artefactos oficiales en **[Releases de GitHub](https://github.com/alktrip/catrip
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | **`catrip-connect_*_amd64.deb`**       | Integración en Debian/Ubuntu: menú, iconos, protocolo `whatsapp://`, actualizaciones avisadas desde la app |
 | **`catrip-connect_*_x86_64.AppImage`** | Portable, sin instalación; ideal para probar o llevar en USB                                               |
+| **Flatpak** (`com.catrip.catrip-multichat-electron`) | Sandbox, actualizaciones vía `flatpak update`; build local documentado en **[docs/FLATPAK.md](docs/FLATPAK.md)** — **aún no en Releases oficiales** |
+
+> **Coexistencia:** no instales a la vez el **`.deb`** y el **Flatpak** si quieres un único lanzador en el menú. El `.deb` usa `catrip-connect.desktop`; el Flatpak usa `com.catrip.catrip-multichat-electron.desktop`. Los datos de usuario siguen en `~/.config/catrip_multichat_electron/` (mismo identificador interno).
 
 ### Instalación rápida (.deb)
 
@@ -151,6 +156,28 @@ Desinstalar paquete `.deb`:
 sudo apt remove catrip-multichat-electron
 ```
 
+### Flatpak (build local / desarrollo)
+
+Requisitos y pasos completos en **[docs/FLATPAK.md](docs/FLATPAK.md)**. Resumen:
+
+```bash
+sudo apt install flatpak flatpak-builder python3-pil python3-venv
+flatpak install flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 \
+  org.freedesktop.Sdk.Extension.node22//24.08 org.electronjs.Electron2.BaseApp//24.08
+
+rm -rf node_modules
+npm run flatpak:build
+flatpak run com.catrip.catrip-multichat-electron
+```
+
+Desinstalar Flatpak:
+
+```bash
+flatpak uninstall --user com.catrip.catrip-multichat-electron
+```
+
+Regenerar dependencias npm offline tras cambiar `package-lock.json`: `npm run flatpak:sources`.
+
 ---
 
 ## Actualizaciones
@@ -159,6 +186,7 @@ sudo apt remove catrip-multichat-electron
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`.deb`**   | Aviso en app (Ajustes → General); descarga del `.deb` a carpeta elegida, verificación SHA-512 si está publicada, instalación con `sudo apt install ./catrip-connect_*_amd64.deb` |
 | **AppImage** | Descarga en segundo plano vía `electron-updater`; opción **Reiniciar ahora** al terminar                                                                                         |
+| **Flatpak**  | Actualizaciones con `flatpak update` (cuando se publique en Flathub o un repo remoto); **no** usa `electron-updater` dentro del sandbox                                          |
 
 ---
 
@@ -167,6 +195,7 @@ sudo apt remove catrip-multichat-electron
 | Recurso                                   | Contenido                                                                                           |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | **[USAGE.md](USAGE.md)**                  | Guía completa: rail, Zen, paleta, enlaces `whatsapp://`, bandeja, rendimiento, variables de entorno |
+| **[docs/FLATPAK.md](docs/FLATPAK.md)**   | Empaquetado Flatpak: manifest, build local, permisos sandbox, Flathub pendiente                     |
 | **Ayuda → Manual de usuario** (en la app) | Manual con índice e ilustraciones en los 9 idiomas                                                  |
 | **[CHANGELOG.md](CHANGELOG.md)**          | Historial de versiones                                                                              |
 
@@ -174,9 +203,9 @@ sudo apt remove catrip-multichat-electron
 
 ## Requisitos y compatibilidad
 
-- **Sistema operativo:** Linux (x64); empaquetado oficial `.deb` y AppImage.
+- **Sistema operativo:** Linux (x64); empaquetado oficial `.deb` y AppImage; **Flatpak** en desarrollo (manifest en repo).
 - **WhatsApp:** cuenta activa en el teléfono; conexión a Internet.
-- **Desarrollo / compilación:** Node.js 22+, herramientas de empaquetado (`dpkg`, `fakeroot` para `.deb`).
+- **Desarrollo / compilación:** Node.js 22+; `.deb`/AppImage: `dpkg`, `fakeroot`; Flatpak: `flatpak-builder`, runtime Freedesktop 24.08 (véase [docs/FLATPAK.md](docs/FLATPAK.md)).
 
 **Tema:** modo oscuro **nativo** de WhatsApp Web (sin inyección de CSS de terceros).
 
@@ -197,6 +226,9 @@ npm run dev
 | `npm run lint` / `npm run typecheck`     | Calidad de código                      |
 | `npm run test:unit` / `npm run test:e2e` | Tests                                  |
 | `npm run dist:linux`                     | Genera `.deb` y AppImage en `release/` |
+| `npm run flatpak:sources`                | Regenera `flatpak/generated-sources.json` |
+| `npm run flatpak:build`                  | Build e instalación local del Flatpak  |
+| `npm run dist:flatpak-dir`               | Solo `linux-unpacked` (usado dentro del manifest Flatpak) |
 
 Regenerar catálogos de traducción y manual:
 
@@ -222,11 +254,13 @@ Detalle en **[USAGE.md](USAGE.md)**.
 ### Empaquetado local
 
 ```bash
-sudo apt install dpkg fakeroot   # solo en la máquina que construye
+sudo apt install dpkg fakeroot   # solo en la máquina que construye .deb
 npm run dist:deb                 # solo .deb
 npm run dist:appimage            # solo AppImage
 npm run dist:linux               # ambos
 ```
+
+Flatpak (sandbox, zypak): ver **[docs/FLATPAK.md](docs/FLATPAK.md)** y `npm run flatpak:build`.
 
 Salida en `release/` (iconos PNG vía `_scripts/generate-app-icons.mjs`).
 

@@ -42,3 +42,10 @@ playwright/.cache/
 
 # Artefactos temporales de generación i18n (prefijo _ en _scripts/)
 _scripts/_*
+
+# Flatpak (build local)
+flatpak/.flatpak-builder/
+flatpak/repo/
+
+# flatpak-builder en raíz (si se ejecuta desde otro cwd)
+.flatpak-builder/

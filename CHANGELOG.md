@@ -6,7 +6,22 @@ El formato está inspirado en [Keep a Changelog](https://keepachangelog.com/es-E
 
 ## [Unreleased]
 
-## [1.7.0] — 2026-05-31
+### Añadido
+
+- **Empaquetado Flatpak** (experimental, rama de desarrollo): manifest `flatpak/com.catrip.catrip-multichat-electron.yml`, metadatos AppStream, `.desktop` e iconos con ID `com.catrip.catrip-multichat-electron`, wrapper `zypak` (`flatpak/run.sh`) y dependencias npm offline (`flatpak/generated-sources.json` vía `flatpak-node-generator`).
+- Scripts de build: `_scripts/flatpak-prepare-sources.sh`, `_scripts/flatpak-build.sh`; comandos npm `flatpak:sources`, `flatpak:build` y `dist:flatpak-dir`.
+- Guía **[docs/FLATPAK.md](docs/FLATPAK.md)** con requisitos, build local e integración futura con Flathub.
+
+### Cambiado
+
+- **README.md**, **USAGE.md**: documentación de instalación ampliada con Flatpak (build local, coexistencia con `.deb`/AppImage, actualizaciones y protocolo `whatsapp://`).
+
+### Notas técnicas
+
+- Build Flatpak: runtime Freedesktop **24.08**, **Electron BaseApp**, extensión Node **22**, `electron-builder --linux dir` → `release/linux-unpacked`.
+- Los paquetes **`.deb`** y **AppImage** no cambian; Flatpak usa `CHROME_DESKTOP=com.catrip.catrip-multichat-electron.desktop` solo en el wrapper del sandbox.
+- **No** hay artefacto Flatpak en GitHub Releases todavía; publicación en Flathub pendiente.
+
 
 ### Añadido
 
