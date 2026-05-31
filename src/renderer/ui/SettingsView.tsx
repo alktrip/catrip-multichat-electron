@@ -15,9 +15,13 @@ type Settings = {
   performance: {
     rendererProcessLimit: number;
     gpuBoost: boolean;
+    chromiumProfile: "default" | "conservative" | "aggressive";
+    ozonePlatform: "auto" | "wayland" | "x11";
     inhibitSleepDuringCall: boolean;
     suspendInactiveAccounts: boolean;
     suspendAfterMinutes: number;
+    maxLiveAccounts: number;
+    prewarmOnHover: boolean;
   };
   network: { proxyEnabled: boolean; proxyRules: string };
   general: {
@@ -116,6 +120,8 @@ export default function SettingsView({
   }>({ top: 0, height: 0, visible: false });
   const [mediaDiagBusy, setMediaDiagBusy] = React.useState(false);
   const [mediaDiagText, setMediaDiagText] = React.useState<string | null>(null);
+  const [perfDiagBusy, setPerfDiagBusy] = React.useState(false);
+  const [perfDiagText, setPerfDiagText] = React.useState<string | null>(null);
   const [cacheBusy, setCacheBusy] = React.useState(false);
   const [cacheMsg, setCacheMsg] = React.useState<string | null>(null);
   const [accounts, setAccounts] = React.useState<
@@ -207,6 +213,22 @@ export default function SettingsView({
         }
       })
       .catch(() => setMediaDiagBusy(false));
+  };
+
+  const runPerfDiag = () => {
+    setPerfDiagBusy(true);
+    setPerfDiagText(null);
+    void window.catrip
+      .runPerformanceDiagnostics()
+      .then((r) => {
+        setPerfDiagBusy(false);
+        if (r.ok) {
+          setPerfDiagText(JSON.stringify(r.data, null, 2));
+        } else {
+          setPerfDiagText([r.message, `(código: ${r.code})`].filter(Boolean).join("\n"));
+        }
+      })
+      .catch(() => setPerfDiagBusy(false));
   };
 
   const clearCacheAll = () => {
@@ -1146,6 +1168,63 @@ export default function SettingsView({
                     {t("settings.performance.gpuBoostHint")}
                   </div>
                   <div style={{ opacity: 0.85, marginBottom: 8 }}>
+                    {t("settings.performance.chromiumProfileLabel")}
+                  </div>
+                  <select
+                    className="catrip-select"
+                    value={settings.performance.chromiumProfile ?? "default"}
+                    onChange={(e) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          chromiumProfile: e.target.value as
+                            | "default"
+                            | "conservative"
+                            | "aggressive",
+                        },
+                      })
+                    }
+                  >
+                    <option value="default">
+                      {t("settings.performance.chromiumProfileDefault")}
+                    </option>
+                    <option value="conservative">
+                      {t("settings.performance.chromiumProfileConservative")}
+                    </option>
+                    <option value="aggressive">
+                      {t("settings.performance.chromiumProfileAggressive")}
+                    </option>
+                  </select>
+                  <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 12 }}>
+                    {t("settings.performance.chromiumProfileHint")}
+                  </div>
+                  <div style={{ opacity: 0.85, marginBottom: 8 }}>
+                    {t("settings.performance.ozonePlatformLabel")}
+                  </div>
+                  <select
+                    className="catrip-select"
+                    value={settings.performance.ozonePlatform ?? "auto"}
+                    onChange={(e) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          ozonePlatform: e.target.value as "auto" | "wayland" | "x11",
+                        },
+                      })
+                    }
+                  >
+                    <option value="auto">{t("settings.performance.ozonePlatformAuto")}</option>
+                    <option value="wayland">
+                      {t("settings.performance.ozonePlatformWayland")}
+                    </option>
+                    <option value="x11">{t("settings.performance.ozonePlatformX11")}</option>
+                  </select>
+                  <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 12 }}>
+                    {t("settings.performance.ozonePlatformHint")}
+                  </div>
+                  <div style={{ opacity: 0.85, marginBottom: 8 }}>
                     {t("settings.performance.rendererLimit")}
                   </div>
                   <select
@@ -1219,6 +1298,48 @@ export default function SettingsView({
                   </select>
                   <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
                     {t("settings.performance.suspendHint")}
+                  </div>
+                  <div style={{ opacity: 0.85, marginBottom: 8 }}>
+                    {t("settings.performance.maxLiveAccountsLabel")}
+                  </div>
+                  <select
+                    className="catrip-select"
+                    value={String(settings.performance.maxLiveAccounts ?? 0)}
+                    onChange={(e) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          maxLiveAccounts: Number(e.target.value),
+                        },
+                      })
+                    }
+                  >
+                    <option value="0">{t("settings.performance.maxLiveAccountsUnlimited")}</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                  </select>
+                  <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                    {t("settings.performance.maxLiveAccountsHint")}
+                  </div>
+                  <ToggleRow
+                    label={t("settings.performance.prewarmOnHover")}
+                    checked={settings.performance.prewarmOnHover !== false}
+                    onChange={(v) =>
+                      update({
+                        ...settings,
+                        performance: {
+                          ...settings.performance,
+                          prewarmOnHover: v,
+                        },
+                      })
+                    }
+                  />
+                  <div className="catrip-text-hint" style={{ marginTop: 8, marginBottom: 16 }}>
+                    {t("settings.performance.prewarmOnHoverHint")}
                   </div>
                   <ToggleRow
                     label={t("settings.performance.inhibitSleep")}
@@ -1329,6 +1450,61 @@ export default function SettingsView({
                       style={{ margin: "12px 0 0", lineHeight: 1.45 }}
                     >
                       {t("settings.performance.mediaDiagFootnote")}
+                    </p>
+
+                    <div className="catrip-gradient-divider" style={{ margin: "18px 0" }} />
+                    <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                      {t("settings.performance.perfDiagSection")}
+                    </div>
+                    <p
+                      style={{ margin: "0 0 12px", opacity: 0.82, fontSize: 13, lineHeight: 1.55 }}
+                    >
+                      {t("settings.performance.perfDiagHint")}
+                    </p>
+                    <button
+                      type="button"
+                      className="catrip-btn catrip-btn-accent"
+                      disabled={perfDiagBusy}
+                      onClick={runPerfDiag}
+                      style={{
+                        borderRadius: 10,
+                        padding: "10px 16px",
+                        border: "1px solid var(--catrip-accent-border)",
+                        background: perfDiagBusy
+                          ? "rgba(255,255,255,0.04)"
+                          : "var(--catrip-accent-soft)",
+                        color: "#e8f8ef",
+                        cursor: perfDiagBusy ? "wait" : "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {perfDiagBusy ? t("common.checking") : t("settings.performance.runPerfDiag")}
+                    </button>
+                    {perfDiagText ? (
+                      <pre
+                        style={{
+                          marginTop: 14,
+                          padding: 12,
+                          borderRadius: 10,
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          background: "rgba(0,0,0,0.35)",
+                          color: "#dce8e8",
+                          fontSize: 11,
+                          lineHeight: 1.45,
+                          overflow: "auto",
+                          maxHeight: 280,
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {perfDiagText}
+                      </pre>
+                    ) : null}
+                    <p
+                      className="catrip-text-hint"
+                      style={{ margin: "12px 0 0", lineHeight: 1.45 }}
+                    >
+                      {t("settings.performance.perfDiagFootnote")}
                     </p>
                   </div>
                 </div>

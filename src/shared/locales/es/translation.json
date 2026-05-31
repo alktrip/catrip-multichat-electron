@@ -172,16 +172,35 @@
       "rendererLimitHint": "0 = predeterminado de Chromium. Requiere reiniciar la app.",
       "gpuInfo": "Catrip Connect usa la GPU de Chromium para dibujar la ventana, el rail y cada cuenta de WhatsApp Web. En Linux la ventana va opaca por defecto (mejor composición). Solo desactiva la GPU si ves pantalla negra:",
       "gpuBoostHint": "Activa rasterización reforzada, zero-copy y VA-API ampliado en Linux. Reinicia la app tras cambiar esta opción o el límite de procesos.",
+      "chromiumProfileLabel": "Perfil Chromium al arrancar",
+      "chromiumProfileDefault": "Equilibrado (predeterminado)",
+      "chromiumProfileConservative": "Conservador (menos GPU)",
+      "chromiumProfileAggressive": "Agresivo (más aceleración)",
+      "chromiumProfileHint": "Controla flags de Chromium al arrancar (rasterización, VA-API, vídeo). Requiere reiniciar la app. «Refuerzo GPU» eleva a agresivo si el perfil sigue en equilibrado.",
+      "ozonePlatformLabel": "Backend gráfico (Linux)",
+      "ozonePlatformAuto": "Automático (detectar Wayland/X11)",
+      "ozonePlatformWayland": "Wayland",
+      "ozonePlatformX11": "X11",
+      "ozonePlatformHint": "Solo Linux. «Automático» usa XDG_SESSION_TYPE y variables de entorno. También puedes forzar con CATRIP_OZONE_PLATFORM.",
       "rendererDefault": "Predeterminado",
       "minutesOption": "{{count}} minutos",
       "suspendAfterLabel": "Suspender tras (minutos sin usar la cuenta)",
       "suspendHint": "Libera RAM cerrando la vista de WhatsApp de las cuentas que no uses; la sesión (cookies) se conserva. Al volver a la cuenta se reactiva al instante. Mientras esté en reposo, los avisos de esa cuenta pueden no actualizarse.",
+      "maxLiveAccountsLabel": "Máximo de cuentas cargadas a la vez",
+      "maxLiveAccountsUnlimited": "Sin límite (predeterminado)",
+      "maxLiveAccountsHint": "Si visitas muchas cuentas en una sesión, suspende las menos recientes aunque no haya pasado el tiempo de reposo. 2 = cuenta activa + 1 en segundo plano.",
+      "prewarmOnHover": "Precalentar al pasar el ratón (rail)",
+      "prewarmOnHoverHint": "Tras 300 ms sobre una cuenta del rail, carga WhatsApp Web en segundo plano para un cambio más rápido.",
       "inhibitSleepHint": "Usa el bloqueo de energía de Electron (equivalente a portal/systemd-inhibit en Linux) mientras WhatsApp Web detecta una llamada activa.",
       "storageSection": "Almacenamiento",
       "storageHint": "Limpia la caché HTTP de todas las cuentas (reduce espacio; normalmente mantiene la sesión).",
       "mediaDiagSection": "Diagnóstico multimedia (WhatsApp Web)",
       "mediaDiagHint": "Comprueba si Chromium puede reproducir códecs típicos de vídeo/audio en la sesión de la cuenta activa (misma ventana que WhatsApp Web). Funciona aunque estés en esta pantalla de ajustes.",
-      "mediaDiagFootnote": "Si decodingInfo_mp4_h264_aac.supported es false o MediaSource rechaza los MIME de MP4, audio/vídeo en WhatsApp pueden fallar."
+      "mediaDiagFootnote": "Si decodingInfo_mp4_h264_aac.supported es false o MediaSource rechaza los MIME de MP4, audio/vídeo en WhatsApp pueden fallar.",
+      "perfDiagSection": "Diagnóstico de rendimiento",
+      "perfDiagHint": "Memoria, procesos Chromium, cuentas vivas/suspendidas, perfil GPU y estadísticas del heartbeat unificado.",
+      "runPerfDiag": "Generar informe ahora",
+      "perfDiagFootnote": "Útil para comparar antes/después de cambiar perfil Chromium, suspensión o número de cuentas."
     },
     "network": {
       "proxy": "Proxy de red",
@@ -199,6 +218,11 @@
       "subtitle": "Cliente multicuenta de WhatsApp Web. Añade tu primera cuenta para empezar a chatear desde el escritorio.",
       "addFirst": "Añadir tu primera cuenta",
       "hint": "También puedes pulsar el botón + del rail (lateral izquierdo, parpadea en verde)."
+    },
+    "whatsappLoading": {
+      "aria": "Cargando WhatsApp para {{label}}",
+      "title": "Conectando {{label}}…",
+      "hint": "Restaurando sesión de WhatsApp Web. La caché de código acelera este paso tras suspensiones anteriores."
     },
     "rail": {
       "createFirst": "Crear tu primera cuenta",

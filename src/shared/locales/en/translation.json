@@ -172,16 +172,35 @@
       "rendererLimitHint": "0 = Chromium default. Requires app restart.",
       "gpuInfo": "Catrip Connect uses Chromium's GPU for the window, rail, and each WhatsApp Web account. On Linux the window is opaque by default (better compositing). Disable the GPU only if you see a black screen: CATRIP_DISABLE_GPU=1.",
       "gpuBoostHint": "Enables reinforced rasterization, zero-copy, and extended VA-API on Linux. Restart the app after changing this or the process limit.",
+      "chromiumProfileLabel": "Chromium profile at launch",
+      "chromiumProfileDefault": "Balanced (default)",
+      "chromiumProfileConservative": "Conservative (less GPU)",
+      "chromiumProfileAggressive": "Aggressive (more acceleration)",
+      "chromiumProfileHint": "Controls Chromium flags at launch (rasterization, VA-API, video). Requires an app restart. «GPU boost» elevates to aggressive when the profile stays balanced.",
+      "ozonePlatformLabel": "Graphics backend (Linux)",
+      "ozonePlatformAuto": "Automatic (detect Wayland/X11)",
+      "ozonePlatformWayland": "Wayland",
+      "ozonePlatformX11": "X11",
+      "ozonePlatformHint": "Linux only. «Automatic» uses XDG_SESSION_TYPE and environment variables. You can also force it with CATRIP_OZONE_PLATFORM.",
       "rendererDefault": "Default",
       "minutesOption": "{{count}} minutes",
       "suspendAfterLabel": "Suspend after (minutes without using the account)",
       "suspendHint": "Frees RAM by closing the WhatsApp view for unused accounts; the session (cookies) is kept. Switching back reloads instantly. While suspended, notifications for that account may not update.",
+      "maxLiveAccountsLabel": "Maximum loaded accounts at once",
+      "maxLiveAccountsUnlimited": "No limit (default)",
+      "maxLiveAccountsHint": "If you visit many accounts in one session, suspends the least recently used ones even before the idle timeout. 2 = active account + 1 in the background.",
+      "prewarmOnHover": "Prewarm on rail hover",
+      "prewarmOnHoverHint": "After 300 ms hovering a rail account, loads WhatsApp Web in the background for a faster switch.",
       "inhibitSleepHint": "Uses Electron's power save blocker (similar to portal/systemd-inhibit on Linux) while WhatsApp Web detects an active call.",
       "storageSection": "Storage",
       "storageHint": "Clears HTTP cache for all accounts (saves disk space; usually keeps the session).",
       "mediaDiagSection": "Multimedia diagnostics (WhatsApp Web)",
       "mediaDiagHint": "Checks whether Chromium can play typical video/audio codecs in the active account session (same window as WhatsApp Web). Works even while you are on this settings screen.",
-      "mediaDiagFootnote": "If decodingInfo_mp4_h264_aac.supported is false or MediaSource rejects MP4 MIME types, audio/video in WhatsApp may fail."
+      "mediaDiagFootnote": "If decodingInfo_mp4_h264_aac.supported is false or MediaSource rejects MP4 MIME types, audio/video in WhatsApp may fail.",
+      "perfDiagSection": "Performance diagnostics",
+      "perfDiagHint": "Memory, Chromium processes, live/suspended accounts, GPU profile, and unified heartbeat stats.",
+      "runPerfDiag": "Generate report now",
+      "perfDiagFootnote": "Useful to compare before/after changing Chromium profile, suspension, or account count."
     },
     "network": {
       "proxy": "Network proxy",
@@ -199,6 +218,11 @@
       "subtitle": "Multi-account WhatsApp Web client. Add your first account to start chatting from the desktop.",
       "addFirst": "Add your first account",
       "hint": "You can also click the + button on the rail (left sidebar, blinking green)."
+    },
+    "whatsappLoading": {
+      "aria": "Loading WhatsApp for {{label}}",
+      "title": "Connecting {{label}}…",
+      "hint": "Restoring your WhatsApp Web session. Code cache speeds this up after previous suspensions."
     },
     "rail": {
       "createFirst": "Create your first account",

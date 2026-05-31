@@ -109,6 +109,7 @@ export type AppApi = {
   setAccountNotificationsEnabled: (id: string, enabled: boolean) => Promise<AccountDto | null>;
   deleteAccount: (id: string) => Promise<boolean>;
   setActiveAccount: (id: string) => Promise<void>;
+  prewarmAccount: (id: string) => Promise<void>;
   reorderAccounts: (orderedIds: string[]) => Promise<boolean>;
   getActiveAccountId: () => Promise<string | null>;
   onAccountsListChanged: (cb: (accounts: AccountDto[]) => void) => () => void;
@@ -142,7 +143,11 @@ export type AppApi = {
   onOpenShortcutsHelp: (cb: () => void) => () => void;
   onOpenAbout: (cb: () => void) => () => void;
   onOpenUserManual: (cb: () => void) => () => void;
+  onWhatsAppLoadState: (
+    cb: (payload: { accountId: string; label: string } | null) => void,
+  ) => () => void;
   runWhatsAppMediaDiagnostics: () => Promise<WhatsAppMediaDiagnosticsResult>;
+  runPerformanceDiagnostics: () => Promise<PerformanceDiagnosticsResult>;
   selectDownloadsDirectory: () => Promise<string | null>;
   clearHttpCacheAllAccounts: () => Promise<boolean>;
   registerWhatsAppProtocol: () => Promise<RegisterProtocolResult>;
@@ -150,6 +155,17 @@ export type AppApi = {
   respondUpdateDialog: (buttonId: string, releaseUrl?: string) => Promise<void>;
   previewUpdateDialog: () => Promise<boolean>;
 };
+
+export type PerformanceDiagnosticsResult =
+  | {
+      ok: true;
+      data: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      code: string;
+      message: string;
+    };
 
 export type WhatsAppMediaDiagnosticsResult =
   | {
@@ -213,6 +229,7 @@ const api: AppApi = {
     ipcRenderer.invoke("accounts:setNotificationsEnabled", id, enabled),
   deleteAccount: (id: string) => ipcRenderer.invoke("accounts:delete", id) as Promise<boolean>,
   setActiveAccount: (id: string) => ipcRenderer.invoke("accounts:setActive", id),
+  prewarmAccount: (id: string) => ipcRenderer.invoke("accounts:prewarm", id),
   reorderAccounts: (orderedIds: string[]) =>
     ipcRenderer.invoke("accounts:reorder", orderedIds) as Promise<boolean>,
   getActiveAccountId: () => ipcRenderer.invoke("accounts:getActiveId"),
@@ -275,8 +292,16 @@ const api: AppApi = {
   onOpenShortcutsHelp: (cb) => subscribeShellMenuChannel("ui:openShortcutsHelp", cb),
   onOpenAbout: (cb) => subscribeShellMenuChannel("ui:openAbout", cb),
   onOpenUserManual: (cb) => subscribeShellMenuChannel("ui:openUserManual", cb),
+  onWhatsAppLoadState: (cb) => {
+    const listener = (_evt: unknown, payload: { accountId: string; label: string } | null) =>
+      cb(payload ?? null);
+    ipcRenderer.on("ui:whatsappLoadState", listener);
+    return () => ipcRenderer.removeListener("ui:whatsappLoadState", listener);
+  },
   runWhatsAppMediaDiagnostics: () =>
     ipcRenderer.invoke("diagnostics:whatsappMedia") as Promise<WhatsAppMediaDiagnosticsResult>,
+  runPerformanceDiagnostics: () =>
+    ipcRenderer.invoke("diagnostics:performance") as Promise<PerformanceDiagnosticsResult>,
   selectDownloadsDirectory: () =>
     ipcRenderer.invoke("dialog:selectDownloadsDirectory") as Promise<string | null>,
   clearHttpCacheAllAccounts: () =>

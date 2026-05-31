@@ -1,18 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  WHATSAPP_ACTIVITY_JS,
-  normalizeWhatsAppActivityRaw,
-} from "../../dist/main/whatsappActivity.js";
+  WHATSAPP_HEARTBEAT_FULL_JS,
+  normalizeWhatsAppHeartbeatRaw,
+} from "../../dist/main/whatsappHeartbeat.js";
 import { buildActivitySnapshot, activityMapsEqual } from "../../dist/main/accountActivity.js";
 
-test("normalizeWhatsAppActivityRaw sanea datos crudos", () => {
-  const out = normalizeWhatsAppActivityRaw({
+test("normalizeWhatsAppHeartbeatRaw sanea datos crudos", () => {
+  const out = normalizeWhatsAppHeartbeatRaw({
     unread: 3.9,
     unreadChats: [{ name: " Ana ", preview: " Hola ", unreadCount: 2 }],
     lastSender: null,
     lastPreview: null,
+    status: "connected",
+    callActive: false,
   });
+  assert.ok(out);
   assert.equal(out.unread, 3);
   assert.equal(out.lastSender, "Ana");
   assert.equal(out.lastPreview, "Hola");
@@ -65,7 +68,7 @@ test("activityMapsEqual compara chats sin leer", () => {
   assert.equal(activityMapsEqual(a, b), true);
 });
 
-test("WHATSAPP_ACTIVITY_JS devuelve preview desde fila con badge", () => {
+test("WHATSAPP_HEARTBEAT_FULL_JS devuelve preview desde fila con badge", () => {
   const badge = {
     getAttribute() {
       return null;
@@ -97,15 +100,23 @@ test("WHATSAPP_ACTIVITY_JS devuelve preview desde fila con badge", () => {
   };
   const doc = {
     title: "(2) WhatsApp",
+    location: { href: "https://web.whatsapp.com/" },
+    body: { innerText: "" },
     querySelector(sel) {
       if (String(sel).includes("chat-list") || sel === "#pane-side") return chatList;
       return null;
     },
   };
-  const fn = new Function("document", `return ${WHATSAPP_ACTIVITY_JS}`);
-  const raw = fn(doc);
+  const fn = new Function(
+    "document",
+    "navigator",
+    "location",
+    `return ${WHATSAPP_HEARTBEAT_FULL_JS}`,
+  );
+  const raw = fn(doc, { onLine: true }, doc.location);
   assert.equal(raw.unread, 2);
   assert.equal(raw.unreadChats.length, 1);
   assert.equal(raw.unreadChats[0].name, "María");
   assert.equal(raw.unreadChats[0].preview, "¿Quedamos hoy?");
+  assert.equal(raw.status, "connected");
 });

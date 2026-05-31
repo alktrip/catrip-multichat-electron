@@ -36,12 +36,12 @@
 
 No sustituye a WhatsApp: embebe **WhatsApp Web oficial** con las garantías de sesión que ya conoces (código QR, cifrado de extremo a extremo del servicio de Meta). Catrip añade la capa de **productividad en el escritorio** que el navegador no ofrece.
 
-| Para quién                   | Qué obtienes                                                                 |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| **Profesional multi-cuenta** | Rail de avatares, `Ctrl+1`–`9`, reposo de cuentas inactivas para ahorrar RAM |
-| **Equipos en Linux**         | `.deb` e **AppImage**, protocolo `whatsapp://`, bandeja del sistema          |
-| **Usuarios internacionales** | Interfaz en **9 idiomas** + idioma del sistema; manual integrado traducido   |
-| **Flujo intensivo**          | Paleta `Ctrl+K`, «Ahora mismo», acciones pendientes, modo Zen                |
+| Para quién                   | Qué obtienes                                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Profesional multi-cuenta** | Rail de avatares, `Ctrl+1`–`9`, reposo de cuentas inactivas, límite de vistas vivas y precalentado al hover |
+| **Equipos en Linux**         | `.deb` e **AppImage**, protocolo `whatsapp://`, bandeja del sistema                                         |
+| **Usuarios internacionales** | Interfaz en **9 idiomas** + idioma del sistema; manual integrado traducido                                  |
+| **Flujo intensivo**          | Paleta `Ctrl+K`, «Ahora mismo», acciones pendientes, modo Zen                                               |
 
 > **Versión actual: [1.7.0](https://github.com/alktrip/catrip-multichat-electron/releases/tag/v1.7.0)** — internacionalización completa, manual multilingüe, atajos con foco en WhatsApp Web y bandeja «Ahora mismo» unificada.
 
@@ -62,6 +62,18 @@ El **rail** concentra cuentas y accesos rápidos; el área principal muestra Wha
 - **Rail (izquierda):** avatares, contadores de no leídos, ⚡ Ahora mismo, ✉ pendientes, ▤ actividad, ajustes y modo Zen.
 - **Área principal:** WhatsApp Web con sesión independiente por cuenta.
 - **Cambio de cuenta:** un clic en el avatar o `Ctrl+1` … `Ctrl+9` según el orden del rail.
+- **Precalentado:** mantén el ratón 300 ms sobre un avatar para cargar esa sesión en segundo plano antes del clic (configurable en Ajustes → Rendimiento).
+
+### Rendimiento multi-cuenta
+
+Optimizaciones para quien alterna entre muchas sesiones sin saturar RAM ni CPU:
+
+- **Suspensión por inactividad** y **tope de cuentas cargadas** (p. ej. solo 2 vistas vivas).
+- **Heartbeat unificado** por cuenta (menos scripts inyectados en WhatsApp Web).
+- **Throttling de frames** (~60 fps activa, ~4 fps en segundo plano, ~1 fps en Zen).
+- **Perfil Chromium** (equilibrado / conservador / agresivo), **backend Wayland/X11** y **diagnóstico de rendimiento** en Ajustes.
+
+Detalle en **[USAGE.md](USAGE.md)** §3c y §9 (Rendimiento).
 
 ### Atajos que no pierden el foco
 

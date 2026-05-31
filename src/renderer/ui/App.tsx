@@ -187,6 +187,10 @@ export default function App() {
     Record<string, AccountSessionStatus>
   >({});
   const [suspendedByAccount, setSuspendedByAccount] = React.useState<Record<string, boolean>>({});
+  const [whatsappLoadOverlay, setWhatsappLoadOverlay] = React.useState<{
+    accountId: string;
+    label: string;
+  } | null>(null);
   const [activityByAccount, setActivityByAccount] = React.useState<AccountActivityMap>({});
   /**
    * Token por cuenta que se incrementa cada vez que su contador de no leídos
@@ -290,6 +294,7 @@ export default function App() {
     const offStatus = api.onAccountsStatusChanged((m) => setAccountStatusById(m ?? {}));
     const offActivity = api.onAccountsActivityChanged((m) => setActivityByAccount(m ?? {}));
     const offSuspended = api.onAccountsSuspendedChanged((m) => setSuspendedByAccount(m ?? {}));
+    const offWaLoad = api.onWhatsAppLoadState((payload) => setWhatsappLoadOverlay(payload));
     return () => {
       offList();
       offActive();
@@ -297,6 +302,7 @@ export default function App() {
       offStatus();
       offActivity();
       offSuspended();
+      offWaLoad();
       mounted = false;
     };
   }, []);
@@ -620,6 +626,27 @@ export default function App() {
     void cmd.perform();
   }, []);
 
+  const prewarmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelPrewarm = React.useCallback(() => {
+    if (prewarmTimerRef.current != null) {
+      clearTimeout(prewarmTimerRef.current);
+      prewarmTimerRef.current = null;
+    }
+  }, []);
+  const schedulePrewarm = React.useCallback(
+    (accountId: string) => {
+      if (settings?.performance?.prewarmOnHover === false) return;
+      if (accountId === activeId) return;
+      cancelPrewarm();
+      prewarmTimerRef.current = setTimeout(() => {
+        prewarmTimerRef.current = null;
+        void window.catrip.prewarmAccount(accountId);
+      }, 300);
+    },
+    [activeId, cancelPrewarm, settings?.performance?.prewarmOnHover],
+  );
+  React.useEffect(() => () => cancelPrewarm(), [cancelPrewarm]);
+
   React.useEffect(() => {
     const railHidden = mode === "settings" || zen || settings?.general?.showSidebar === false;
     const sidebarWidth = railHidden ? 0 : sidebarWidthPx;
@@ -902,9 +929,12 @@ export default function App() {
                       title={tooltip}
                       draggable
                       onClick={() => {
+                        cancelPrewarm();
                         setActiveId(a.id);
                         void window.catrip.setActiveAccount(a.id);
                       }}
+                      onMouseEnter={() => schedulePrewarm(a.id)}
+                      onMouseLeave={cancelPrewarm}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         void window.catrip.regenerateAccountIcon(a.id);
@@ -1135,6 +1165,34 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {whatsappLoadOverlay && mode === "browser" ? (
+          <div
+            className="catrip-wa-loading-panel"
+            role="status"
+            aria-live="polite"
+            aria-label={t("app.whatsappLoading.aria", { label: whatsappLoadOverlay.label })}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: "#111b21",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 16,
+              color: "#aebac1",
+            }}
+          >
+            <div className="catrip-wa-loading-spinner" aria-hidden />
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#e9edef" }}>
+              {t("app.whatsappLoading.title", { label: whatsappLoadOverlay.label })}
+            </div>
+            <div style={{ fontSize: 13, opacity: 0.82, maxWidth: 320, textAlign: "center" }}>
+              {t("app.whatsappLoading.hint")}
+            </div>
+          </div>
+        ) : null}
 
         {accounts.length === 0 && !zen ? (
           <div

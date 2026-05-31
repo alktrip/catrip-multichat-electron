@@ -1,4 +1,4 @@
-import { app, session } from "electron";
+import { app, session, type Session } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -207,6 +207,15 @@ export function deleteAccount(
   return { removed, newActiveId };
 }
 
+import { ensureSessionCodeCache } from "./whatsappViewRuntime";
+
+const sessionsCodeCacheReady = new WeakSet<Session>();
+
 export function ensureElectronSessionForAccount(accountId: string) {
-  return session.fromPartition(`persist:acct-${accountId}`);
+  const ses = session.fromPartition(`persist:acct-${accountId}`);
+  if (!sessionsCodeCacheReady.has(ses)) {
+    sessionsCodeCacheReady.add(ses);
+    ensureSessionCodeCache(ses, accountId);
+  }
+  return ses;
 }
