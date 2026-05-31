@@ -151,11 +151,7 @@
       "steps": null,
       "note": null,
       "table": {
-        "headers": [
-          "Werkzeug",
-          "Wann nutzen",
-          "So öffnen"
-        ],
+        "headers": ["Werkzeug", "Wann nutzen", "So öffnen"],
         "rows": [
           [
             "⚡ Jetzt",
@@ -172,11 +168,7 @@
             "Vollständige Liste aller ungelesenen Chats",
             "✉-Button oder Ctrl+K → „ausstehend“"
           ],
-          [
-            "Ctrl+K → Chats",
-            "Kontakt per Name oder Text finden",
-            "Ctrl+K und Namen eingeben"
-          ]
+          ["Ctrl+K → Chats", "Kontakt per Name oder Text finden", "Ctrl+K und Namen eingeben"]
         ]
       }
     },
@@ -402,63 +394,21 @@
       "steps": null,
       "note": "Kurzliste auch unter Hilfe → Tastenkürzel und vollständiges Handbuch unter Hilfe → Benutzerhandbuch.",
       "table": {
-        "headers": [
-          "Kürzel",
-          "Wirkung"
-        ],
+        "headers": ["Kürzel", "Wirkung"],
         "rows": [
-          [
-            "Ctrl+K",
-            "Suche öffnen (ungelesene Chats, Konten und Aktionen)"
-          ],
-          [
-            "Ctrl+P",
-            "Einstellungen öffnen"
-          ],
-          [
-            "Ctrl+1 … Ctrl+9",
-            "Zu Konto 1, 2, 3… (bis 9)"
-          ],
-          [
-            "Ctrl+N",
-            "Neuer Chat in WhatsApp Web"
-          ],
-          [
-            "Ctrl+M",
-            "Chat per Telefonnummer"
-          ],
-          [
-            "Ctrl+U",
-            "Neues Konto"
-          ],
-          [
-            "Ctrl+Shift+A",
-            "Jetzt öffnen oder schließen (Top 3 dringend)"
-          ],
-          [
-            "Ctrl+Shift+Z",
-            "Zen-Modus ein/aus"
-          ],
-          [
-            "Escape",
-            "Jetzt schließen, Zen verlassen oder Palette schließen"
-          ],
-          [
-            "Ctrl+W",
-            "Fenster ausblenden"
-          ],
-          [
-            "Ctrl+Q",
-            "Anwendung beenden"
-          ],
-          [
-            "F5",
-            "WhatsApp Web neu laden"
-          ],
-          [
-            "F11",
-            "Vollbild"
-          ]
+          ["Ctrl+K", "Suche öffnen (ungelesene Chats, Konten und Aktionen)"],
+          ["Ctrl+P", "Einstellungen öffnen"],
+          ["Ctrl+1 … Ctrl+9", "Zu Konto 1, 2, 3… (bis 9)"],
+          ["Ctrl+N", "Neuer Chat in WhatsApp Web"],
+          ["Ctrl+M", "Chat per Telefonnummer"],
+          ["Ctrl+U", "Neues Konto"],
+          ["Ctrl+Shift+A", "Jetzt öffnen oder schließen (Top 3 dringend)"],
+          ["Ctrl+Shift+Z", "Zen-Modus ein/aus"],
+          ["Escape", "Jetzt schließen, Zen verlassen oder Palette schließen"],
+          ["Ctrl+W", "Fenster ausblenden"],
+          ["Ctrl+Q", "Anwendung beenden"],
+          ["F5", "WhatsApp Web neu laden"],
+          ["F11", "Vollbild"]
         ]
       }
     },

@@ -151,11 +151,7 @@
       "steps": null,
       "note": null,
       "table": {
-        "headers": [
-          "Tool",
-          "When to use it",
-          "How to open it"
-        ],
+        "headers": ["Tool", "When to use it", "How to open it"],
         "rows": [
           [
             "⚡ Right now",
@@ -167,16 +163,8 @@
             "Per-account summary: who wrote and preview",
             "▤ button or Ctrl+K → activity"
           ],
-          [
-            "✉ Pending actions",
-            "Full list of all unread chats",
-            "✉ button or Ctrl+K → pending"
-          ],
-          [
-            "Ctrl+K → Chats",
-            "Find a specific contact by name or text",
-            "Ctrl+K and type the name"
-          ]
+          ["✉ Pending actions", "Full list of all unread chats", "✉ button or Ctrl+K → pending"],
+          ["Ctrl+K → Chats", "Find a specific contact by name or text", "Ctrl+K and type the name"]
         ]
       }
     },
@@ -402,63 +390,21 @@
       "steps": null,
       "note": "You can also see a quick list under Help → Keyboard shortcuts and the full manual under Help → User manual.",
       "table": {
-        "headers": [
-          "Shortcut",
-          "What it does"
-        ],
+        "headers": ["Shortcut", "What it does"],
         "rows": [
-          [
-            "Ctrl+K",
-            "Open search (unread chats, accounts, and actions)"
-          ],
-          [
-            "Ctrl+P",
-            "Open Settings"
-          ],
-          [
-            "Ctrl+1 … Ctrl+9",
-            "Go to account 1, 2, 3… (up to 9)"
-          ],
-          [
-            "Ctrl+N",
-            "New chat in WhatsApp Web"
-          ],
-          [
-            "Ctrl+M",
-            "Chat by phone number"
-          ],
-          [
-            "Ctrl+U",
-            "New account"
-          ],
-          [
-            "Ctrl+Shift+A",
-            "Open or close Right now (top 3 urgent)"
-          ],
-          [
-            "Ctrl+Shift+Z",
-            "Toggle Zen mode"
-          ],
-          [
-            "Escape",
-            "Close Right now, exit Zen mode, or close palette"
-          ],
-          [
-            "Ctrl+W",
-            "Hide window"
-          ],
-          [
-            "Ctrl+Q",
-            "Quit the application"
-          ],
-          [
-            "F5",
-            "Reload WhatsApp Web"
-          ],
-          [
-            "F11",
-            "Full screen"
-          ]
+          ["Ctrl+K", "Open search (unread chats, accounts, and actions)"],
+          ["Ctrl+P", "Open Settings"],
+          ["Ctrl+1 … Ctrl+9", "Go to account 1, 2, 3… (up to 9)"],
+          ["Ctrl+N", "New chat in WhatsApp Web"],
+          ["Ctrl+M", "Chat by phone number"],
+          ["Ctrl+U", "New account"],
+          ["Ctrl+Shift+A", "Open or close Right now (top 3 urgent)"],
+          ["Ctrl+Shift+Z", "Toggle Zen mode"],
+          ["Escape", "Close Right now, exit Zen mode, or close palette"],
+          ["Ctrl+W", "Hide window"],
+          ["Ctrl+Q", "Quit the application"],
+          ["F5", "Reload WhatsApp Web"],
+          ["F11", "Full screen"]
         ]
       }
     },
